@@ -18,6 +18,12 @@ final class SafeXmlParser
             return $this->failure(DomainErrorCode::InvalidXml, 'The XML build is not valid UTF-8.');
         }
 
+        if (preg_match('/^\s*<\?xml[^>]*\bencoding\s*=\s*["\']([^"\']+)["\']/i', $xml, $encoding) === 1
+            && strtoupper(str_replace('_', '-', $encoding[1])) !== 'UTF-8'
+        ) {
+            return $this->failure(DomainErrorCode::InvalidXml, 'The XML declaration must use UTF-8.');
+        }
+
         if (preg_match('/<!\s*(?:DOCTYPE|ENTITY)\b/i', $xml) === 1) {
             return $this->failure(DomainErrorCode::UnsafeXml, 'DTD and entity declarations are not permitted.');
         }
@@ -28,12 +34,16 @@ final class SafeXmlParser
         $document->resolveExternals = false;
         $document->substituteEntities = false;
         $document->validateOnParse = false;
-        $loaded = $document->loadXML(
-            $xml,
-            LIBXML_NONET | LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_BIGLINES,
-        );
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
+
+        try {
+            $loaded = $document->loadXML(
+                $xml,
+                LIBXML_NONET | LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_BIGLINES,
+            );
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
 
         if (! $loaded || ! $document->documentElement instanceof DOMElement) {
             return $this->failure(DomainErrorCode::InvalidXml, 'The XML build is malformed.');

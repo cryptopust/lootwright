@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePobImportRequest;
+use App\Modules\BuildIntake\PobImportConflict;
 use App\Modules\BuildIntake\PobImportRejected;
 use App\Modules\BuildIntake\PobPolicyDenied;
 use App\Modules\BuildIntake\PolicyGatedPobImporter;
@@ -18,13 +19,23 @@ class PobImportController extends Controller
         PolicyGatedPobImporter $importer,
     ): JsonResponse {
         $input = $this->input($request);
+        $actorIdentifier = $request->user()?->getAuthIdentifier();
+        $actorId = is_int($actorIdentifier) || is_string($actorIdentifier)
+            ? (string) $actorIdentifier
+            : null;
 
         try {
             $execution = $importer->handle(
                 $input,
                 $request->boolean('persist'),
                 $request->integer('retention_hours') ?: null,
+                $request->header('Idempotency-Key'),
+                $actorId,
             );
+        } catch (PobImportConflict) {
+            return response()->json([
+                'status' => 'idempotency_conflict',
+            ], 409);
         } catch (PobPolicyDenied $exception) {
             return response()->json([
                 'status' => 'policy_denied',
@@ -54,8 +65,11 @@ class PobImportController extends Controller
                 'id' => $stored->id,
                 'expires_at' => $stored->expiresAt,
                 'deletion_token' => $stored->deletionToken,
+                'idempotent_replay' => $stored->replayed,
             ],
-        ], $stored === null ? 200 : 201, options: JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        ], $stored === null || $stored->replayed ? 200 : 201, [
+            'Cache-Control' => 'no-store',
+        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     }
 
     private function input(StorePobImportRequest $request): string

@@ -177,21 +177,40 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 - Delivery and privacy: pasted code/XML and uploaded plain-text code use the
   deny-by-default gate before processing and the exact pinned format gate before
   normalization. No URL is fetched. Raw input is never persisted or logged;
-  consented normalized JSON is encrypted for 24 hours by default (168-hour
-  maximum), has hash-only token deletion, and is pruned hourly. Imported prose
-  is untrusted text and is not sent to OpenAI.
+  authenticated, consented normalized JSON is encrypted for 24 hours by default
+  (168-hour maximum), has hash-only token deletion, and is pruned hourly.
+  Imported prose is untrusted text and is not sent to OpenAI.
+- Principal-engineer review on 2026-08-14 confirmed and corrected: edition-free
+  parser-local IDs; PoE1 choice leakage into PoE2; partial skill/gem truncation;
+  silent invalid scalar coercion; missing parser-time enforcement; a concrete
+  adapter dependency under provider-neutral `src/Application`; anonymous,
+  non-idempotent persistence; owner/idempotency metadata exposure risk; a local
+  CLI stream-wrapper/UNC network path; missing local-policy effective-start and
+  global-kill-switch enforcement; cacheable private responses; and a privacy
+  regression test that had not actually inserted its sentinel text. Regression
+  tests now lock each boundary.
+- Persistence hardening: `persistent_store` now additionally requires the
+  `authenticated_user` Policy Gate condition, a high-entropy idempotency key,
+  keyed owner/idempotency hashes, exact input/checksum/game/parser replay, and
+  no-store responses. Different-owner keys are isolated; conflicting reuse
+  fails. Lootwright sessions are encrypted and remain unrelated to GGG. No
+  public account/login flow exists yet, so hosted persistence remains disabled
+  for anonymous users while transient import remains available.
 - Verification: original tiny fixtures and tests cover PoE1, beta PoE2,
   ambiguous edition, URLs, malformed Base64/compression/XML/UTF-8, expansion
-  bombs, XXE, depth/size/node limits, unknown nodes, duplicate items,
-  deterministic round trips, upload validation, policy denial, encryption,
-  retention, deletion, redacted logs, and database-free CLI execution.
+  bombs, XXE, depth/size/node/skill/gem/time limits, unknown and invalid scalar
+  data, duplicate items, edition-scoped identifiers, deterministic round trips,
+  upload validation, all import-stage policy denials, authenticated
+  owner-scoped idempotency, encryption, retention, deletion, no-store private
+  responses, redacted logs, and database-free CLI execution without URL,
+  stream-wrapper, or UNC access.
 - Migration and gate evidence: an isolated in-memory SQLite
   `migrate:fresh --seed --force` completed with 15 sources, 15 versions, 16
   evidence records, 58 exact rules, the inactive global switch, and the empty
   PoB-import table. Composer validation/audit, Pint, PHPStan level 7, PHPUnit,
   npm clean install/high-severity audit, ESLint, Vue TypeScript, Vitest, Vite,
-  and the PowerShell documentation validator passed. PHPUnit ran 336 tests with
-  4,113 assertions; Vitest ran 2 tests across 2 files; Composer and npm reported
+  and the PowerShell documentation validator passed. PHPUnit ran 351 tests with
+  4,213 assertions; Vitest ran 2 tests across 2 files; Composer and npm reported
   no vulnerability advisories; documentation validation covered 29 Markdown
   files. The README fixture command and both HTTP routes were also verified
   locally.
@@ -239,9 +258,9 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 - Status: Pending.
 - Narrow completed slice: Prompt 05 includes encrypted, consented normalized
-  PoB retention, deletion-token hashing, and expiry pruning. Authenticated
-  workspaces, analysis history, backup deletion, and queue lifecycle remain in
-  this prompt.
+  PoB retention, authenticated owner hashing, idempotency, deletion-token
+  hashing, and expiry pruning. Public account flows, authenticated workspaces,
+  analysis history, backup deletion, and queue lifecycle remain in this prompt.
 - Scope: implement PostgreSQL repositories, short-lived raw imports, normalized/result retention, deletion, authorization, encryption, and Redis/Horizon jobs.
 - Gate: tenant/workspace isolation, idempotency, backup/deletion behavior, log redaction, queue limits, and retention UX are verified.
 

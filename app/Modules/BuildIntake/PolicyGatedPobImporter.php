@@ -3,17 +3,19 @@
 namespace App\Modules\BuildIntake;
 
 use Carbon\CarbonImmutable;
-use Lootwright\Application\BuildIntake\PobImportService;
-use Lootwright\Application\BuildIntake\PreparedPobInput;
 use Lootwright\Application\PolicyProvenance\DecideCapability;
 use Lootwright\Domain\BuildIntake\Import\PobImportResult;
 use Lootwright\Domain\PolicyProvenance\Capability;
 use Lootwright\Domain\PolicyProvenance\CapabilityDecision;
 use Lootwright\Domain\PolicyProvenance\CapabilityRequest;
 use Lootwright\Domain\PolicyProvenance\RetrievedAt;
+use Lootwright\Domain\Shared\Error\DomainError;
+use Lootwright\Domain\Shared\Error\DomainErrorCode;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
+use Lootwright\GameAdapters\Shared\Pob\PobImportCoordinator;
+use Lootwright\GameAdapters\Shared\Pob\PreparedPobInput;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -24,14 +26,19 @@ final readonly class PolicyGatedPobImporter
     private const USER_VERSION = '1.0.0';
 
     public function __construct(
-        private PobImportService $importer,
+        private PobImportCoordinator $importer,
         private DecideCapability $policy,
         private PobImportStore $store,
         private LoggerInterface $logger,
     ) {}
 
-    public function handle(string $input, bool $persist, ?int $retentionHours = null): PobImportExecution
-    {
+    public function handle(
+        string $input,
+        bool $persist,
+        ?int $retentionHours = null,
+        ?string $idempotencyKey = null,
+        ?string $actorId = null,
+    ): PobImportExecution {
         $requestHash = hash('sha256', $input);
 
         try {
@@ -66,15 +73,36 @@ final readonly class PolicyGatedPobImporter
             $stored = null;
 
             if ($persist) {
+                if (! PobImportIdempotency::isValid($idempotencyKey)) {
+                    throw new PobImportRejected(DomainError::because(
+                        DomainErrorCode::InvalidIdentifier,
+                        'Persistent imports require a valid idempotency key.',
+                    ));
+                }
+
+                $persistenceConditions = ['explicit_user_submission', 'user_storage_consent'];
+
+                if (is_string($actorId) && trim($actorId) !== '') {
+                    $persistenceConditions[] = 'authenticated_user';
+                }
+
                 $this->authorize(
                     Capability::PersistentStore,
                     'user_input.pob_code.store',
                     self::USER_SOURCE,
                     self::USER_VERSION,
-                    ['explicit_user_submission', 'user_storage_consent'],
+                    $persistenceConditions,
                 );
+
+                if (! is_string($actorId) || trim($actorId) === '') {
+                    throw new PobImportRejected(DomainError::because(
+                        DomainErrorCode::InvalidIdentifier,
+                        'Persistent imports require an authenticated owner.',
+                    ));
+                }
+
                 $hours = $retentionHours ?? (int) config('build-intake.default_retention_hours', 24);
-                $stored = $this->store->store($import, $requestHash, $hours);
+                $stored = $this->store->store($import, $requestHash, $hours, $idempotencyKey, $actorId);
             }
 
             $this->logger->info('pob_import_completed', [
@@ -83,6 +111,7 @@ final readonly class PolicyGatedPobImporter
                 'game_edition' => $import->canonicalBuild->edition->value,
                 'parser_version' => $import->parserVersion,
                 'persisted' => $stored !== null,
+                'idempotent_replay' => $stored instanceof StoredPobImport ? $stored->replayed : false,
             ]);
 
             return new PobImportExecution($import, $stored);
@@ -101,6 +130,13 @@ final readonly class PolicyGatedPobImporter
                 'source_id' => $exception->decision->sourceId,
                 'capability' => $exception->decision->capability->value,
                 'reason' => $exception->decision->reason->value,
+            ]);
+
+            throw $exception;
+        } catch (PobImportConflict $exception) {
+            $this->logger->notice('pob_import_idempotency_conflict', [
+                'request_hash_sha256' => $requestHash,
+                'outcome' => 'idempotency_conflict',
             ]);
 
             throw $exception;

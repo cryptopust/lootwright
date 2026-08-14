@@ -17,5 +17,6 @@ final readonly class ImportLimits
         public int $gems = 2_048,
         public int $items = 512,
         public int $textBytes = 65_536,
+        public int $processingMilliseconds = 2_000,
     ) {}
 }

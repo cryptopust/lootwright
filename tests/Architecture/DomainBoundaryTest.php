@@ -116,6 +116,58 @@ class DomainBoundaryTest extends TestCase
         }
     }
 
+    public function test_pob_delivery_paths_cannot_call_the_ungated_parser_directly(): void
+    {
+        foreach (self::phpFiles(dirname(__DIR__, 2).'/app/Http') as $file) {
+            $content = file_get_contents($file) ?: '';
+
+            self::assertStringNotContainsString('PobImportCoordinator', $content);
+            self::assertStringNotContainsString('Lootwright\\GameAdapters\\', $content);
+        }
+
+        $controller = file_get_contents(dirname(__DIR__, 2).'/app/Http/Controllers/PobImportController.php') ?: '';
+        $command = file_get_contents(dirname(__DIR__, 2).'/app/Console/Commands/ImportPobFixture.php') ?: '';
+
+        self::assertStringContainsString('PolicyGatedPobImporter', $controller);
+        self::assertStringContainsString('PolicyGatedPobImporter', $command);
+        self::assertStringContainsString('LocalFixtureCapabilityPolicy', $command);
+        self::assertStringNotContainsString('->import(', $command);
+        self::assertStringNotContainsString('->prepare(', $command);
+        self::assertStringNotContainsString('->normalize(', $command);
+
+        $allowedCoordinatorConsumers = [
+            '/app/Console/Commands/ImportPobFixture.php',
+            '/app/Modules/BuildIntake/PolicyGatedPobImporter.php',
+            '/app/Providers/AppServiceProvider.php',
+        ];
+
+        foreach (self::phpFiles(dirname(__DIR__, 2).'/app') as $file) {
+            $content = file_get_contents($file) ?: '';
+
+            if (! str_contains($content, 'PobImportCoordinator')) {
+                continue;
+            }
+
+            $normalized = str_replace('\\', '/', $file);
+            $matched = array_filter(
+                $allowedCoordinatorConsumers,
+                static fn (string $suffix): bool => str_ends_with($normalized, $suffix),
+            );
+            self::assertNotSame([], $matched, "{$file} bypasses the policy-gated PoB import use case.");
+        }
+    }
+
+    public function test_provider_neutral_application_layer_cannot_import_concrete_game_adapters(): void
+    {
+        foreach (self::phpFiles(dirname(__DIR__, 2).'/src/Application') as $file) {
+            self::assertStringNotContainsString(
+                'Lootwright\\GameAdapters\\',
+                file_get_contents($file) ?: '',
+                "{$file} imports a concrete game adapter.",
+            );
+        }
+    }
+
     /** @return list<string> */
     private static function phpFiles(string $root): array
     {

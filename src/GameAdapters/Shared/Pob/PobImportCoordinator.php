@@ -1,7 +1,8 @@
 <?php
 
-namespace Lootwright\Application\BuildIntake;
+namespace Lootwright\GameAdapters\Shared\Pob;
 
+use Closure;
 use DOMDocument;
 use DOMElement;
 use Lootwright\Domain\BuildIntake\Import\ImportLimits;
@@ -9,18 +10,21 @@ use Lootwright\Domain\BuildIntake\Ports\PobBuildParser;
 use Lootwright\Domain\Shared\Error\DomainError;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
 use Lootwright\Domain\Shared\Error\DomainResult;
-use Lootwright\GameAdapters\Shared\Pob\DecodedPobInput;
-use Lootwright\GameAdapters\Shared\Pob\PobEnvelopeDecoder;
-use Lootwright\GameAdapters\Shared\Pob\SafeXmlParser;
 
-final readonly class PobImportService
+final readonly class PobImportCoordinator
 {
+    /** @var Closure(): int */
+    private Closure $monotonicNanoseconds;
+
     /** @param list<PobBuildParser> $parsers */
     public function __construct(
         private PobEnvelopeDecoder $decoder,
         private SafeXmlParser $xmlParser,
         private array $parsers,
-    ) {}
+        ?Closure $monotonicNanoseconds = null,
+    ) {
+        $this->monotonicNanoseconds = $monotonicNanoseconds ?? static fn (): int => hrtime(true);
+    }
 
     public function import(string $input, ?ImportLimits $limits = null): DomainResult
     {
@@ -43,6 +47,7 @@ final readonly class PobImportService
     public function prepare(string $input, ?ImportLimits $limits = null): DomainResult
     {
         $limits ??= new ImportLimits;
+        $startedAt = $this->now();
         $decodedResult = $this->decoder->decode($input, $limits);
 
         if ($decodedResult->isFailure()) {
@@ -53,6 +58,10 @@ final readonly class PobImportService
 
         if (! $decoded instanceof DecodedPobInput) {
             return $this->failure(DomainErrorCode::InvalidEncoding, 'The decoded build envelope is invalid.');
+        }
+
+        if ($this->elapsed($startedAt) > $this->processingBudget($limits)) {
+            return $this->failure(DomainErrorCode::ProcessingLimit, 'The build exceeded the parser processing-time limit.');
         }
 
         $documentResult = $this->xmlParser->parse($decoded->xml, $limits);
@@ -78,16 +87,35 @@ final readonly class PobImportService
             return $this->failure(DomainErrorCode::AmbiguousGameEdition, 'The build edition cannot be proven from its root element.');
         }
 
-        return DomainResult::success(new PreparedPobInput($document, $root, $decoded->checksumSha256));
+        $processingNanoseconds = $this->elapsed($startedAt);
+
+        if ($processingNanoseconds > $this->processingBudget($limits)) {
+            return $this->failure(DomainErrorCode::ProcessingLimit, 'The build exceeded the parser processing-time limit.');
+        }
+
+        return DomainResult::success(new PreparedPobInput(
+            $document,
+            $root,
+            $decoded->checksumSha256,
+            $processingNanoseconds,
+        ));
     }
 
     public function normalize(PreparedPobInput $prepared, ?ImportLimits $limits = null): DomainResult
     {
         $limits ??= new ImportLimits;
+        $startedAt = $this->now();
 
         foreach ($this->parsers as $parser) {
             if ($parser->rootElement() === $prepared->rootElement) {
-                return $parser->parse($prepared->document, $prepared->checksumSha256, $limits);
+                $result = $parser->parse($prepared->document, $prepared->checksumSha256, $limits);
+                $processingNanoseconds = $prepared->processingNanosecondsUsed + $this->elapsed($startedAt);
+
+                if ($processingNanoseconds > $this->processingBudget($limits)) {
+                    return $this->failure(DomainErrorCode::ProcessingLimit, 'The build exceeded the parser processing-time limit.');
+                }
+
+                return $result;
             }
         }
 
@@ -97,5 +125,20 @@ final readonly class PobImportService
     private function failure(DomainErrorCode $code, string $message): DomainResult
     {
         return DomainResult::failure(DomainError::because($code, $message));
+    }
+
+    private function now(): int
+    {
+        return ($this->monotonicNanoseconds)();
+    }
+
+    private function elapsed(int $startedAt): int
+    {
+        return max(0, $this->now() - $startedAt);
+    }
+
+    private function processingBudget(ImportLimits $limits): int
+    {
+        return max(1, $limits->processingMilliseconds) * 1_000_000;
     }
 }

@@ -30,4 +30,5 @@ enum DomainErrorCode: string
     case UnsafeXml = 'unsafe_xml';
     case AmbiguousGameEdition = 'ambiguous_game_edition';
     case UnsupportedInput = 'unsupported_input';
+    case ProcessingLimit = 'processing_limit';
 }

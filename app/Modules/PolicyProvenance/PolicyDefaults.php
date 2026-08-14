@@ -98,7 +98,7 @@ final class PolicyDefaults
         ] as $source => $operation) {
             $rules[] = self::rule($source, '1.0.0', Capability::Import, "user_input.{$operation}.import", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $userConditions, 'Deliberately pasted input may enter the bounded intake workflow.');
             $rules[] = self::rule($source, '1.0.0', Capability::TransientProcess, "user_input.{$operation}.process", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $userConditions, 'Deliberately pasted input may be processed transiently with hostile-input limits.');
-            $rules[] = self::rule($source, '1.0.0', Capability::PersistentStore, "user_input.{$operation}.store", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, [...$userConditions, 'user_storage_consent'], 'User-owned persistence requires explicit storage consent and retention controls.');
+            $rules[] = self::rule($source, '1.0.0', Capability::PersistentStore, "user_input.{$operation}.store", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, [...$userConditions, 'user_storage_consent', 'authenticated_user'], 'User-owned persistence requires authentication, explicit storage consent, and retention controls.');
             $rules[] = self::rule($source, '1.0.0', Capability::PublicDisplay, "user_input.{$operation}.public_display", PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'User input is private by default and cannot be published.');
             $rules[] = self::rule($source, '1.0.0', Capability::Redistribution, "user_input.{$operation}.redistribute", PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Public redistribution of user input is denied by default.');
         }

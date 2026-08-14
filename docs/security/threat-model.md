@@ -48,14 +48,14 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 
 | Threat | Example | Required controls |
 | --- | --- | --- |
-| Resource exhaustion | Huge base64 share code expands into a decompression bomb | Encoded/decoded byte limits, expansion-ratio cap, parser time/memory budget, item/node limits, request and queue rate limits, bounded retries |
+| Resource exhaustion | Huge base64 share code expands into a decompression bomb or anonymous callers fill storage | Encoded/decoded byte limits, expansion-ratio and 2-second parser budget, item/node/skill/gem limits, per-user/IP rate limits, authentication before persistence, bounded retention and retries |
 | Parser exploitation | Malicious XML uses entities, DTD, deep nesting, or malformed numeric values | XXE/DTD/XInclude/network disabled, depth and count limits, strict schema/value objects, fuzz/property tests, no dynamic evaluation |
 | SSRF and network pivot | User text contains a URL or redirect to internal services | Never fetch user-provided URLs; central outbound allowlist with scheme/host/port/path, DNS and redirect revalidation, private-address denial |
 | XSS/content injection | Item text or AI prose contains HTML/script/Markdown payloads | Contextual escaping, sanitized allowlist Markdown only, CSP, no raw AI HTML, safe download content types |
 | Prompt injection | Imported text tells AI to reveal secrets or invent rules | Treat content as data, minimize fields, structured schemas, no secrets/tools in AI context, deterministic authority, output validation |
 | Canonical-data corruption | AI or source import creates a plausible stat mapping | AI excluded from canonical writes, two-person source/ruleset review, immutable versions, checksum verification, typed provenance |
 | Cross-game confusion | PoE2 identifier resolves through PoE1 mapping or cache | Non-null game IDs, separate namespaces/catalogs/cache keys, database constraints, negative isolation tests, no fallback |
-| Authorization failure | One user reads another user's analysis | Workspace ownership checks at use-case boundary, opaque IDs, policy tests, least-privilege queries, deletion tests |
+| Authorization failure | One user replays or deletes another user's import | Authentication condition at the persistence gate, keyed owner/idempotency hashes, owner-scoped idempotency, unguessable deletion capability, opaque IDs, policy and deletion tests |
 | Sensitive-data leakage | Share code or item text appears in logs or provider prompts | Data classification, request hashes and coarse outcomes only in logs, no raw PoB persistence, encrypted consented normalized storage, no AI transmission, no analytics payloads |
 | Credential collection | A feature asks for `POESESSID` to improve results | Product-level prohibition, blocked field names, security review, UI tests, no generic secret vault for GGG sessions |
 | Prohibited automation | Recommendation feature clicks Trade or sends a whisper | No browser/client integration ports, no executable/extension deliverables, manual text recipe only, architecture and policy tests |
@@ -71,14 +71,15 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 | Evidence-admin takeover | An attacker changes evidence or disables a kill switch | Environment-only high-entropy admin token, constant-time comparison, 404 fail-closed response, CSRF protection, rate limiting, no token in database/logs, deployment secret rotation |
 | Audit data leakage | Raw builds, credentials, prompts, or personal data are written with decisions | Audit only source/version/capability/operation/outcome/reason/evidence IDs/non-secret condition names/time/actor type; tests reject token persistence |
 | Public explanation overexposure | A read-only policy page reveals admin notes or secrets | Dedicated bounded response fields, no reviewer notes/tokens/audit context, read-only route, caching and rate limits |
-| Deletion-token disclosure | A storage deletion token is recovered from the database or logs | Return 256-bit token once, store only SHA-256, constant-time verification, never log or include it in policy audits |
+| Deletion-token disclosure | A storage deletion token is recovered from the database, cache, or logs | Derive a 256-bit capability with the application key and owner-scoped high-entropy idempotency key, store only SHA-256, use constant-time verification, no-store responses, never log or include it in policy audits |
+| Duplicate persistence | Client retry creates multiple encrypted records or changes a prior result | Required owner-scoped idempotency key, unique keyed hash, exact input/checksum/game/parser match, deterministic replay, conflict on key reuse |
 | Parser format drift | A new upstream envelope/root is silently interpreted using old assumptions | Pinned source commits and license hashes, expiring evidence, exact root detection, parser versions, beta labelling, fail-closed unsupported structures |
 
 ## Privacy and retention baseline
 
 - Collect only the content the user explicitly submits and the minimum operational metadata.
 - Raw PoB share codes and XML are memory-only and are never persisted. Only a normalized result may be stored, and only after explicit consent.
-- Consented normalized PoB imports are application-key encrypted, default to 24 hours, cannot exceed the configured 168-hour ceiling, have a one-time deletion token, and are pruned hourly after expiry.
+- Authenticated and consented normalized PoB imports are application-key encrypted, default to 24 hours, cannot exceed the configured 168-hour ceiling, have owner-scoped idempotency and hash-only deletion capabilities, and are pruned hourly after expiry.
 - Later workspaces and analysis history still require authenticated ownership, backup-aware deletion, and their own explicit retention policy.
 - Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
 - Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
@@ -99,6 +100,7 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 ## Residual and unresolved risks
 
 - Format-only PoB1 and beta PoB2 interoperability are approved only for the pinned records through 2026-11-12; upstream drift or expired evidence disables execution.
+- No public Lootwright account/login flow exists yet; persistent hosted imports remain unavailable to anonymous users until that separately reviewed boundary is implemented. Transient imports do not require an account.
 - Public hosting jurisdiction, privacy notice, retention periods, age policy, and incident-response contacts are undecided.
 - Third-party ruleset data may not be licensable for redistribution even if technically accessible.
 - The precise boundary between factual compatibility text and protected GGG expression needs legal review.

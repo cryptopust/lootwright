@@ -109,7 +109,7 @@ class PolicyProvenanceGateTest extends TestCase
         self::assertSame('source_capability_kill_switch', $scoped->reason->value);
     }
 
-    public function test_user_persistence_requires_consent(): void
+    public function test_user_persistence_requires_consent_and_an_authenticated_owner(): void
     {
         $withoutConsent = $this->decision($this->request(
             Capability::PersistentStore,
@@ -125,9 +125,17 @@ class PolicyProvenanceGateTest extends TestCase
             '1.0.0',
             ['explicit_user_submission', 'user_storage_consent'],
         ));
+        $withConsentAndOwner = $this->decision($this->request(
+            Capability::PersistentStore,
+            'user_input.item_text.store',
+            'USER-PASTED-ITEM',
+            '1.0.0',
+            ['explicit_user_submission', 'user_storage_consent', 'authenticated_user'],
+        ));
 
         self::assertSame(PolicyDecision::RequireReview, $withoutConsent->decision);
-        self::assertSame(PolicyDecision::Allow, $withConsent->decision);
+        self::assertSame(PolicyDecision::RequireReview, $withConsent->decision);
+        self::assertSame(PolicyDecision::Allow, $withConsentAndOwner->decision);
     }
 
     public function test_public_explanations_are_read_only_and_admin_evidence_is_token_protected(): void

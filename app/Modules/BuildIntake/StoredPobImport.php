@@ -8,5 +8,6 @@ final readonly class StoredPobImport
         public string $id,
         public string $deletionToken,
         public string $expiresAt,
+        public bool $replayed,
     ) {}
 }

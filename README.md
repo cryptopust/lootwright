@@ -80,14 +80,23 @@ php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
 The web boundary accepts pasted raw share codes/XML or an uploaded `text/plain`
 code at `POST /api/build-imports/pob`. URL fetching is intentionally absent. A
 normalized result is transient unless `persist`, explicit `storage_consent`,
-and an optional bounded `retention_hours` are supplied. Consented normalized
-JSON is encrypted; its default retention is 24 hours and it can be deleted with
-the one-time token returned by the endpoint. Run `php artisan
+an authenticated Lootwright session, a client-generated high-entropy
+`Idempotency-Key` header, and an optional bounded `retention_hours` are
+supplied. Consented normalized JSON is encrypted; its default retention is 24
+hours and it can be deleted with the capability token returned by the endpoint.
+Transient import remains available without an account. No public login flow is
+implemented yet, so hosted persistence remains unavailable until a reviewed
+authenticated account boundary exists. Run `php artisan
 pob:prune-imports` to prune expired records; the scheduler runs it hourly.
 
 Exact limits, supported fields, the pre-ruleset boundary, PoE2 beta status, and
 privacy behavior are documented in [PoB import compatibility](docs/compatibility/pob-import.md).
 The upstream notice is in [Path of Building format attribution](docs/compliance/path-of-building-attribution.md).
+
+Production HTTPS deployments must set `SESSION_SECURE_COOKIE=true`; Lootwright
+session payloads are encrypted, HTTP-only, and SameSite `lax` by default. These
+are Lootwright application sessions only—GGG credentials, cookies, and
+`POESESSID` remain prohibited.
 
 ## Development commands
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Lootwright\Application\BuildIntake;
+namespace Lootwright\GameAdapters\Shared\Pob;
 
 use DOMDocument;
 use Lootwright\Domain\Shared\Game\GameEdition;
@@ -11,6 +11,7 @@ final readonly class PreparedPobInput
         public DOMDocument $document,
         public string $rootElement,
         public string $checksumSha256,
+        public int $processingNanosecondsUsed,
     ) {}
 
     public function edition(): GameEdition

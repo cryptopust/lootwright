@@ -28,4 +28,9 @@ final class Pob1Normalizer extends AbstractPobNormalizer
     {
         return new ImportProvenance('POB1-FORMAT-001', self::SOURCE_COMMIT, self::LICENSE_SHA256, self::PARSER_VERSION);
     }
+
+    protected function choiceAttributes(): array
+    {
+        return ['bandit', 'pantheonMajorGod', 'pantheonMinorGod'];
+    }
 }

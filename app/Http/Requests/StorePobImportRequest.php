@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Modules\BuildIntake\PobImportIdempotency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -34,6 +35,14 @@ class StorePobImportRequest extends FormRequest
 
             if (is_string($input) && strlen($input) > 1_048_576) {
                 $validator->errors()->add('input', 'The build input may not exceed 1 MiB.');
+            }
+
+            if ($this->boolean('persist')) {
+                $idempotencyKey = $this->header('Idempotency-Key');
+
+                if (! PobImportIdempotency::isValid($idempotencyKey)) {
+                    $validator->errors()->add('Idempotency-Key', 'Persistent imports require a high-entropy 32-128 character Idempotency-Key header.');
+                }
             }
         }];
     }

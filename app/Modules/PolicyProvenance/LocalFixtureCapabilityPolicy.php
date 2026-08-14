@@ -19,8 +19,18 @@ use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
  */
 final readonly class LocalFixtureCapabilityPolicy implements CapabilityPolicy
 {
+    public function __construct(private bool $globalKillSwitch = false) {}
+
     public function authorize(CapabilityRequest $request): DomainResult
     {
+        if ($this->globalKillSwitch) {
+            return $this->decision($request, PolicyDecision::Deny, PolicyDecisionReason::GlobalKillSwitch, 'The emergency global policy kill switch is active.');
+        }
+
+        if ($request->evaluatedAt->value < PolicyDefaults::REVIEWED_AT) {
+            return $this->decision($request, PolicyDecision::RequireReview, PolicyDecisionReason::MissingEvidence, 'Pinned format policy evidence was not yet effective.');
+        }
+
         if ($request->evaluatedAt->value >= PolicyDefaults::REVIEW_EXPIRES_AT) {
             return $this->decision($request, PolicyDecision::RequireReview, PolicyDecisionReason::ExpiredEvidence, 'Pinned format policy evidence has expired.');
         }

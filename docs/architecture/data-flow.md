@@ -79,7 +79,7 @@ sequenceDiagram
 ### 8. Persistence and deletion
 
 - PostgreSQL stores normalized snapshots, deterministic results, provenance references, and minimal audit metadata.
-- Raw PoB input is never persisted. Consented normalized import JSON is encrypted, defaults to 24-hour retention, is bounded by a 168-hour ceiling, and has token-based deletion plus hourly expiry pruning.
+- Raw PoB input is never persisted. Authenticated, consented normalized import JSON is owner-scoped, idempotent, encrypted, defaults to 24-hour retention, is bounded by a 168-hour ceiling, and has capability-token deletion plus hourly expiry pruning.
 - Redis contains disposable jobs, rate-limit counters, and cache entries, never the sole copy of a result.
 - Logs contain opaque request IDs, not share codes, item text, credentials, or AI prompts.
 

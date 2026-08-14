@@ -15,8 +15,9 @@ envelope but a distinct XML root and evolving fields.
 Approve only format interoperability at the commits and license hashes recorded
 in the source register. Implement the envelope and XML reader independently in
 framework-free PHP. PoE1 and PoE2 use separate parsers and normalizers behind a
-shared intake port. PoE2 is beta and cannot activate PoE2 analysis, rulesets, or
-phase-two game data.
+shared intake port, with their concrete coordinator kept in the adapter layer
+rather than provider-neutral `src/Application`. PoE2 is beta and cannot activate
+PoE2 analysis, rulesets, or phase-two game data.
 
 The parser never fetches a URL, executes Lua or embedded content, or invents a
 game edition. `PathOfBuilding` is PoE1 evidence and `PathOfBuilding2` is PoE2
@@ -31,5 +32,10 @@ later fail-closed step.
 - No upstream source, dependency, dataset, formula, asset, or full build enters
   the repository.
 - PoE2 compatibility is intentionally narrower and labelled beta.
+- Parser-local identifiers are edition-prefixed, and PoE1-only choices are not
+  consumed by the PoE2 adapter.
+- Persistent results require a Policy Gate allow for an authenticated
+  Lootwright owner, explicit consent, owner-scoped idempotency, encryption,
+  bounded retention, and deletion; anonymous transient import remains allowed.
 - Format or license drift immediately expires the allow record and requires new
   fixtures and review.

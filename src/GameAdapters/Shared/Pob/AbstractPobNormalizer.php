@@ -23,6 +23,9 @@ abstract class AbstractPobNormalizer
 
     abstract protected function provenance(): ImportProvenance;
 
+    /** @return list<string> */
+    abstract protected function choiceAttributes(): array;
+
     public function normalize(DOMDocument $document, string $inputChecksum, ImportLimits $limits): DomainResult
     {
         $root = $document->documentElement;
@@ -43,14 +46,14 @@ abstract class AbstractPobNormalizer
             return $this->failure(DomainErrorCode::InvalidXml, 'The build XML has no Build section.');
         }
 
-        $level = $this->integerAttribute($build, 'level');
+        $level = $this->integerAttribute($build, 'level', $warnings, '/Build/@level');
 
         if ($level !== null && ($level < 1 || $level > 100)) {
             $warnings[] = new ImportWarning('invalid_character_level', 'Character level is outside 1-100 and was left unknown.', '/Build/@level');
             $level = null;
         }
 
-        $spec = $tree === null ? null : $this->activeSpec($tree);
+        $spec = $tree === null ? null : $this->activeSpec($tree, $warnings);
         $classId = $this->canonicalId(
             'class',
             $spec?->getAttribute('classInternalId') ?: $spec?->getAttribute('classId') ?: $build->getAttribute('className'),
@@ -82,7 +85,28 @@ abstract class AbstractPobNormalizer
             $passives[] = $passive;
         }
 
-        $skills = $this->skills($skillsNode, $limits, $warnings);
+        $skillsResult = $this->skills($skillsNode, $limits, $warnings);
+
+        if ($skillsResult->isFailure()) {
+            return $skillsResult;
+        }
+
+        $rawSkills = $skillsResult->value();
+
+        if (! is_array($rawSkills) || ! array_is_list($rawSkills)) {
+            return $this->failure(DomainErrorCode::InvalidValue, 'The normalized skill collection is invalid.');
+        }
+
+        $skills = [];
+
+        foreach ($rawSkills as $skill) {
+            if (! is_array($skill)) {
+                return $this->failure(DomainErrorCode::InvalidValue, 'A normalized skill group is invalid.');
+            }
+
+            $skills[] = $skill;
+        }
+
         $itemsResult = $this->items($itemsNode, $limits, $warnings);
 
         if ($itemsResult->isFailure()) {
@@ -135,7 +159,7 @@ abstract class AbstractPobNormalizer
     {
         $choices = [];
 
-        foreach (['bandit', 'pantheonMajorGod', 'pantheonMinorGod'] as $name) {
+        foreach ($this->choiceAttributes() as $name) {
             $value = $this->nullable($build->getAttribute($name));
 
             if ($value !== null) {
@@ -167,7 +191,7 @@ abstract class AbstractPobNormalizer
                 continue;
             }
 
-            $nodes[] = 'pob.node.'.$raw;
+            $nodes[] = $this->editionPrefix().'.pob.node.'.$raw;
 
             if (count($nodes) > $limits->passiveNodes) {
                 return $this->failure(DomainErrorCode::InputTooLarge, 'The build exceeds the passive-node limit.');
@@ -181,12 +205,11 @@ abstract class AbstractPobNormalizer
     }
 
     /** @param list<ImportWarning> $warnings
-     * @return list<array<string, mixed>>
      */
-    private function skills(?DOMElement $skillsNode, ImportLimits $limits, array &$warnings): array
+    private function skills(?DOMElement $skillsNode, ImportLimits $limits, array &$warnings): DomainResult
     {
         if ($skillsNode === null) {
-            return [];
+            return DomainResult::success([]);
         }
 
         $skills = [];
@@ -194,8 +217,7 @@ abstract class AbstractPobNormalizer
 
         foreach ($skillsNode->getElementsByTagName('Skill') as $skillNode) {
             if (count($skills) >= $limits->skills) {
-                $warnings[] = new ImportWarning('skill_limit', 'Additional skill groups were not normalized.', '/Skills');
-                break;
+                return $this->failure(DomainErrorCode::InputTooLarge, 'The build exceeds the skill-group limit.');
             }
 
             $group = count($skills) + 1;
@@ -209,8 +231,7 @@ abstract class AbstractPobNormalizer
                 $gemCount++;
 
                 if ($gemCount > $limits->gems) {
-                    $warnings[] = new ImportWarning('gem_limit', 'Additional gems were not normalized.', '/Skills');
-                    break 2;
+                    return $this->failure(DomainErrorCode::InputTooLarge, 'The build exceeds the gem-count limit.');
                 }
 
                 $externalId = $gemNode->getAttribute('skillId')
@@ -218,23 +239,23 @@ abstract class AbstractPobNormalizer
                     ?: $gemNode->getAttribute('nameSpec');
                 $gems[] = [
                     'id' => $this->canonicalId('gem', $externalId),
-                    'level' => $this->integerAttribute($gemNode, 'level'),
-                    'quality' => $this->integerAttribute($gemNode, 'quality'),
-                    'enabled' => $this->booleanAttribute($gemNode, 'enabled', true),
+                    'level' => $this->integerAttribute($gemNode, 'level', $warnings, '/Skills/Skill/Gem/@level'),
+                    'quality' => $this->integerAttribute($gemNode, 'quality', $warnings, '/Skills/Skill/Gem/@quality'),
+                    'enabled' => $this->booleanAttribute($gemNode, 'enabled', true, $warnings, '/Skills/Skill/Gem/@enabled'),
                     'socket_index' => count($gems) + 1,
                     'link_group' => $group,
                 ];
             }
 
             $skills[] = [
-                'id' => 'pob.skill_group.'.$group,
+                'id' => $this->editionPrefix().'.pob.skill_group.'.$group,
                 'slot' => $this->bounded($skillNode->getAttribute('slot'), 128),
-                'enabled' => $this->booleanAttribute($skillNode, 'enabled', true),
+                'enabled' => $this->booleanAttribute($skillNode, 'enabled', true, $warnings, '/Skills/Skill/@enabled'),
                 'gems' => $gems,
             ];
         }
 
-        return $skills;
+        return DomainResult::success($skills);
     }
 
     /** @param list<ImportWarning> $warnings */
@@ -275,11 +296,17 @@ abstract class AbstractPobNormalizer
             }
 
             $items[$id] = [
-                'id' => 'pob.item.'.$this->slug($id),
+                'id' => $this->editionPrefix().'.pob.item.'.$this->slug($id),
                 'source_id' => $this->bounded($id, 128),
                 'slots' => array_values(array_unique($slots[$id] ?? [])),
                 'item_text_untrusted' => $text,
             ];
+        }
+
+        foreach (array_keys($slots) as $itemId) {
+            if (! isset($items[$itemId])) {
+                $warnings[] = new ImportWarning('dangling_item_slot', 'An equipment slot references an item that is not present.', '/Items/Slot/@itemId');
+            }
         }
 
         return DomainResult::success($items);
@@ -299,18 +326,26 @@ abstract class AbstractPobNormalizer
         foreach ($parent->getElementsByTagName('Input') as $input) {
             $name = $input->getAttribute('name');
 
-            if ($name === '' || isset($values[$name])) {
+            $key = $this->bounded($name, 128);
+
+            if ($name === '' || isset($values[$key])) {
                 $warnings[] = new ImportWarning('duplicate_or_missing_configuration', 'A duplicate or unnamed configuration value was ignored.', '/Config/Input');
 
                 continue;
             }
 
-            $key = $this->bounded($name, 128);
-
             if ($input->hasAttribute('boolean')) {
-                $values[$key] = $this->booleanAttribute($input, 'boolean', false);
-            } elseif ($input->hasAttribute('number') && preg_match('/^-?[0-9]+$/D', $input->getAttribute('number')) === 1) {
-                $values[$key] = (int) $input->getAttribute('number');
+                $boolean = $this->booleanAttribute($input, 'boolean', false, $warnings, '/Config/Input/@boolean');
+                $values[$key] = $boolean ?? $this->bounded($input->getAttribute('boolean'), 32);
+            } elseif ($input->hasAttribute('number')) {
+                $number = $input->getAttribute('number');
+
+                if (preg_match('/^-?[0-9]+$/D', $number) === 1) {
+                    $values[$key] = (int) $number;
+                } else {
+                    $warnings[] = new ImportWarning('invalid_integer', 'An invalid integer was preserved as untrusted text.', '/Config/Input/@number');
+                    $values[$key] = $this->bounded($number, 64);
+                }
             } else {
                 $values[$key] = $this->bounded($input->getAttribute('string'), 512);
             }
@@ -332,13 +367,15 @@ abstract class AbstractPobNormalizer
             $name = $stat->getAttribute('stat');
             $value = $stat->getAttribute('value');
 
-            if ($name === '' || isset($values[$name])) {
+            $key = $this->bounded($name, 128);
+
+            if ($name === '' || isset($values[$key])) {
                 $warnings[] = new ImportWarning('duplicate_or_missing_summary', 'A duplicate or unnamed summary value was ignored.', '/Build/PlayerStat');
 
                 continue;
             }
 
-            $values[$this->bounded($name, 128)] = preg_match('/^-?[0-9]+$/D', $value) === 1
+            $values[$key] = preg_match('/^-?[0-9]+$/D', $value) === 1
                 ? (int) $value
                 : $this->bounded($value, 256);
         }
@@ -352,7 +389,7 @@ abstract class AbstractPobNormalizer
     private function unsupported(DOMElement $root): array
     {
         $consumedAttributes = [
-            'Build' => ['targetVersion', 'level', 'className', 'ascendClassName', 'bandit', 'pantheonMajorGod', 'pantheonMinorGod'],
+            'Build' => ['targetVersion', 'level', 'className', 'ascendClassName', ...$this->choiceAttributes()],
             'PlayerStat' => ['stat', 'value'],
             'Config' => [],
             'Input' => ['name', 'boolean', 'number', 'string'],
@@ -415,7 +452,8 @@ abstract class AbstractPobNormalizer
         return $attributes;
     }
 
-    private function activeSpec(DOMElement $tree): ?DOMElement
+    /** @param list<ImportWarning> $warnings */
+    private function activeSpec(DOMElement $tree, array &$warnings): ?DOMElement
     {
         $specs = [];
 
@@ -425,7 +463,16 @@ abstract class AbstractPobNormalizer
             }
         }
 
-        $active = max(1, (int) $tree->getAttribute('activeSpec'));
+        $activeValue = $tree->getAttribute('activeSpec');
+        $active = 1;
+
+        if ($activeValue !== '') {
+            if (preg_match('/^[1-9][0-9]*$/D', $activeValue) === 1) {
+                $active = (int) $activeValue;
+            } else {
+                $warnings[] = new ImportWarning('invalid_active_spec', 'The active passive-tree specification is invalid; the first specification was used.', '/Tree/@activeSpec');
+            }
+        }
 
         return $specs[$active - 1] ?? $specs[0] ?? null;
     }
@@ -454,27 +501,61 @@ abstract class AbstractPobNormalizer
         return trim($text);
     }
 
-    private function integerAttribute(DOMElement $element, string $name): ?int
+    /** @param list<ImportWarning> $warnings */
+    private function integerAttribute(DOMElement $element, string $name, array &$warnings, string $path): ?int
     {
+        if (! $element->hasAttribute($name)) {
+            return null;
+        }
+
         $value = $element->getAttribute($name);
 
-        return preg_match('/^-?[0-9]+$/D', $value) === 1 ? (int) $value : null;
+        if (preg_match('/^-?[0-9]+$/D', $value) !== 1) {
+            $warnings[] = new ImportWarning('invalid_integer', 'An invalid integer was left unknown.', $path);
+
+            return null;
+        }
+
+        return (int) $value;
     }
 
-    private function booleanAttribute(DOMElement $element, string $name, bool $default): bool
-    {
+    /** @param list<ImportWarning> $warnings */
+    private function booleanAttribute(
+        DOMElement $element,
+        string $name,
+        bool $default,
+        array &$warnings,
+        string $path,
+    ): ?bool {
         if (! $element->hasAttribute($name)) {
             return $default;
         }
 
-        return strtolower($element->getAttribute($name)) === 'true';
+        return match (strtolower(trim($element->getAttribute($name)))) {
+            'true' => true,
+            'false' => false,
+            default => $this->invalidBoolean($warnings, $path),
+        };
+    }
+
+    /** @param list<ImportWarning> $warnings */
+    private function invalidBoolean(array &$warnings, string $path): null
+    {
+        $warnings[] = new ImportWarning('invalid_boolean', 'An invalid boolean value was left unknown.', $path);
+
+        return null;
     }
 
     private function canonicalId(string $kind, string $raw): ?string
     {
         $raw = trim($raw);
 
-        return $raw === '' ? null : 'pob.'.$kind.'.'.$this->slug($raw);
+        return $raw === '' ? null : $this->editionPrefix().'.pob.'.$kind.'.'.$this->slug($raw);
+    }
+
+    private function editionPrefix(): string
+    {
+        return $this->edition()->value;
     }
 
     private function slug(string $value): string

@@ -22,10 +22,10 @@ or unmet conditions require review but remain non-executable.
 | Source | Capabilities and exact operation family | Baseline | Conditions or rationale |
 | --- | --- | --- | --- |
 | User-pasted PoB/PoB2 code | `import`, `transient_process` | `allow` | Requires `explicit_user_submission`; parser provenance remains a separate gate. |
-| User-pasted PoB/PoB2 code | `persistent_store` | `allow` | Additionally requires `user_storage_consent`; retention and deletion controls still apply. |
+| User-pasted PoB/PoB2 code | `persistent_store` | `allow` | Additionally requires `user_storage_consent` and `authenticated_user`; retention, idempotency, owner scoping, and deletion controls still apply. |
 | User-pasted PoB/PoB2 code | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
 | User-pasted item text | `import`, `transient_process` | `allow` | Requires `explicit_user_submission` and hostile-input bounds. |
-| User-pasted item text | `persistent_store` | `allow` | Additionally requires `user_storage_consent`. |
+| User-pasted item text | `persistent_store` | `allow` | Additionally requires `user_storage_consent` and `authenticated_user`. |
 | User-pasted item text | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
 | Official documented GGG APIs | `live_fetch` | `require_review` | No exact API operation is enabled. A future operation needs available application registration, configured credentials, least-privilege scopes, and current policy evidence. |
 | GGG application registration | `live_fetch: ggg.application.register` | `deny` | On 2026-08-14 the official docs still state that GGG is unable to process new applications. |
@@ -68,7 +68,10 @@ The PoB HTTP intake requests user `import` and `transient_process` decisions
 before decoding. Once the XML root supplies structural edition evidence, it
 requests the exact pinned PoB1 or PoB2 format-interpret decision before the
 game-specific normalizer runs. Persistence requests a separate
-`persistent_store` decision with explicit user consent.
+`persistent_store` decision with explicit user consent and an authenticated
+Lootwright owner. Missing authentication produces a non-executable
+`require_review` decision. This condition refers only to Lootwright identity;
+GGG sessions and credentials remain denied.
 
 ## Current official evidence
 

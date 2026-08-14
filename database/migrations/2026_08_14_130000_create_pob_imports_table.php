@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('pob_imports', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->char('owner_id_hash', 64);
+            $table->char('idempotency_key_hash', 64)->unique();
             $table->char('request_hash_sha256', 64);
             $table->char('input_checksum_sha256', 64);
             $table->string('outcome', 32);
@@ -21,6 +23,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['expires_at', 'outcome']);
+            $table->index('owner_id_hash');
             $table->index('request_hash_sha256');
         });
     }

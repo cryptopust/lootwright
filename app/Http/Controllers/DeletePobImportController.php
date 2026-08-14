@@ -19,11 +19,11 @@ class DeletePobImportController extends Controller
         if (! $deleted) {
             return response()->json([
                 'status' => 'not_found',
-            ], 404);
+            ], 404, ['Cache-Control' => 'no-store']);
         }
 
         return response()->json([
             'status' => 'deleted',
-        ]);
+        ], headers: ['Cache-Control' => 'no-store']);
     }
 }
