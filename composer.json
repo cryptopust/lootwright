@@ -1,0 +1,159 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "lootwright/lootwright",
+    "type": "project",
+    "description": "Deterministic, evidence-backed build analysis and manual item-search planning.",
+    "keywords": [
+        "laravel",
+        "inertia",
+        "lootwright"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "inertiajs/inertia-laravel": "^3.0",
+        "laravel/framework": "^13.25",
+        "laravel/horizon": "^5.48.0",
+        "laravel/tinker": "^3.0",
+        "laravel/wayfinder": "^0.1.14"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.24",
+        "larastan/larastan": "^3.9",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "laravel/sail": "^1.53",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.9.3",
+        "phpunit/phpunit": "^12.5.23"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Lootwright\\Application\\": "src/Application/",
+            "Lootwright\\Domain\\": "src/Domain/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm ci",
+            "npm run build"
+        ],
+        "setup:windows": [
+            "composer install --ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm ci",
+            "npm run build"
+        ],
+        "setup:docker": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "docker compose build",
+            "docker compose up -d pgsql redis",
+            "docker compose run --rm app php artisan key:generate",
+            "docker compose run --rm app php artisan migrate --force",
+            "docker compose run --rm app npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#E36A3D,#5BC0BE,#F2ECDD\" \"php artisan serve\" \"php artisan horizon\" \"npm run dev\" --names='server,horizon,vite'"
+        ],
+        "dev:web": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#E36A3D,#F2ECDD\" \"php artisan serve\" \"npm run dev\" --names='server,vite'"
+        ],
+        "dev:container": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#E36A3D,#5BC0BE,#F2ECDD\" \"php artisan serve --host=0.0.0.0\" \"php artisan horizon\" \"npm run dev\" --names='server,horizon,vite'"
+        ],
+        "dev:docker": [
+            "Composer\\Config::disableProcessTimeout",
+            "docker compose up --build"
+        ],
+        "format": [
+            "pint --parallel"
+        ],
+        "format:check": [
+            "pint --parallel --test"
+        ],
+        "analyse": [
+            "phpstan analyse --memory-limit=1G"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "lint": [
+            "@format:check",
+            "@analyse"
+        ],
+        "backend-test": "@test",
+        "frontend-test": "npm run test",
+        "build": "npm run build",
+        "docs:check": "@php scripts/validate-docs.php",
+        "quality": [
+            "Composer\\Config::disableProcessTimeout",
+            "composer validate --strict",
+            "composer audit",
+            "@format:check",
+            "@analyse",
+            "@test",
+            "npm ci",
+            "npm audit --audit-level=high",
+            "npm run lint",
+            "npm run typecheck",
+            "npm run test",
+            "npm run build",
+            "@docs:check"
+        ],
+        "full-quality-gate": "@quality",
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        },
+        "audit": {
+            "block-insecure": true
+        },
+        "platform": {
+            "php": "8.4.1"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

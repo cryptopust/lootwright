@@ -1,0 +1,83 @@
+# Threat Model
+
+Status: baseline for documentation phase, reviewed 2026-08-14. Revisit before the first public deployment and whenever an external capability, parser, ruleset source, account system, or funding path changes.
+
+## Security objectives
+
+- Preserve deterministic correctness and evidence integrity.
+- Prevent Lootwright from becoming a route to GGG account compromise, prohibited automation, scraping, or client inspection.
+- Protect user-submitted build material and goals from unauthorized access or excessive retention.
+- Prevent untrusted inputs, sources, dependencies, and AI output from executing code or changing canonical facts.
+- Keep PoE1 and PoE2 data and rules isolated.
+- Keep the service available under abusive or malformed workloads.
+
+## Assets
+
+- User goals, share codes, pasted item text, normalized snapshots, and analysis history.
+- Ruleset packages, checksums, parser versions, provenance decisions, and deterministic results.
+- Application secrets, database records, queue payloads, logs, and deployment credentials.
+- Maintainer approval authority and source-register integrity.
+- Project reputation and compliance posture.
+
+GGG credentials are explicitly not assets held by Lootwright: `POESESSID`, Path of Exile passwords, browser cookies, session credentials, and game-client secrets must never be collected.
+
+## Adversaries and failures
+
+- An unauthenticated abuser exhausting CPU, memory, storage, queues, or AI quota.
+- A malicious user submitting decompression bombs, parser exploits, XSS payloads, prompt injection, or cross-game identifiers.
+- A compromised or careless maintainer activating an unproven source or altered ruleset.
+- A compromised dependency, package registry, AI provider, or future documented API.
+- An attacker exploiting authorization, tenant isolation, CSRF, SSRF, injection, cache confusion, or unsafe rendering.
+- An honest contributor introducing nondeterminism, policy drift, or PoE1/PoE2 contamination.
+
+## Trust boundaries
+
+See the [system context](../architecture/system-context.md). The principal boundaries are public browser input, Laravel-to-domain DTOs, parser execution, ruleset activation, persistence/Redis, operator imports, and optional outbound AI calls.
+
+## Threats and required controls
+
+| Threat | Example | Required controls |
+| --- | --- | --- |
+| Resource exhaustion | Huge base64 share code expands into a decompression bomb | Encoded/decoded byte limits, expansion-ratio cap, parser time/memory budget, item/node limits, request and queue rate limits, bounded retries |
+| Parser exploitation | Malicious XML uses entities, DTD, deep nesting, or malformed numeric values | XXE/DTD/XInclude/network disabled, depth and count limits, strict schema/value objects, fuzz/property tests, no dynamic evaluation |
+| SSRF and network pivot | User text contains a URL or redirect to internal services | Never fetch user-provided URLs; central outbound allowlist with scheme/host/port/path, DNS and redirect revalidation, private-address denial |
+| XSS/content injection | Item text or AI prose contains HTML/script/Markdown payloads | Contextual escaping, sanitized allowlist Markdown only, CSP, no raw AI HTML, safe download content types |
+| Prompt injection | Imported text tells AI to reveal secrets or invent rules | Treat content as data, minimize fields, structured schemas, no secrets/tools in AI context, deterministic authority, output validation |
+| Canonical-data corruption | AI or source import creates a plausible stat mapping | AI excluded from canonical writes, two-person source/ruleset review, immutable versions, checksum verification, typed provenance |
+| Cross-game confusion | PoE2 identifier resolves through PoE1 mapping or cache | Non-null game IDs, separate namespaces/catalogs/cache keys, database constraints, negative isolation tests, no fallback |
+| Authorization failure | One user reads another user's analysis | Workspace ownership checks at use-case boundary, opaque IDs, policy tests, least-privilege queries, deletion tests |
+| Sensitive-data leakage | Share code or item text appears in logs or provider prompts | Data classification, structured redacted logs, prompt minimization, short raw-input retention, encrypted transport/storage, no analytics payloads |
+| Credential collection | A feature asks for `POESESSID` to improve results | Product-level prohibition, blocked field names, security review, UI tests, no generic secret vault for GGG sessions |
+| Prohibited automation | Recommendation feature clicks Trade or sends a whisper | No browser/client integration ports, no executable/extension deliverables, manual text recipe only, architecture and policy tests |
+| Supply-chain compromise | Malicious Composer/npm package or install script | Lockfiles, `composer audit`, `npm audit`, provenance/license review, minimal dependencies, protected update review, pinned CI |
+| Queue replay/duplication | Retried analysis creates inconsistent or excessive work | Idempotency keys, immutable inputs, bounded retry/backoff, per-workspace quotas, deterministic result keys |
+| Ruleset rollback/tampering | Old or modified ruleset is activated silently | Content-addressed artifacts, SHA-256, immutable publication, activation audit, explicit supersession, rollback approval |
+| CSRF/session abuse | Attacker submits or deletes analyses in a user's session | Laravel CSRF, secure/HTTP-only/SameSite cookies, session rotation, authorization on every mutation, rate limits |
+| SQL/command injection | Imported text reaches a query or process | Parameterized queries, no shell execution in parsing, strict DTOs, least-privilege database role |
+| Policy drift | An undocumented endpoint is added for convenience | Deny-by-default capability registry, allowlisted exact operations, source-register review, compliance tests and ADR |
+
+## Privacy and retention baseline
+
+- Collect only the content the user explicitly submits and the minimum operational metadata.
+- Raw share codes and item text are ephemeral by default; the exact deletion window must be set before implementation and disclosed to users.
+- Normalized snapshots and results require an explicit workspace retention policy and user deletion path.
+- Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
+- Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
+- Backups inherit deletion and access controls; retention and restore-deletion behavior must be tested.
+
+## Security verification before release
+
+- Parser fuzzing and decompression-limit tests.
+- Static analysis, dependency audits, secret scanning, and production configuration review.
+- Authorization, CSRF, XSS, SSRF, SQL injection, rate-limit, queue replay, and deletion tests.
+- Ruleset checksum/provenance and cross-game isolation tests.
+- AI-off, AI-timeout, prompt-injection, invalid-schema, and policy-denial tests.
+- Manual review proving there is no GGG credential field, client/browser integration, scraper, undocumented endpoint, or funding entitlement.
+
+## Residual and unresolved risks
+
+- PoB/PoB2 parser formats and licenses are not yet approved.
+- Public hosting jurisdiction, privacy notice, retention periods, age policy, and incident-response contacts are undecided.
+- Third-party ruleset data may not be licensable for redistribution even if technically accessible.
+- The precise boundary between factual compatibility text and protected GGG expression needs legal review.
+
