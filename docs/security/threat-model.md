@@ -60,7 +60,8 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 | Credential collection | A feature asks for `POESESSID` to improve results | Product-level prohibition, blocked field names, security review, UI tests, no generic secret vault for GGG sessions |
 | Prohibited automation | Recommendation feature clicks Trade or sends a whisper | No browser/client integration ports, no executable/extension deliverables, manual text recipe only, architecture and policy tests |
 | Supply-chain compromise | Malicious Composer/npm package or install script | Lockfiles, `composer audit`, `npm audit`, provenance/license review, minimal dependencies, protected update review, pinned CI |
-| Queue replay/duplication | Retried analysis creates inconsistent or excessive work | Idempotency keys, immutable inputs, bounded retry/backoff, per-workspace quotas, deterministic result keys |
+| Queue replay/duplication | Retried analysis creates inconsistent or excessive work | Owner-scoped keyed idempotency hashes, unique database constraint, atomic state claims, immutable inputs/outputs, typed transient-only retry, bounded backoff, deterministic result hashes |
+| Raw queue handoff exposure | A queued share code survives a crash or is copied into a queue/database payload | Application-key encryption in private object storage, opaque key only in PostgreSQL, ID-only queue payload, immediate post-parse deletion, one-hour expiry ceiling, hourly pruning, no raw logs or backups |
 | Ruleset rollback/tampering | Old or modified ruleset is activated silently | Content-addressed artifacts, SHA-256, immutable publication, activation audit, explicit supersession, rollback approval |
 | CSRF/session abuse | Attacker submits or deletes analyses in a user's session | Laravel CSRF, secure/HTTP-only/SameSite cookies, session rotation, authorization on every mutation, rate limits |
 | SQL/command injection | Imported text reaches a query or process | Parameterized queries, no shell execution in parsing, strict DTOs, least-privilege database role |
@@ -78,9 +79,15 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 ## Privacy and retention baseline
 
 - Collect only the content the user explicitly submits and the minimum operational metadata.
-- Raw PoB share codes and XML are memory-only and are never persisted. Only a normalized result may be stored, and only after explicit consent.
+- Raw PoB share codes and XML remain memory-only on the synchronous format
+  endpoint. The authenticated queued workflow stores only an explicitly
+  consented, application-key-encrypted private object for worker handoff,
+  deletes it immediately after parse or terminal rejection, and enforces a
+  one-hour expiry ceiling if no worker completes it.
 - Authenticated and consented normalized PoB imports are application-key encrypted, default to 24 hours, cannot exceed the configured 168-hour ceiling, have owner-scoped idempotency and hash-only deletion capabilities, and are pruned hourly after expiry.
-- Later workspaces and analysis history still require authenticated ownership, backup-aware deletion, and their own explicit retention policy.
+- Analysis history is authenticated, owner-HMAC scoped, encrypted, and
+  user-deletable in the primary store. Production backup retention and
+  restore-deletion procedures remain a release prerequisite.
 - Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
 - Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
 - Backups inherit deletion and access controls; retention and restore-deletion behavior must be tested.
@@ -101,6 +108,9 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 
 - Format-only PoB1 and beta PoB2 interoperability are approved only for the pinned records through 2026-11-12; upstream drift or expired evidence disables execution.
 - No public Lootwright account/login flow exists yet; persistent hosted imports remain unavailable to anonymous users until that separately reviewed boundary is implemented. Transient imports do not require an account.
+- The primary-store deletion workflow is implemented, but backup-provider
+  purge guarantees and restore-time deletion replay remain unresolved until a
+  production backup system is selected.
 - Public hosting jurisdiction, privacy notice, retention periods, age policy, and incident-response contacts are undecided.
 - Third-party ruleset data may not be licensable for redistribution even if technically accessible.
 - The precise boundary between factual compatibility text and protected GGG expression needs legal review.

@@ -256,11 +256,33 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 12 — Persistence, privacy, and workspace lifecycle
 
-- Status: Pending.
-- Narrow completed slice: Prompt 05 includes encrypted, consented normalized
-  PoB retention, authenticated owner hashing, idempotency, deletion-token
-  hashing, and expiry pruning. Public account flows, authenticated workspaces,
-  analysis history, backup deletion, and queue lifecycle remain in this prompt.
+- Status: In progress as of 2026-08-14; primary-store orchestration and
+  lifecycle are implemented, while production backup deletion and public
+  account UX remain release prerequisites.
+- Application workflow: added framework-neutral `SubmitBuildArtifact`,
+  `ParseAndNormalizeBuild`, `RequestClarification`, `CreateAnalysis`,
+  `RunDeterministicAnalysis`, `RetrieveAnalysis`,
+  `CompareAnalysisVersions`, `ReanalyzeWithGoalsOrBudget`,
+  `ExplainPolicyDecision`, and `DeleteUserData` use cases with typed ports and
+  no Laravel imports under `src/`.
+- Persistence and queues: added owner-scoped PostgreSQL repositories,
+  encrypted immutable snapshots and hashes, encrypted private raw-artifact
+  handoff with a one-hour ceiling, atomic/idempotent state claims, after-commit
+  events, Redis/Horizon routing, three-attempt transient-only backoff, and
+  terminal invalid/policy outcomes.
+- Privacy and authorization: analysis routes require authentication, owner
+  mismatches return not found, raw text stays out of database JSON/queue
+  payloads/logs, deletion spans Analysis and earlier Build Intake persistence
+  through typed ports, and only unlinkable aggregate deletion counts remain.
+- Fail-closed boundary: the production deterministic engine reports an exact
+  ruleset as unavailable until Prompt 04 and Prompt 07 approve and implement
+  one. Full completion in tests uses deterministic and Policy Gate fakes; AI
+  fakes verify the workflow makes no provider calls.
+- Test coverage: feature/integration tests exercise all visible states,
+  immutable hashes, duplicate submission replay/conflict, transaction rollback,
+  transient retry, terminal invalid/policy denial, clarification, authorization,
+  reanalysis/comparison, expiry pruning, deletion isolation, and audited policy
+  explanation.
 - Scope: implement PostgreSQL repositories, short-lived raw imports, normalized/result retention, deletion, authorization, encryption, and Redis/Horizon jobs.
 - Gate: tenant/workspace isolation, idempotency, backup/deletion behavior, log redaction, queue limits, and retention UX are verified.
 

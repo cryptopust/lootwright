@@ -7,10 +7,11 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Lootwright\Application\Workflow\Ports\SupplementalUserDataEraser;
 use Lootwright\Domain\BuildIntake\Import\PobImportResult;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 
-final class PobImportStore
+final class PobImportStore implements SupplementalUserDataEraser
 {
     public function store(
         PobImportResult $result,
@@ -89,6 +90,13 @@ final class PobImportStore
     public function pruneExpired(): int
     {
         return DB::table('pob_imports')->where('expires_at', '<=', now())->delete();
+    }
+
+    public function erase(string $ownerId): void
+    {
+        DB::table('pob_imports')
+            ->where('owner_id_hash', $this->keyedHash('pob-import-owner', $ownerId))
+            ->delete();
     }
 
     private function replay(

@@ -7,6 +7,8 @@ sequenceDiagram
     actor User
     participant Web as Laravel / Inertia
     participant Gate as Policy + Provenance Gate
+    participant Store as PostgreSQL + encrypted object storage
+    participant Queue as Redis / Horizon
     participant Parser as PoE1 or PoE2 adapter
     participant Core as Deterministic core
     participant AI as Optional AI port
@@ -14,12 +16,14 @@ sequenceDiagram
     User->>Web: goal + explicit share code/item text
     Web->>Gate: input type, game, capability, provenance
     Gate-->>Web: allow or typed denial
-    Web->>Parser: bounded hostile input + parser version
-    Parser-->>Web: normalized snapshot + diagnostics
-    Web->>Core: snapshot + immutable ruleset identity
-    Core-->>Web: evidence-backed findings
-    Web->>Core: findings + user constraints
-    Core-->>Web: ranked upgrades + manual recipe
+    Web->>Store: owner-scoped metadata + encrypted raw handoff
+    Web->>Queue: idempotent parse job after commit
+    Queue->>Parser: bounded hostile input + exact adapter
+    Parser-->>Store: immutable normalized snapshot + hash
+    Queue->>Gate: exact ruleset source/version + requested actions
+    Gate-->>Queue: allow or typed policy block
+    Queue->>Core: snapshot + immutable ruleset identity
+    Core-->>Store: hashed immutable findings/recommendations/recipe
     opt AI enabled and permitted
         Web->>AI: minimal redacted intent/results
         AI-->>Web: schema-valid intent or explanation
@@ -79,10 +83,20 @@ sequenceDiagram
 ### 8. Persistence and deletion
 
 - PostgreSQL stores normalized snapshots, deterministic results, provenance references, and minimal audit metadata.
-- Raw PoB input is never persisted. Authenticated, consented normalized import JSON is owner-scoped, idempotent, encrypted, defaults to 24-hour retention, is bounded by a 168-hour ceiling, and has capability-token deletion plus hourly expiry pruning.
+- The synchronous format-only endpoint never persists raw PoB input.
+  Authenticated queued analysis uses an encrypted private-object-storage handoff
+  because request memory cannot cross a queue boundary. Its database row stores
+  only the opaque key and minimum metadata; the object is deleted immediately
+  after parse or terminal rejection and has an hourly-pruned one-hour ceiling.
+- Normalized imports and analysis input/output snapshots are encrypted,
+  owner-scoped, content-hashed, and immutable. Concurrent duplicate requests
+  resolve through a unique owner-scoped idempotency hash.
 - Redis contains disposable jobs, rate-limit counters, and cache entries, never the sole copy of a result.
 - Logs contain opaque request IDs, not share codes, item text, credentials, or AI prompts.
+- User deletion removes artifacts, analyses, and prior retained imports through
+  typed module ports. Only unlinkable aggregate deletion counts remain for
+  operational evidence.
 
 ## Failure behavior
 
-All stages fail closed with typed outcomes: invalid input, unsupported parser, unsupported game/patch, provenance denied, ruleset unavailable, checksum mismatch, analysis limitation, or optional-provider unavailable. Retries are bounded and idempotent. A failure must never cause fallback to a different game, unverified source, undocumented endpoint, or AI-generated fact.
+All stages fail closed with typed outcomes: invalid input, unsupported parser, unsupported game/patch, provenance denied, ruleset unavailable, checksum mismatch, analysis limitation, or optional-provider unavailable. Only typed transient failures are retried with bounded backoff; invalid input and policy denial are terminal. Atomic state claims and immutable writes make duplicate jobs safe. A failure must never cause fallback to a different game, unverified source, undocumented endpoint, or AI-generated fact.

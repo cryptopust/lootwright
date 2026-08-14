@@ -47,10 +47,11 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/Domain/UsageFunding` | Usage port and disabled funding policy | Shared, Policy and Provenance | payment providers, funding entitlements |
 | `src/GameAdapters/PoE1` | PoE1 parsing and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |
 | `src/GameAdapters/PoE2` | PoE2 parsing and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
-| `src/Application` | Use cases, commands, queries, provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK types |
+| `src/Application` | Use cases, commands, queries, workflow states, DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
 | `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
+| `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
 | `app/Modules/AI` | Optional provider adapters and redaction | AI application port, Laravel | authoritative facts or scoring |
 | `resources/js` | Inertia pages, Vue components, user interaction | typed page contracts | authoritative analysis |
 
@@ -61,6 +62,8 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 - Synchronous calls are preferred inside the process. Queue only bounded, idempotent work that benefits from retry or latency isolation.
 - Laravel events may notify in-process secondary behavior, but event logs are not the source of truth and event sourcing is prohibited.
 - Database transactions end at a use-case boundary. Cross-module transactions must be explicit and tested.
+- Cross-module deletion uses the application-owned `SupplementalUserDataEraser`
+  port; the Analysis repository never reads Build Intake tables directly.
 - Domain results carry evidence and version identities; presentation may format but not recalculate them.
 - New modules require a concrete bounded responsibility and an update to this map.
 
