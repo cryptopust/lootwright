@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ReadinessController;
+use App\Http\Middleware\EnsurePolicyAdminTokenIsValid;
 use App\Http\Middleware\EnsureReadinessTokenIsValid;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'policy.admin' => EnsurePolicyAdminTokenIsValid::class,
             'readiness' => EnsureReadinessTokenIsValid::class,
         ]);
 

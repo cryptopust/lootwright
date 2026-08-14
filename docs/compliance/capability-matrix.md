@@ -1,0 +1,75 @@
+# Capability Matrix
+
+Status: binding deny-by-default baseline, policy version `1.0.0`, reviewed
+2026-08-14. A `require_review` result is non-executable and cannot be treated as
+an allow by a UI, administrator, feature flag, AI provider, or fallback path.
+
+## Decision semantics
+
+| Decision | Production effect |
+| --- | --- |
+| `allow` | Execution is permitted only for the exact source, source version, capability, and operation when current `allowed` evidence exists, every named condition is supplied by the trusted application boundary, and no kill switch matches. |
+| `deny` | Execution is prohibited. |
+| `require_review` | Execution is prohibited until a reviewer records current evidence and replaces the rule with an explicit reviewed allow. |
+
+Missing rules and unknown source versions deny. Missing, unknown, expired,
+revoked, denied, or conflicting evidence never enables execution. Revoked,
+denied, and conflicting evidence produces a denial; missing, unknown, expired,
+or unmet conditions require review but remain non-executable.
+
+## Conservative defaults
+
+| Source | Capabilities and exact operation family | Baseline | Conditions or rationale |
+| --- | --- | --- | --- |
+| User-pasted PoB/PoB2 code | `import`, `transient_process` | `allow` | Requires `explicit_user_submission`; parser provenance remains a separate gate. |
+| User-pasted PoB/PoB2 code | `persistent_store` | `allow` | Additionally requires `user_storage_consent`; retention and deletion controls still apply. |
+| User-pasted PoB/PoB2 code | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
+| User-pasted item text | `import`, `transient_process` | `allow` | Requires `explicit_user_submission` and hostile-input bounds. |
+| User-pasted item text | `persistent_store` | `allow` | Additionally requires `user_storage_consent`. |
+| User-pasted item text | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
+| Official documented GGG APIs | `live_fetch` | `require_review` | No exact API operation is enabled. A future operation needs available application registration, configured credentials, least-privilege scopes, and current policy evidence. |
+| GGG application registration | `live_fetch: ggg.application.register` | `deny` | On 2026-08-14 the official docs still state that GGG is unable to process new applications. |
+| Undocumented Trade endpoints | `live_fetch` for `/api/trade/search`, `/api/trade/fetch`, and the `/api/trade/data/*` family | `deny` | These paths are absent from the supported API Reference. Exact unregistered paths also fail the missing-rule default. |
+| `POESESSID`, passwords, cookies, sessions | `import`, `persistent_store` | `deny` | Lootwright must never request, capture, transmit, or retain account secrets. |
+| Official site/forum/Trade scraping | `live_fetch` | `deny` | Automated extraction is prohibited. |
+| Browser extensions, overlays, client/file/memory/network/screen/log inspection, macros, and automation | `transient_process` | `deny` | Client interaction and automated input or Trade behavior are prohibited. |
+| Remote pobb.in fetching | `live_fetch: pobbin.fetch` | `require_review` | Disabled until explicit remote-fetch permission evidence and user consent are reviewed. Pasted codes remain supported separately. |
+| Path of Building Community | `import`, `derivative_analysis`, `redistribution` | `require_review` | Requires the pinned repository version, MIT evidence, attribution, and review of third-party and GGG-derived portions. |
+| RePoE or similar generated datasets | `import`, `derivative_analysis` | `require_review` | Underlying data rights and current GGG policy must be documented. |
+| RePoE or similar generated datasets | `redistribution`, `monetized_hosting` | `deny` | Hosted redistribution remains disabled while underlying rights are unresolved. |
+| GGG art, item images, logos, music, flavour text, screenshots, and fonts | `public_display`, `redistribution` | `deny` | Protected publisher expression is outside Lootwright's license scope. |
+| OpenAI API | `live_fetch` for intent extraction or explanation | `require_review` | No provider adapter is enabled. Future review requires configured credentials, privacy disclosure, data minimization, provider approval, current policy evidence, and an enforced spend limit. |
+| Donations and monetized hosting | `monetized_hosting` | `deny` | Requires an explicit policy/legal decision; funding cannot affect functionality or access. |
+
+## Kill switches
+
+The environment-level `POLICY_GLOBAL_KILL_SWITCH` fails closed before any allow.
+The database also supports global, source, capability, and combined
+source-capability switches. Any active matching switch overrides an allow rule.
+Only the protected policy-admin boundary may manage evidence or database kill
+switches.
+
+## Audit and explanations
+
+Every gate request records source, source version, exact operation, capability,
+decision, reason, policy version, evidence IDs, non-secret condition names, time,
+and actor type. It does not record raw input, credentials, tokens, prompts, or
+unnecessary personal data.
+
+The public read-only source explanation endpoint exposes source metadata and
+human-readable rules. Evidence management and kill-switch mutation require the
+policy-admin token, CSRF protection, and rate limiting. The token is configured
+only through the environment and is never persisted in an audit or evidence
+record.
+
+## Current official evidence
+
+- GGG Developer Docs: <https://www.pathofexile.com/developer/docs>
+- GGG API Reference: <https://www.pathofexile.com/developer/docs/reference>
+- GGG Terms: <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy>
+- OpenAI API data controls: <https://developers.openai.com/api/docs/guides/your-data>
+- OpenAI API spend limits: <https://developers.openai.com/api/docs/guides/spend-limits>
+
+See the [source register](source-register.md) for retrieval and provenance
+details. These links are evidence references; they do not independently enable
+any connector.

@@ -29,7 +29,7 @@ final readonly class CapabilitySet implements JsonSerializable
                 ));
             }
 
-            $key = $decision->capability->value;
+            $key = $decision->sourceId.':'.$decision->capability->value;
 
             if (isset($indexed[$key])) {
                 return DomainResult::failure(DomainError::because(
@@ -46,12 +46,15 @@ final readonly class CapabilitySet implements JsonSerializable
         return DomainResult::success(new self($indexed));
     }
 
-    public function decisionFor(Capability $capability): CapabilityDecision
+    public function decisionFor(string $sourceId, Capability $capability): CapabilityDecision
     {
-        return $this->decisions[$capability->value] ?? new CapabilityDecision(
+        return $this->decisions[$sourceId.':'.$capability->value] ?? new CapabilityDecision(
             $capability,
-            PermissionStatus::Denied,
-            CommercialUseStatus::Unknown,
+            $sourceId,
+            PolicyDecision::Deny,
+            PolicyDecisionReason::MissingRule,
+            PolicyVersion::baseline(),
+            'No active policy rule exists for this source and capability.',
         );
     }
 

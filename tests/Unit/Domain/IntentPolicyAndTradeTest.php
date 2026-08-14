@@ -9,6 +9,9 @@ use Lootwright\Domain\PolicyProvenance\CapabilityDecision;
 use Lootwright\Domain\PolicyProvenance\CapabilitySet;
 use Lootwright\Domain\PolicyProvenance\CommercialUseStatus;
 use Lootwright\Domain\PolicyProvenance\PermissionStatus;
+use Lootwright\Domain\PolicyProvenance\PolicyDecision;
+use Lootwright\Domain\PolicyProvenance\PolicyDecisionReason;
+use Lootwright\Domain\PolicyProvenance\PolicyVersion;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Value\Confidence;
@@ -49,14 +52,17 @@ class IntentPolicyAndTradeTest extends TestCase
     {
         $set = DomainFixtures::value(CapabilitySet::create([
             new CapabilityDecision(
-                Capability::IntentExtraction,
-                PermissionStatus::Allowed,
-                CommercialUseStatus::Unknown,
+                Capability::LiveFetch,
+                'OPENAI-API',
+                PolicyDecision::RequireReview,
+                PolicyDecisionReason::ReviewRequired,
+                PolicyVersion::baseline(),
+                'Provider review is required.',
             ),
         ]), CapabilitySet::class);
 
-        self::assertTrue($set->decisionFor(Capability::IntentExtraction)->isDenied());
-        self::assertTrue($set->decisionFor(Capability::Funding)->isDenied());
+        self::assertTrue($set->decisionFor('OPENAI-API', Capability::LiveFetch)->isDenied());
+        self::assertTrue($set->decisionFor('UNKNOWN-SOURCE', Capability::MonetizedHosting)->isDenied());
     }
 
     public function test_funding_is_structurally_disabled(): void

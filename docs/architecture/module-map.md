@@ -43,12 +43,12 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/Domain/Analysis` | Deterministic metrics and findings | Shared, Build Intake, Rulesets | HTTP, Eloquent, queues, AI |
 | `src/Domain/Recommendations` | Deterministic ranking and explanations-as-data | Shared, Build Intake, Analysis | provider prose, market state |
 | `src/Domain/TradePlanning` | Abstract manual filter recipe | Shared, Recommendations | Trade IDs, URLs, browser/API clients |
-| `src/Domain/PolicyProvenance` | Capability, permission, commercial-use, and provenance contracts | Shared | external clients, feature-flag overrides |
+| `src/Domain/PolicyProvenance` | Sources/versions, permission evidence, exact capability rules, decisions, effective periods, kill switches, and pure evaluation | Shared | external clients, database types, feature-flag overrides |
 | `src/Domain/UsageFunding` | Usage port and disabled funding policy | Shared, Policy and Provenance | payment providers, funding entitlements |
 | `src/GameAdapters/PoE1` | PoE1 parsing and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |
 | `src/GameAdapters/PoE2` | PoE2 parsing and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
 | `src/Application` | Use cases, commands, queries, provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK types |
-| `app/Modules/PolicyProvenance` | Source register, capability decisions, audit | Application ports, Laravel | domain formulas |
+| `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
 | `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
 | `app/Modules/Builds` | HTTP/jobs/persistence for user submissions | Application ports, Laravel | direct game calculations |
 | `app/Modules/AI` | Optional provider adapters and redaction | AI application port, Laravel | authoritative facts or scoring |

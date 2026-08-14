@@ -4,9 +4,13 @@ namespace Lootwright\Domain\PolicyProvenance;
 
 enum Capability: string
 {
-    case UserBuildInput = 'user_build_input';
-    case RulesetImport = 'ruleset_import';
-    case IntentExtraction = 'intent_extraction';
-    case ResultExplanation = 'result_explanation';
-    case Funding = 'funding';
+    case Import = 'import';
+    case TransientProcess = 'transient_process';
+    case PersistentStore = 'persistent_store';
+    case PublicDisplay = 'public_display';
+    case DerivativeAnalysis = 'derivative_analysis';
+    case LinkOut = 'link_out';
+    case LiveFetch = 'live_fetch';
+    case Redistribution = 'redistribution';
+    case MonetizedHosting = 'monetized_hosting';
 }

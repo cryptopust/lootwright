@@ -16,7 +16,7 @@ provider-SDK dependency. Framework delivery and infrastructure remain under
 | `Lootwright\Domain\Analysis` | `src/Domain/Analysis` | Evidence-backed finding contracts and the deterministic analyzer port; no formulas yet |
 | `Lootwright\Domain\Recommendations` | `src/Domain/Recommendations` | Upgrade priority, impact, alternative, and recommendation contracts; no ranking formula yet |
 | `Lootwright\Domain\TradePlanning` | `src/Domain/TradePlanning` | Descriptive required, weighted, and excluded filters plus manual-recipe contracts; no Trade IDs, payloads, URLs, or calls |
-| `Lootwright\Domain\PolicyProvenance` | `src/Domain/PolicyProvenance` | Capability, permission, commercial-use, provenance contracts, and the authorization port; no allow records or integration implementation yet |
+| `Lootwright\Domain\PolicyProvenance` | `src/Domain/PolicyProvenance` | Data sources and versions, access/source types, capability rules, permission evidence and effective periods, decisions/reasons, kill switches, the pure evaluator, and the authorization port |
 | `Lootwright\Domain\UsageFunding` | `src/Domain/UsageFunding` | Usage-policy port and the structurally disabled funding baseline |
 | `Lootwright\Application` | `src/Application` | Provider-neutral AI gateway ports and application command/query DTOs; domain entities never depend on these DTOs |
 
@@ -97,6 +97,12 @@ Build Analysis, upgrade planning in Recommendations, recipe compilation in
 Trade Planning, capability authorization in Policy and Provenance, and usage
 authorization in Usage and Funding. Optional intent/explanation AI ports live in
 the application layer because AI is not a domain authority.
+
+The Laravel adapter under `app/Modules/PolicyProvenance` owns policy tables,
+seeded defaults, decision auditing, evidence management, and kill-switch
+persistence. It hydrates the pure evaluator through the domain-owned
+`CapabilityPolicy` port. `allow` is the only executable outcome;
+`require_review` fails closed.
 
 Application commands and queries under `src/Application` are transport-neutral
 DTOs. They may carry domain values inward, but they are not domain entities and

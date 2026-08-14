@@ -1,14 +1,17 @@
 # GGG Integration Policy
 
-Status: binding, deny by default. This document is an engineering policy based on sources retrieved on 2026-08-14; it is not legal advice.
+Status: binding, deny by default. This document is an engineering policy based
+on sources retrieved and re-verified on 2026-08-14 at 13:16 UTC; it is not legal
+advice. The re-verification found no material policy-text change from the
+earlier review that day, so no capability was broadened or enabled.
 
 ## Sources reviewed
 
 | Source | Exact URL | Retrieved | Result |
 | --- | --- | --- | --- |
-| GGG Developer Docs, including API Policies, Third-Party Requirements, available resources, developer guidelines, errors, rate limits, and authorization | <https://www.pathofexile.com/developer/docs> | 2026-08-14 | HTTP 200, title `Developer Docs - Path of Exile` |
-| GGG API Reference | <https://www.pathofexile.com/developer/docs/reference> | 2026-08-14 | HTTP 200, title `Developer Docs - Path of Exile` |
-| Path of Exile & Path of Exile 2 Terms of Use and Privacy Policy | <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy> | 2026-08-14 | HTTP 200, title `Path of Exile`; privacy notice states last updated October 2024 |
+| GGG Developer Docs, including API Policies, Third-Party Requirements, available resources, developer guidelines, errors, rate limits, and authorization | <https://www.pathofexile.com/developer/docs> | 2026-08-14 13:16 UTC | HTTP 200, title `Developer Docs - Path of Exile`; registration remains unavailable |
+| GGG API Reference | <https://www.pathofexile.com/developer/docs/reference> | 2026-08-14 13:16 UTC | HTTP 200, title `Developer Docs - Path of Exile`; named internal Trade paths absent |
+| Path of Exile & Path of Exile 2 Terms of Use and Privacy Policy | <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy> | 2026-08-14 13:16 UTC | HTTP 200, title `Path of Exile`; privacy notice still states last updated October 2024 |
 
 The official pages can change without notice. Re-read and record them before enabling or materially changing any GGG-facing capability, and at least before each public release.
 
@@ -73,6 +76,9 @@ Unknown, missing, conflicting, expired, or checksum-mismatched fields deny the o
 
 Gate denials cannot be overridden by AI, environment variables, feature flags, user input, administrator convenience, or error fallback. Emergency disablement may revoke an allow record immediately.
 
+The executable decision semantics and seeded defaults are recorded in the
+[capability matrix](capability-matrix.md). `require_review` is non-executable.
+
 ## GGG API posture
 
 The MVP has no GGG API dependency. The documented API Reference includes resources such as profiles, filters, leagues, characters, PoE1 stashes/public stashes, and currency exchange, but documented availability alone is not a product need or permission to build a live market feature. These capabilities remain disabled.
@@ -103,4 +109,3 @@ Unknown commercial-use status is disabled. Advertising, subscriptions, sponsorsh
 ## Review triggers
 
 Re-review this policy when GGG changes its docs/Terms, a parser or source changes, PoE2 is activated, an API/OAuth feature is proposed, AI receives new data, hosting jurisdiction changes, funding is considered, or protected content is proposed for storage/display.
-

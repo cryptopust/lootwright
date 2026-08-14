@@ -1,6 +1,8 @@
 # Threat Model
 
-Status: baseline for documentation phase, reviewed 2026-08-14. Revisit before the first public deployment and whenever an external capability, parser, ruleset source, account system, or funding path changes.
+Status: implementation baseline, reviewed 2026-08-14 for policy-gate version
+`1.0.0`. Revisit before the first public deployment and whenever an external
+capability, parser, ruleset source, account system, or funding path changes.
 
 ## Security objectives
 
@@ -17,6 +19,10 @@ Status: baseline for documentation phase, reviewed 2026-08-14. Revisit before th
 - Ruleset packages, checksums, parser versions, provenance decisions, and deterministic results.
 - Application secrets, database records, queue payloads, logs, and deployment credentials.
 - Maintainer approval authority and source-register integrity.
+- Permission evidence, effective periods, policy rules, kill switches, and
+  append-only capability-decision audit records.
+- The environment-only policy-admin token and emergency global kill-switch
+  configuration.
 - Project reputation and compliance posture.
 
 GGG credentials are explicitly not assets held by Lootwright: `POESESSID`, Path of Exile passwords, browser cookies, session credentials, and game-client secrets must never be collected.
@@ -32,7 +38,11 @@ GGG credentials are explicitly not assets held by Lootwright: `POESESSID`, Path 
 
 ## Trust boundaries
 
-See the [system context](../architecture/system-context.md). The principal boundaries are public browser input, Laravel-to-domain DTOs, parser execution, ruleset activation, persistence/Redis, operator imports, and optional outbound AI calls.
+See the [system context](../architecture/system-context.md). The principal
+boundaries are public browser input, Laravel-to-domain DTOs, the public
+read-only policy explanation endpoint, the token-protected evidence-management
+boundary, policy persistence, parser execution, ruleset activation,
+persistence/Redis, operator imports, and optional outbound AI calls.
 
 ## Threats and required controls
 
@@ -55,6 +65,12 @@ See the [system context](../architecture/system-context.md). The principal bound
 | CSRF/session abuse | Attacker submits or deletes analyses in a user's session | Laravel CSRF, secure/HTTP-only/SameSite cookies, session rotation, authorization on every mutation, rate limits |
 | SQL/command injection | Imported text reaches a query or process | Parameterized queries, no shell execution in parsing, strict DTOs, least-privilege database role |
 | Policy drift | An undocumented endpoint is added for convenience | Deny-by-default capability registry, allowlisted exact operations, source-register review, compliance tests and ADR |
+| Gate bypass | A controller, job, UI path, or connector calls an external provider directly | Every external application use case depends on the owning `CapabilityPolicy` port; no UI authority; exact-operation tests; architecture review before adding a connector |
+| Forged or stale evidence | An allow survives after its permission expires or is revoked | Effective periods, closed permission statuses, exact source versions, `require_review` as non-executable, transition tests for missing/unknown/expired/revoked/conflicting evidence |
+| Emergency-control failure | A compromised source continues executing during an incident | Environment global kill switch plus persisted global/source/capability/source-capability switches; every active switch overrides an allow |
+| Evidence-admin takeover | An attacker changes evidence or disables a kill switch | Environment-only high-entropy admin token, constant-time comparison, 404 fail-closed response, CSRF protection, rate limiting, no token in database/logs, deployment secret rotation |
+| Audit data leakage | Raw builds, credentials, prompts, or personal data are written with decisions | Audit only source/version/capability/operation/outcome/reason/evidence IDs/non-secret condition names/time/actor type; tests reject token persistence |
+| Public explanation overexposure | A read-only policy page reveals admin notes or secrets | Dedicated bounded response fields, no reviewer notes/tokens/audit context, read-only route, caching and rate limits |
 
 ## Privacy and retention baseline
 
@@ -71,6 +87,9 @@ See the [system context](../architecture/system-context.md). The principal bound
 - Static analysis, dependency audits, secret scanning, and production configuration review.
 - Authorization, CSRF, XSS, SSRF, SQL injection, rate-limit, queue replay, and deletion tests.
 - Ruleset checksum/provenance and cross-game isolation tests.
+- Table-driven default-policy and evidence-transition tests, exact-operation
+  denial tests, all kill-switch scopes, admin-boundary tests, and audit-field
+  review.
 - AI-off, AI-timeout, prompt-injection, invalid-schema, and policy-denial tests.
 - Manual review proving there is no GGG credential field, client/browser integration, scraper, undocumented endpoint, or funding entitlement.
 
@@ -80,4 +99,3 @@ See the [system context](../architecture/system-context.md). The principal bound
 - Public hosting jurisdiction, privacy notice, retention periods, age policy, and incident-response contacts are undecided.
 - Third-party ruleset data may not be licensable for redistribution even if technically accessible.
 - The precise boundary between factual compatibility text and protected GGG expression needs legal review.
-

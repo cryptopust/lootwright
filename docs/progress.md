@@ -106,9 +106,53 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 03 — Policy and Provenance Gate
 
-- Status: Pending.
-- Scope: implement source/capability records, exact-operation matching, checksums, expiry, approval audit, emergency disablement, and deny-first tests.
-- Gate: every external adapter is unreachable without an active exact allow record; undocumented GGG endpoints are structurally absent.
+- Status: Complete on 2026-08-14.
+- Official-policy re-review: the exact GGG Developer Docs, API Reference, and
+  Terms URLs returned HTTP 200 when retrieved again at 13:16 UTC. No material
+  policy-text change was found: registration remains unavailable, the
+  documented-resource boundary and non-affiliation requirement remain, the
+  internal Trade paths remain absent from the API Reference, and the privacy
+  notice still says last updated October 2024. No capability was broadened.
+- Scope delivered: implemented pure domain concepts for data sources and
+  versions, source/access types, exact capabilities and operations, permission
+  evidence and URLs, retrieval/effective periods, attribution, closed evidence
+  statuses, policy decisions/reasons/versions, kill switches, and a fail-closed
+  evaluator. Laravel owns only the persistence, seed, audit, HTTP, and adapter
+  concerns under `app/Modules/PolicyProvenance`.
+- Defaults: seeded 14 sources, 14 versions, 15 evidence records, 56 exact
+  operation rules, and an inactive emergency global switch. User-pasted input
+  requires explicit submission and storage consent for persistence. GGG APIs,
+  internal Trade, credentials, scraping, client/browser interaction, remote
+  pobb.in, PoB Community, RePoE, protected assets, OpenAI, donations, and
+  monetized hosting use the conservative decisions in the [capability
+  matrix](compliance/capability-matrix.md). No external connector was added.
+- Execution and audit: only `allow` is executable; `require_review` remains
+  non-executable. Exact source/version/capability/operation matching, current
+  allowed evidence, trusted condition names, and clear kill switches are all
+  required. Every database-backed request writes a UUIDv7 decision audit with
+  no raw input, secret, prompt, or unnecessary personal data. Database failure
+  denies execution.
+- Operations: `POLICY_GLOBAL_KILL_SWITCH` provides immediate environment-level
+  disablement; persisted switches cover global, source, capability, and
+  source-capability scopes. Evidence and persisted-switch management are
+  protected by an environment-only admin token, CSRF, rate limits, and a 404
+  fail-closed boundary. Users can read bounded source explanations without
+  reviewer metadata or mutation authority.
+- Migration evidence: `php artisan migrate:fresh --seed --force` passed against
+  an isolated SQLite verification database and produced the expected 14 source,
+  14 version, 15 evidence, 56 rule, and 1 kill-switch rows. Production remains
+  configured for PostgreSQL through environment variables.
+- Gate evidence: Composer validation/audit, Pint, PHPStan level 7, PHPUnit,
+  clean npm install/high-severity audit, ESLint, Vue TypeScript, Vitest, Vite,
+  and the PowerShell documentation validator passed. PHPUnit ran 292 tests with
+  3,458 assertions; Vitest ran 2 tests across 2 files; Composer and npm reported
+  no vulnerability advisories; documentation validation covered 26 Markdown
+  files. Table-driven tests exercise every seeded default, every evidence
+  status transition, exact-operation denial, consent, all kill-switch scopes,
+  audit persistence, admin protection, and public explanation boundaries.
+- Gate: every future external adapter remains unreachable without an active
+  exact allow decision; undocumented GGG endpoints are explicitly denied and
+  absent from connector code.
 
 ## Prompt 04 — Versioned ruleset catalog
 

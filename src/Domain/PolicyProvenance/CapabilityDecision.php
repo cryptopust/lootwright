@@ -6,26 +6,38 @@ use JsonSerializable;
 
 final readonly class CapabilityDecision implements JsonSerializable
 {
+    /** @param list<string> $evidenceIds */
     public function __construct(
         public Capability $capability,
-        public PermissionStatus $permission,
-        public CommercialUseStatus $commercialUse,
+        public string $sourceId,
+        public PolicyDecision $decision,
+        public PolicyDecisionReason $reason,
+        public PolicyVersion $policyVersion,
+        public string $explanation,
+        public array $evidenceIds = [],
     ) {}
+
+    public function permitsExecution(): bool
+    {
+        return $this->decision === PolicyDecision::Allow;
+    }
 
     public function isDenied(): bool
     {
-        return $this->permission !== PermissionStatus::Allowed
-            || $this->commercialUse === CommercialUseStatus::Unknown
-            || $this->commercialUse === CommercialUseStatus::Prohibited;
+        return ! $this->permitsExecution();
     }
 
-    /** @return array{capability: string, permission: string, commercial_use: string} */
+    /** @return array<string, mixed> */
     public function jsonSerialize(): array
     {
         return [
             'capability' => $this->capability->value,
-            'permission' => $this->permission->value,
-            'commercial_use' => $this->commercialUse->value,
+            'source_id' => $this->sourceId,
+            'decision' => $this->decision->value,
+            'reason' => $this->reason->value,
+            'policy_version' => $this->policyVersion->value,
+            'explanation' => $this->explanation,
+            'evidence_ids' => $this->evidenceIds,
         ];
     }
 }

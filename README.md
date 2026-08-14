@@ -93,4 +93,6 @@ Laravel delivery and infrastructure code belongs under `app/`. The future
 framework-independent deterministic core belongs under `src/` and may not import
 Laravel or infrastructure types. See the [module map](docs/architecture/module-map.md)
 and [domain foundation](docs/architecture/domain-foundation.md), then check the
-[delivery progress](docs/progress.md) before adding application behavior.
+[capability matrix](docs/compliance/capability-matrix.md), [source
+register](docs/compliance/source-register.md), and [delivery
+progress](docs/progress.md) before adding application behavior.

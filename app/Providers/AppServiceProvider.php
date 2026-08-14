@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Modules\PolicyProvenance\DatabaseCapabilityPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
+use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PolicyEvaluator::class);
+        $this->app->bind(CapabilityPolicy::class, DatabaseCapabilityPolicy::class);
     }
 
     /**
