@@ -50,7 +50,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/Application` | Use cases, commands, queries, provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
 | `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
-| `app/Modules/Builds` | HTTP/jobs/persistence for user submissions | Application ports, Laravel | direct game calculations |
+| `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, encrypted consented persistence, deletion, and expiry pruning | Application parser service, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/AI` | Optional provider adapters and redaction | AI application port, Laravel | authoritative facts or scoring |
 | `resources/js` | Inertia pages, Vue components, user interaction | typed page contracts | authoritative analysis |
 

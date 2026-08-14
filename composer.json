@@ -10,6 +10,8 @@
     ],
     "license": "MIT",
     "require": {
+        "ext-dom": "*",
+        "ext-zlib": "*",
         "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.25",
@@ -34,7 +36,8 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Lootwright\\Application\\": "src/Application/",
-            "Lootwright\\Domain\\": "src/Domain/"
+            "Lootwright\\Domain\\": "src/Domain/",
+            "Lootwright\\GameAdapters\\": "src/GameAdapters/"
         }
     },
     "autoload-dev": {

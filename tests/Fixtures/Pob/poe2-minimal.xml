@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding2>
+  <Build targetVersion="4_0" level="55" className="Fixture Two" ascendClassName="Fixture Two Ascendancy">
+    <PlayerStat stat="FixtureSummary" value="456"/>
+  </Build>
+  <Tree activeSpec="1">
+    <Spec title="Fixture Two" treeVersion="fixture-2" classInternalId="fixture_two" ascendancyInternalId="fixture_two_asc" nodes="303,404"/>
+  </Tree>
+  <Skills activeSkillSet="1"><SkillSet id="1" title="Fixture"><Skill enabled="true" slot="Fixture"><Gem skillId="fixture_two_skill" level="12" quality="0" enabled="true"/></Skill></SkillSet></Skills>
+  <Items activeItemSet="1"><Item id="2"><![CDATA[Fixture Two Item]]></Item><ItemSet id="1"><Slot name="Fixture" itemId="2" active="true"/></ItemSet></Items>
+  <Config><Input name="fixtureTwo" string="enabled"/></Config>
+  <Notes>Fixture two notes</Notes>
+</PathOfBuilding2>

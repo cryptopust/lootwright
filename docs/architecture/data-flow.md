@@ -31,7 +31,7 @@ sequenceDiagram
 
 ### 1. Intake
 
-- The user explicitly chooses PoE1 or, in phase two, PoE2.
+- PoB edition is proven from the exact validated XML root; conflicting or absent evidence is rejected rather than guessed.
 - Accepted input is text only: a goal, a share code, and/or pasted item text.
 - No clipboard read, file discovery, account lookup, browser state, or URL fetch occurs.
 - The web boundary enforces encoded size, rate, content type, and authorization limits before queueing work.
@@ -79,11 +79,10 @@ sequenceDiagram
 ### 8. Persistence and deletion
 
 - PostgreSQL stores normalized snapshots, deterministic results, provenance references, and minimal audit metadata.
-- Raw imports are short-lived by default and have a documented deletion deadline.
+- Raw PoB input is never persisted. Consented normalized import JSON is encrypted, defaults to 24-hour retention, is bounded by a 168-hour ceiling, and has token-based deletion plus hourly expiry pruning.
 - Redis contains disposable jobs, rate-limit counters, and cache entries, never the sole copy of a result.
 - Logs contain opaque request IDs, not share codes, item text, credentials, or AI prompts.
 
 ## Failure behavior
 
 All stages fail closed with typed outcomes: invalid input, unsupported parser, unsupported game/patch, provenance denied, ruleset unavailable, checksum mismatch, analysis limitation, or optional-provider unavailable. Retries are bounded and idempotent. A failure must never cause fallback to a different game, unverified source, undocumented endpoint, or AI-generated fact.
-

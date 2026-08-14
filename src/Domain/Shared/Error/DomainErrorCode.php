@@ -22,4 +22,12 @@ enum DomainErrorCode: string
     case AnalysisMismatch = 'analysis_mismatch';
     case ClarificationRequired = 'clarification_required';
     case UnsupportedSerialization = 'unsupported_serialization';
+    case InputTooLarge = 'input_too_large';
+    case InvalidEncoding = 'invalid_encoding';
+    case InvalidCompression = 'invalid_compression';
+    case DecompressionLimit = 'decompression_limit';
+    case InvalidXml = 'invalid_xml';
+    case UnsafeXml = 'unsafe_xml';
+    case AmbiguousGameEdition = 'ambiguous_game_edition';
+    case UnsupportedInput = 'unsupported_input';
 }

@@ -5,7 +5,7 @@ FROM php:8.4-cli-bookworm
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes $PHPIZE_DEPS git libpq-dev unzip \
-    && docker-php-ext-install pcntl pdo_pgsql posix \
+    && docker-php-ext-install dom pcntl pdo_pgsql posix \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get clean \

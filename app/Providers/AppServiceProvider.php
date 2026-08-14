@@ -8,8 +8,15 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Lootwright\Application\BuildIntake\PobImportService;
 use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
+use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
+use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
+use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
+use Lootwright\GameAdapters\PoE2\Pob\Pob2Parser;
+use Lootwright\GameAdapters\Shared\Pob\PobEnvelopeDecoder;
+use Lootwright\GameAdapters\Shared\Pob\SafeXmlParser;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +27,14 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PolicyEvaluator::class);
         $this->app->bind(CapabilityPolicy::class, DatabaseCapabilityPolicy::class);
+        $this->app->singleton(PobImportService::class, static fn (): PobImportService => new PobImportService(
+            new PobEnvelopeDecoder,
+            new SafeXmlParser,
+            [
+                new Pob1Parser(new Pob1Normalizer),
+                new Pob2Parser(new Pob2Normalizer),
+            ],
+        ));
     }
 
     /**

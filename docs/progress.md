@@ -119,7 +119,7 @@ This is the controlled implementation sequence. A later prompt may refine earlie
   statuses, policy decisions/reasons/versions, kill switches, and a fail-closed
   evaluator. Laravel owns only the persistence, seed, audit, HTTP, and adapter
   concerns under `app/Modules/PolicyProvenance`.
-- Defaults: seeded 14 sources, 14 versions, 15 evidence records, 56 exact
+- Defaults: seeded 15 sources, 15 versions, 16 evidence records, 58 exact
   operation rules, and an inactive emergency global switch. User-pasted input
   requires explicit submission and storage consent for persistence. GGG APIs,
   internal Trade, credentials, scraping, client/browser interaction, remote
@@ -139,8 +139,8 @@ This is the controlled implementation sequence. A later prompt may refine earlie
   fail-closed boundary. Users can read bounded source explanations without
   reviewer metadata or mutation authority.
 - Migration evidence: `php artisan migrate:fresh --seed --force` passed against
-  an isolated SQLite verification database and produced the expected 14 source,
-  14 version, 15 evidence, 56 rule, and 1 kill-switch rows. Production remains
+  an isolated SQLite verification database and produced the expected 15 source,
+  15 version, 16 evidence, 58 rule, and 1 kill-switch rows. Production remains
   configured for PostgreSQL through environment variables.
 - Gate evidence: Composer validation/audit, Pint, PHPStan level 7, PHPUnit,
   clean npm install/high-severity audit, ESLint, Vue TypeScript, Vitest, Vite,
@@ -162,9 +162,42 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 05 — PoE1 PoB import
 
-- Status: Pending and blocked on `POB1-FORMAT-001` approval in the [source register](compliance/source-register.md).
-- Scope: implement bounded PoE1 share-code decoding/parsing from a pinned, licensed, provenanced format; preserve diagnostics and input digest.
-- Gate: decompression bombs, XXE/DTD/network access, malformed structures, unsupported versions, and PoE2 payloads are rejected safely.
+- Status: Complete on 2026-08-14 for format-only pre-ruleset intake.
+- Source and license review: pinned Path of Building Community PoE1 commit
+  `bcbca9b60b04abc17935c84ff3589342193bd758` and PoE2 commit
+  `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`; recorded root-license SHA-256
+  values and attribution. Lootwright uses an independent PHP implementation
+  and copies no upstream Lua, dependency, dataset, formula, asset, or build.
+- Scope delivered: strict Base64/Base64URL and zlib decoding, bounded hardened
+  XML, exact root-based edition evidence, separate PoE1 and beta PoE2
+  parser/normalizers, warnings, unsupported-field records, parser/source
+  provenance, checksums, and a deterministic `CanonicalImportedBuild`. Unknown
+  patches are not promoted to analysis-grade `CanonicalBuild` and no ruleset,
+  game data, or formula was added.
+- Delivery and privacy: pasted code/XML and uploaded plain-text code use the
+  deny-by-default gate before processing and the exact pinned format gate before
+  normalization. No URL is fetched. Raw input is never persisted or logged;
+  consented normalized JSON is encrypted for 24 hours by default (168-hour
+  maximum), has hash-only token deletion, and is pruned hourly. Imported prose
+  is untrusted text and is not sent to OpenAI.
+- Verification: original tiny fixtures and tests cover PoE1, beta PoE2,
+  ambiguous edition, URLs, malformed Base64/compression/XML/UTF-8, expansion
+  bombs, XXE, depth/size/node limits, unknown nodes, duplicate items,
+  deterministic round trips, upload validation, policy denial, encryption,
+  retention, deletion, redacted logs, and database-free CLI execution.
+- Migration and gate evidence: an isolated in-memory SQLite
+  `migrate:fresh --seed --force` completed with 15 sources, 15 versions, 16
+  evidence records, 58 exact rules, the inactive global switch, and the empty
+  PoB-import table. Composer validation/audit, Pint, PHPStan level 7, PHPUnit,
+  npm clean install/high-severity audit, ESLint, Vue TypeScript, Vitest, Vite,
+  and the PowerShell documentation validator passed. PHPUnit ran 336 tests with
+  4,113 assertions; Vitest ran 2 tests across 2 files; Composer and npm reported
+  no vulnerability advisories; documentation validation covered 29 Markdown
+  files. The README fixture command and both HTTP routes were also verified
+  locally.
+- Compatibility: see [PoB import compatibility](compatibility/pob-import.md),
+  [ADR 0010](adr/0010-format-only-pob-import.md), and the
+  [attribution record](compliance/path-of-building-attribution.md).
 
 ## Prompt 06 — PoE1 item-text import
 
@@ -205,6 +238,10 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 ## Prompt 12 — Persistence, privacy, and workspace lifecycle
 
 - Status: Pending.
+- Narrow completed slice: Prompt 05 includes encrypted, consented normalized
+  PoB retention, deletion-token hashing, and expiry pruning. Authenticated
+  workspaces, analysis history, backup deletion, and queue lifecycle remain in
+  this prompt.
 - Scope: implement PostgreSQL repositories, short-lived raw imports, normalized/result retention, deletion, authorization, encryption, and Redis/Horizon jobs.
 - Gate: tenant/workspace isolation, idempotency, backup/deletion behavior, log redaction, queue limits, and retention UX are verified.
 
@@ -223,6 +260,9 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 ## Prompt 15 — PoE2 phase-two adapter
 
 - Status: Pending and not authorized until PoE1 release gates pass.
+- Format-only exception: a separately namespaced beta PoB2 intake adapter may
+  produce `CanonicalImportedBuild` for compatibility testing. It does not
+  activate PoE2 rulesets, analysis, UI claims, or game datasets.
 - Scope: approve PoB2/ruleset sources, create an isolated PoE2 adapter, add PoE2 UI/persistence support, and run shared-port plus cross-game negative tests.
 - Gate: no PoE1 identifiers/rules leak into PoE2, no speculative mappings ship, and a new ADR explicitly activates PoE2.
 

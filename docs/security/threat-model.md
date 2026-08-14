@@ -56,7 +56,7 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 | Canonical-data corruption | AI or source import creates a plausible stat mapping | AI excluded from canonical writes, two-person source/ruleset review, immutable versions, checksum verification, typed provenance |
 | Cross-game confusion | PoE2 identifier resolves through PoE1 mapping or cache | Non-null game IDs, separate namespaces/catalogs/cache keys, database constraints, negative isolation tests, no fallback |
 | Authorization failure | One user reads another user's analysis | Workspace ownership checks at use-case boundary, opaque IDs, policy tests, least-privilege queries, deletion tests |
-| Sensitive-data leakage | Share code or item text appears in logs or provider prompts | Data classification, structured redacted logs, prompt minimization, short raw-input retention, encrypted transport/storage, no analytics payloads |
+| Sensitive-data leakage | Share code or item text appears in logs or provider prompts | Data classification, request hashes and coarse outcomes only in logs, no raw PoB persistence, encrypted consented normalized storage, no AI transmission, no analytics payloads |
 | Credential collection | A feature asks for `POESESSID` to improve results | Product-level prohibition, blocked field names, security review, UI tests, no generic secret vault for GGG sessions |
 | Prohibited automation | Recommendation feature clicks Trade or sends a whisper | No browser/client integration ports, no executable/extension deliverables, manual text recipe only, architecture and policy tests |
 | Supply-chain compromise | Malicious Composer/npm package or install script | Lockfiles, `composer audit`, `npm audit`, provenance/license review, minimal dependencies, protected update review, pinned CI |
@@ -71,12 +71,15 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 | Evidence-admin takeover | An attacker changes evidence or disables a kill switch | Environment-only high-entropy admin token, constant-time comparison, 404 fail-closed response, CSRF protection, rate limiting, no token in database/logs, deployment secret rotation |
 | Audit data leakage | Raw builds, credentials, prompts, or personal data are written with decisions | Audit only source/version/capability/operation/outcome/reason/evidence IDs/non-secret condition names/time/actor type; tests reject token persistence |
 | Public explanation overexposure | A read-only policy page reveals admin notes or secrets | Dedicated bounded response fields, no reviewer notes/tokens/audit context, read-only route, caching and rate limits |
+| Deletion-token disclosure | A storage deletion token is recovered from the database or logs | Return 256-bit token once, store only SHA-256, constant-time verification, never log or include it in policy audits |
+| Parser format drift | A new upstream envelope/root is silently interpreted using old assumptions | Pinned source commits and license hashes, expiring evidence, exact root detection, parser versions, beta labelling, fail-closed unsupported structures |
 
 ## Privacy and retention baseline
 
 - Collect only the content the user explicitly submits and the minimum operational metadata.
-- Raw share codes and item text are ephemeral by default; the exact deletion window must be set before implementation and disclosed to users.
-- Normalized snapshots and results require an explicit workspace retention policy and user deletion path.
+- Raw PoB share codes and XML are memory-only and are never persisted. Only a normalized result may be stored, and only after explicit consent.
+- Consented normalized PoB imports are application-key encrypted, default to 24 hours, cannot exceed the configured 168-hour ceiling, have a one-time deletion token, and are pruned hourly after expiry.
+- Later workspaces and analysis history still require authenticated ownership, backup-aware deletion, and their own explicit retention policy.
 - Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
 - Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
 - Backups inherit deletion and access controls; retention and restore-deletion behavior must be tested.
@@ -95,7 +98,7 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 
 ## Residual and unresolved risks
 
-- PoB/PoB2 parser formats and licenses are not yet approved.
+- Format-only PoB1 and beta PoB2 interoperability are approved only for the pinned records through 2026-11-12; upstream drift or expired evidence disables execution.
 - Public hosting jurisdiction, privacy notice, retention periods, age policy, and incident-response contacts are undecided.
 - Third-party ruleset data may not be licensable for redistribution even if technically accessible.
 - The precise boundary between factual compatibility text and protected GGG expression needs legal review.

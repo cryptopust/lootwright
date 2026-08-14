@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding>
+  <Build targetVersion="3_0" level="42" className="Fixture Class" ascendClassName="Fixture Ascendancy" bandit="Fixture Choice">
+    <PlayerStat stat="FixtureSummary" value="123"/>
+  </Build>
+  <Tree activeSpec="1">
+    <Spec title="Fixture" treeVersion="fixture-1" classId="1" ascendClassId="2" nodes="101,202"/>
+  </Tree>
+  <Skills activeSkillSet="1">
+    <SkillSet id="1" title="Fixture Set">
+      <Skill enabled="true" slot="Fixture Slot">
+        <Gem skillId="fixture_active" level="20" quality="10" enabled="true"/>
+        <Gem skillId="fixture_support" level="19" quality="0" enabled="false"/>
+      </Skill>
+    </SkillSet>
+  </Skills>
+  <Items activeItemSet="1">
+    <Item id="1"><![CDATA[Rarity: Rare
+Fixture Item]]></Item>
+    <ItemSet id="1" title="Fixture Items"><Slot name="Fixture Slot" itemId="1" active="true"/></ItemSet>
+  </Items>
+  <Config><Input name="fixtureBoolean" boolean="true"/><Input name="fixtureNumber" number="7"/></Config>
+  <Calcs><Input name="fixtureView" string="safe"/></Calcs>
+  <Notes>Untrusted &lt;script&gt;fixture&lt;/script&gt; text</Notes>
+  <LootwrightFuture example="one"/>
+</PathOfBuilding>

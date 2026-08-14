@@ -1,0 +1,78 @@
+<?php
+
+namespace Lootwright\GameAdapters\Shared\Pob;
+
+use DOMDocument;
+use DOMElement;
+use DOMNode;
+use Lootwright\Domain\BuildIntake\Import\ImportLimits;
+use Lootwright\Domain\Shared\Error\DomainError;
+use Lootwright\Domain\Shared\Error\DomainErrorCode;
+use Lootwright\Domain\Shared\Error\DomainResult;
+
+final class SafeXmlParser
+{
+    public function parse(string $xml, ImportLimits $limits): DomainResult
+    {
+        if (! mb_check_encoding($xml, 'UTF-8')) {
+            return $this->failure(DomainErrorCode::InvalidXml, 'The XML build is not valid UTF-8.');
+        }
+
+        if (preg_match('/<!\s*(?:DOCTYPE|ENTITY)\b/i', $xml) === 1) {
+            return $this->failure(DomainErrorCode::UnsafeXml, 'DTD and entity declarations are not permitted.');
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+        $document = new DOMDocument;
+        $document->resolveExternals = false;
+        $document->substituteEntities = false;
+        $document->validateOnParse = false;
+        $loaded = $document->loadXML(
+            $xml,
+            LIBXML_NONET | LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_BIGLINES,
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded || ! $document->documentElement instanceof DOMElement) {
+            return $this->failure(DomainErrorCode::InvalidXml, 'The XML build is malformed.');
+        }
+
+        $stack = [[$document->documentElement, 1]];
+        $elements = 0;
+
+        while ($stack !== []) {
+            [$node, $depth] = array_pop($stack);
+
+            if (! $node instanceof DOMNode || ! is_int($depth)) {
+                return $this->failure(DomainErrorCode::InvalidXml, 'The XML node structure is invalid.');
+            }
+
+            if ($depth > $limits->xmlDepth) {
+                return $this->failure(DomainErrorCode::InputTooLarge, 'The XML build exceeds the nesting-depth limit.');
+            }
+
+            if ($node instanceof DOMElement) {
+                $elements++;
+
+                if ($elements > $limits->xmlElements || $node->attributes->length > $limits->attributesPerElement) {
+                    return $this->failure(DomainErrorCode::InputTooLarge, 'The XML build exceeds structural limits.');
+                }
+            }
+
+            foreach ($node->childNodes as $child) {
+                if ($child instanceof DOMElement) {
+                    $stack[] = [$child, $depth + 1];
+                }
+            }
+        }
+
+        return DomainResult::success($document);
+    }
+
+    private function failure(DomainErrorCode $code, string $message): DomainResult
+    {
+        return DomainResult::failure(DomainError::because($code, $message));
+    }
+}

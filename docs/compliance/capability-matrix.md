@@ -34,7 +34,9 @@ or unmet conditions require review but remain non-executable.
 | Official site/forum/Trade scraping | `live_fetch` | `deny` | Automated extraction is prohibited. |
 | Browser extensions, overlays, client/file/memory/network/screen/log inspection, macros, and automation | `transient_process` | `deny` | Client interaction and automated input or Trade behavior are prohibited. |
 | Remote pobb.in fetching | `live_fetch: pobbin.fetch` | `require_review` | Disabled until explicit remote-fetch permission evidence and user consent are reviewed. Pasted codes remain supported separately. |
-| Path of Building Community | `import`, `derivative_analysis`, `redistribution` | `require_review` | Requires the pinned repository version, MIT evidence, attribution, and review of third-party and GGG-derived portions. |
+| Path of Building Community, pinned PoE1 format | `derivative_analysis: pob.community.format_interpret` | `allow` | Independent local format interpretation only; requires configured attribution, the pinned commit, and no copied upstream implementation. |
+| Path of Building Community, pinned PoE2 format | `derivative_analysis: pob2.community.format_interpret` | `allow` | Same format-only conditions; PoE2 output is beta and cannot activate rulesets or analysis. |
+| Path of Building Community, broader reuse | `import`, `derivative_analysis`, `redistribution: pob.community.reuse` | `require_review` | Source, game data, formulas, assets, full builds, dependencies, and third-party portions remain disabled. |
 | RePoE or similar generated datasets | `import`, `derivative_analysis` | `require_review` | Underlying data rights and current GGG policy must be documented. |
 | RePoE or similar generated datasets | `redistribution`, `monetized_hosting` | `deny` | Hosted redistribution remains disabled while underlying rights are unresolved. |
 | GGG art, item images, logos, music, flavour text, screenshots, and fonts | `public_display`, `redistribution` | `deny` | Protected publisher expression is outside Lootwright's license scope. |
@@ -61,6 +63,12 @@ human-readable rules. Evidence management and kill-switch mutation require the
 policy-admin token, CSRF protection, and rate limiting. The token is configured
 only through the environment and is never persisted in an audit or evidence
 record.
+
+The PoB HTTP intake requests user `import` and `transient_process` decisions
+before decoding. Once the XML root supplies structural edition evidence, it
+requests the exact pinned PoB1 or PoB2 format-interpret decision before the
+game-specific normalizer runs. Persistence requests a separate
+`persistent_store` decision with explicit user consent.
 
 ## Current official evidence
 

@@ -1,9 +1,10 @@
 # Lootwright
 
-Lootwright is a Laravel 13 modular-monolith foundation for deterministic,
-evidence-backed Path of Exile 1 build analysis and human-readable manual
-item-search planning. Prompt 01 establishes the delivery stack only; parsing,
-game data, AI providers, market integrations, and donations are not implemented.
+Lootwright is a Laravel 13 modular monolith for deterministic, evidence-backed
+Path of Exile 1 build analysis and human-readable manual item-search planning.
+The current implementation includes a bounded, local PoB1 importer and a
+separate beta PoB2 format adapter. Game datasets, analysis formulas, AI
+providers, market integrations, and donations are not implemented.
 
 This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
@@ -43,9 +44,9 @@ docker compose down
 
 ## Host setup
 
-Install PHP 8.4 with `pdo_pgsql` and `redis`, Node.js 24, npm 11, PostgreSQL, and
-Redis. Copy `.env.example` to `.env`, change its local-only example credentials
-if needed, then run:
+Install PHP 8.4 with `dom`, `zlib`, `pdo_pgsql`, and `redis`, Node.js 24, npm 11,
+PostgreSQL, and Redis. Copy `.env.example` to `.env`, change its local-only
+example credentials if needed, then run:
 
 ```bash
 composer run setup
@@ -66,6 +67,27 @@ The deeper `GET /ready` endpoint checks PostgreSQL and Redis and is hidden unles
 `READINESS_TOKEN` is configured and supplied in the
 `X-Lootwright-Readiness-Token` header. Horizon is available at `/horizon` only in
 the local environment and is denied elsewhere.
+
+## Local PoB import
+
+Run a small local fixture through the safe parser without database, Redis,
+network, or OpenAI access:
+
+```powershell
+php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
+```
+
+The web boundary accepts pasted raw share codes/XML or an uploaded `text/plain`
+code at `POST /api/build-imports/pob`. URL fetching is intentionally absent. A
+normalized result is transient unless `persist`, explicit `storage_consent`,
+and an optional bounded `retention_hours` are supplied. Consented normalized
+JSON is encrypted; its default retention is 24 hours and it can be deleted with
+the one-time token returned by the endpoint. Run `php artisan
+pob:prune-imports` to prune expired records; the scheduler runs it hourly.
+
+Exact limits, supported fields, the pre-ruleset boundary, PoE2 beta status, and
+privacy behavior are documented in [PoB import compatibility](docs/compatibility/pob-import.md).
+The upstream notice is in [Path of Building format attribution](docs/compliance/path-of-building-attribution.md).
 
 ## Development commands
 

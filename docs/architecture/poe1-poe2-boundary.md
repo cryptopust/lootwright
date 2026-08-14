@@ -57,6 +57,11 @@ Only the PoE1 adapter is active in the MVP. PoE2 interfaces may be reserved wher
 4. policy/security review; and
 5. an ADR changing the adapter's status from inactive to active.
 
+ADR 0010 permits one narrower exception: a beta PoB2 format reader may decode
+and normalize explicitly supplied input behind the shared intake port. PoE2
+rulesets, analysis, game datasets, persistence claims, and release parity remain
+inactive; the beta reader cannot satisfy the phase-two activation gates above.
+
 ## Compatibility testing
 
 - Contract tests run independently against each active adapter.
@@ -65,4 +70,3 @@ Only the PoE1 adapter is active in the MVP. PoE2 interfaces may be reserved wher
 - A PoE1 test failure cannot be waived because PoE2 produces a similar result.
 
 See [ADR 0003](../adr/0003-poe1-first-delivery.md) and the [module map](module-map.md).
-
