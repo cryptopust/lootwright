@@ -2,7 +2,7 @@ Lootwright
 
 Path of Exile için izlenebilir, yapay zekâ destekli build analiz ve item arama planlama aracı.
 
-English README
+[English README](https://github.com/cryptopust/lootwright/blob/main/README.md)
 
 Proje durumu: pre-alpha / mimari ve prototip aşaması.
 Aşağıda anlatılan yetenekler hedeflenen ürünü tanımlar. Henüz çalışan bir üretim servisinin hazır olduğu anlamına gelmez.
