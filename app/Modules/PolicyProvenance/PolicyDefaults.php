@@ -23,6 +23,7 @@ final class PolicyDefaults
     public static function sources(): array
     {
         return [
+            self::source('LOOTWRIGHT-MANUAL-TRADE', 'Lootwright manual Trade recipe schema', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Original local-only recipe generation; no Trade endpoint, listing, price, or browser operation.'),
             self::source('USER-PASTED-POB', 'User-pasted PoB or PoB2 code', SourceType::UserSupplied, AccessMode::PastedText, 'Text deliberately submitted by a user; no URL fetch.'),
             self::source('USER-PASTED-ITEM', 'User-pasted item text', SourceType::UserSupplied, AccessMode::PastedText, 'Item text deliberately submitted by a user.'),
             self::source('GGG-DOCUMENTED-API', 'Official documented GGG APIs', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Only exact operations in the official API Reference can ever be reviewed.'),
@@ -45,6 +46,7 @@ final class PolicyDefaults
     public static function versions(): array
     {
         return [
+            ['source_id' => 'LOOTWRIGHT-MANUAL-TRADE', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'USER-PASTED-POB', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'USER-PASTED-ITEM', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-DOCUMENTED-API', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
@@ -67,6 +69,7 @@ final class PolicyDefaults
     public static function evidence(): array
     {
         return [
+            self::evidenceRecord('LOOTWRIGHT-MANUAL-TRADE-EVIDENCE', 'LOOTWRIGHT-MANUAL-TRADE', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/product/manual-trade-workflow.md', PermissionStatus::Allowed, 'Lootwright-original plain-text recipes may be generated locally from approved immutable vocabulary without market access or automation.', false),
             self::evidenceRecord('USER-PASTED-POB-EVIDENCE', 'USER-PASTED-POB', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/capability-matrix.md', PermissionStatus::Allowed, 'Lootwright policy permits bounded processing of deliberately pasted input.', false),
             self::evidenceRecord('USER-PASTED-ITEM-EVIDENCE', 'USER-PASTED-ITEM', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/capability-matrix.md', PermissionStatus::Allowed, 'Lootwright policy permits bounded processing of deliberately pasted item text.', false),
             self::evidenceRecord('GGG-DEVELOPER-DOCS-20260814', 'GGG-DOCUMENTED-API', '2026-08-14', 'https://www.pathofexile.com/developer/docs', PermissionStatus::Allowed, 'Official policy reference is current, but no API operation is approved.', true),
@@ -91,6 +94,10 @@ final class PolicyDefaults
     {
         $rules = [];
         $userConditions = ['explicit_user_submission'];
+        $rules[] = self::rule('LOOTWRIGHT-MANUAL-TRADE', '1.0.0', Capability::DerivativeAnalysis, 'trade.manual_recipe.generate', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['deterministic_input', 'exact_ruleset_resolved', 'manual_actions_only', 'no_market_data'], 'A local plain-text recipe may be generated only from deterministic recommendations and approved exact ruleset vocabulary.');
+        $rules[] = self::rule('LOOTWRIGHT-MANUAL-TRADE', '1.0.0', Capability::LinkOut, 'trade.homepage.link', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['explicit_user_action', 'generic_homepage_only', 'single_link_only'], 'One clearly labelled generic official Trade homepage link is allowed for manual use.');
+        $rules[] = self::rule('LOOTWRIGHT-MANUAL-TRADE', '1.0.0', Capability::LinkOut, 'trade.encoded_url.generate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Encoded or query-bearing official Trade search URLs are prohibited.');
+        $rules[] = self::rule('LOOTWRIGHT-MANUAL-TRADE', '1.0.0', Capability::LiveFetch, 'trade.listings.fetch', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Manual recipe generation cannot fetch, rank, cache, monitor, or price live listings.');
 
         foreach ([
             'USER-PASTED-POB' => 'pob_code',

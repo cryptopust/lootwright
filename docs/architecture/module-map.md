@@ -52,6 +52,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
+| `app/Modules/TradePlanning` | Edition routing and exact Policy Gate authorization for local manual-recipe generation and the single generic homepage link | Application Trade Planning ports, isolated game adapters, Policy and Provenance port, Laravel | Trade HTTP clients, listings, prices, encoded links, browser automation |
 | `app/Modules/AI` | Optional provider adapters and redaction | AI application port, Laravel | authoritative facts or scoring |
 | `resources/js` | Inertia pages, Vue components, user interaction | typed page contracts | authoritative analysis |
 

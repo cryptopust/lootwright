@@ -4,6 +4,7 @@ namespace Lootwright\Domain\PolicyProvenance;
 
 enum AccessMode: string
 {
+    case LocalRuntime = 'local_runtime';
     case LocalUpload = 'local_upload';
     case PastedText = 'pasted_text';
     case AuthenticatedApi = 'authenticated_api';

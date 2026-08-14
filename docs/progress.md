@@ -244,9 +244,32 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 10 — Manual Trade-filter recipes
 
-- Status: Pending.
+- Status: In progress as of 2026-08-14; the deterministic compiler and safety
+  boundary are implemented with fixture-only vocabulary, while production
+  output remains blocked on Prompt 04, Prompt 07, and Prompt 09.
+- Delivered: framework-independent application DTOs, checksum-bound approved
+  vocabulary, exact decimal ranges, strict and broad variants, structural
+  budget relaxation, automatic conflict exclusions, slot dependencies,
+  finding-to-filter traces, ruleset/source/confidence metadata, canonical JSON,
+  and a URL-free plain-text renderer.
+- Edition policy: PoE1 compilation is available only when an approved exact
+  vocabulary is supplied. PoE2 has a separate adapter that fails closed until
+  phase two is activated.
+- Unknown mappings: unsupported modifier, target, constraint, influence,
+  fracture, rarity, corruption, or open-affix concepts are emitted as
+  unresolved requirements with clarification questions; nothing is guessed.
+- Policy: local manual generation and one explicit generic homepage link have
+  exact allows. Live listing fetch and encoded Trade URL generation have exact
+  denials. No Trade HTTP, browser, clipboard, automation, or price capability
+  was added.
+- Tests: UI-independent canonical serialization, exact labels/values,
+  PoE1/PoE2 isolation, conflicts, budget relaxation, unsupported constraints,
+  and Policy Gate live-fetch/encoded-link denials are covered with fixture-only
+  facts.
 - Scope: transform recommendations into descriptive item categories, ranges, priorities, alternatives, and relaxation order for manual entry.
-- Gate: output has no Trade API IDs, query payloads, links, prices, listings, browser behavior, or undocumented endpoints.
+- Gate: output has no official Trade API IDs, query payloads, generated search
+  links, prices, listings, browser behavior, or undocumented endpoints. One
+  generic query-free official homepage link is the sole allowed link-out.
 
 ## Prompt 11 — Optional provider-neutral AI
 

@@ -12,11 +12,15 @@ use App\Modules\Analysis\Infrastructure\UnavailableDeterministicAnalysisEngine;
 use App\Modules\Analysis\Persistence\PostgresWorkflowRepository;
 use App\Modules\BuildIntake\PobImportStore;
 use App\Modules\PolicyProvenance\DatabaseCapabilityPolicy;
+use App\Modules\TradePlanning\DatabaseManualTradeRecipePolicy;
+use App\Modules\TradePlanning\EditionManualTradeRecipeGenerator;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipeGenerator;
+use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipePolicy;
 use Lootwright\Application\Workflow\Ports\AnalysisPolicyGate;
 use Lootwright\Application\Workflow\Ports\ArtifactParser;
 use Lootwright\Application\Workflow\Ports\ArtifactStorage;
@@ -54,6 +58,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ArtifactParser::class, PolicyGatedArtifactParser::class);
         $this->app->bind(DeterministicAnalysisEngine::class, UnavailableDeterministicAnalysisEngine::class);
         $this->app->bind(AnalysisPolicyGate::class, DatabaseAnalysisPolicyGate::class);
+        $this->app->bind(ManualTradeRecipeGenerator::class, EditionManualTradeRecipeGenerator::class);
+        $this->app->bind(ManualTradeRecipePolicy::class, DatabaseManualTradeRecipePolicy::class);
         $this->app->singleton(PobImportCoordinator::class, static fn (): PobImportCoordinator => new PobImportCoordinator(
             new PobEnvelopeDecoder,
             new SafeXmlParser,

@@ -15,10 +15,10 @@ provider-SDK dependency. Framework delivery and infrastructure remain under
 | `Lootwright\Domain\Rulesets` | `src/Domain/Rulesets` | Immutable ruleset identity and exact-resolution port |
 | `Lootwright\Domain\Analysis` | `src/Domain/Analysis` | Evidence-backed finding contracts and the deterministic analyzer port; no formulas yet |
 | `Lootwright\Domain\Recommendations` | `src/Domain/Recommendations` | Upgrade priority, impact, alternative, and recommendation contracts; no ranking formula yet |
-| `Lootwright\Domain\TradePlanning` | `src/Domain/TradePlanning` | Descriptive required, weighted, and excluded filters plus manual-recipe contracts; no Trade IDs, payloads, URLs, or calls |
+| `Lootwright\Domain\TradePlanning` | `src/Domain/TradePlanning` | Descriptive required, weighted, and excluded filter contracts; no Trade IDs, payloads, URLs, or calls |
 | `Lootwright\Domain\PolicyProvenance` | `src/Domain/PolicyProvenance` | Data sources and versions, access/source types, capability rules, permission evidence and effective periods, decisions/reasons, kill switches, the pure evaluator, and the authorization port |
 | `Lootwright\Domain\UsageFunding` | `src/Domain/UsageFunding` | Usage-policy port and the structurally disabled funding baseline |
-| `Lootwright\Application` | `src/Application` | Provider-neutral AI gateway ports and application command/query DTOs; domain entities never depend on these DTOs |
+| `Lootwright\Application` | `src/Application` | Provider-neutral AI/workflow ports plus checksum-bound manual-recipe DTOs, exact ranges, serialization, unresolved requirements, and use cases; domain entities never depend on these DTOs |
 
 PoE1 and PoE2 adapter namespaces are intentionally absent until an approved
 parser or ruleset source exists. Opaque shared identifier types carry a mandatory

@@ -72,6 +72,14 @@ sequenceDiagram
 - Deterministic ranking uses declared objectives, constraints, benefits, costs-as-unknown where price data is absent, and tie-break rules.
 - Recommendations never claim current prices or availability.
 - Trade planning emits descriptive fields, ranges, alternatives, and human steps. It emits no Trade API IDs, query payloads, browser actions, or generated Trade links.
+- Each slot recipe resolves labels and constraints only from the exact
+  checksum-bound ruleset vocabulary, carries the source finding trace on every
+  filter, and emits strict plus structurally relaxed broad variants.
+- Unmapped modifiers and patch-inapplicable rarity, corruption, influence,
+  fracture, or affix constraints become typed unresolved requirements with a
+  clarification question; no adjacent label or edition fallback is allowed.
+- A separate Policy Gate decision permits one generic query-free official
+  Trade homepage link. The plain-text copy rendering contains no URL.
 
 ### 7. Optional AI
 

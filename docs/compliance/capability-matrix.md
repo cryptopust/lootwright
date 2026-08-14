@@ -21,6 +21,10 @@ or unmet conditions require review but remain non-executable.
 
 | Source | Capabilities and exact operation family | Baseline | Conditions or rationale |
 | --- | --- | --- | --- |
+| Lootwright manual Trade schema | `derivative_analysis: trade.manual_recipe.generate` | `allow` | Requires deterministic input, one exact resolved ruleset, manual actions only, and no market data. This permits only Lootwright-original local serialization. |
+| Lootwright manual Trade schema | `link_out: trade.homepage.link` | `allow` | Requires an explicit user action and exactly one generic, query-free official Trade homepage link. |
+| Lootwright manual Trade schema | `link_out: trade.encoded_url.generate` | `deny` | Encoded or query-bearing official Trade search URLs are prohibited. |
+| Lootwright manual Trade schema | `live_fetch: trade.listings.fetch` | `deny` | Recipes cannot fetch, display, rank, cache, monitor, or price live listings. |
 | User-pasted PoB/PoB2 code | `import`, `transient_process` | `allow` | Requires `explicit_user_submission`; parser provenance remains a separate gate. |
 | User-pasted PoB/PoB2 code | `persistent_store` | `allow` | Additionally requires `user_storage_consent` and `authenticated_user`; retention, idempotency, owner scoping, and deletion controls still apply. |
 | User-pasted PoB/PoB2 code | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
