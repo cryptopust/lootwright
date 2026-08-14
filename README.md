@@ -2,7 +2,7 @@ Lootwright
 
 A traceable, AI-assisted build analysis and item-search planning tool for Path of Exile.
 
-Türkçe README
+[Türkçe README](https://github.com/cryptopust/lootwright/blob/main/README.tr.md)
 
 Project status: pre-alpha / architecture and prototype stage.
 The capabilities described below define the intended product. They should not be interpreted as a claim that a production service is already available.
