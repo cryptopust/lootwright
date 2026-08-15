@@ -60,6 +60,7 @@ final readonly class SubmitBuildArtifact
                 if (! $receipt->replayed) {
                     $this->storage->put($blobKey, $command->artifact);
                     $stored = true;
+                    $this->dispatcher->parse($receipt->artifactId, $command->edition);
                 }
 
                 return $receipt;
@@ -74,10 +75,6 @@ final readonly class SubmitBuildArtifact
 
         if (! $receipt instanceof SubmissionReceipt) {
             throw new InvalidWorkflowInput('The submission transaction returned an invalid receipt.');
-        }
-
-        if (! $receipt->replayed) {
-            $this->dispatcher->parse($receipt->artifactId);
         }
 
         return $receipt;

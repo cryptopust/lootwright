@@ -16,4 +16,24 @@ Normalized local response caching is permitted only when the user-facing privacy
 
 User-scoped AI audit and daily-budget records use one-way deployment-key HMACs rather than account IDs or IP addresses. They are operational records, not analysis authority. The owner-deletion workflow removes the user's linkable AI audit, daily-budget, and indexed cache entries; global aggregate spend counters remain unlinkable. Production retention and backup deletion must still be configured and tested before activation.
 
+Queued analysis may use an authenticated account or an expiring anonymous
+privacy session. An anonymous credential contains a UUIDv7 plus a random
+256-bit secret and is shown only when created. Lootwright stores only the
+secret's SHA-256 hash, status, expiry, and lifecycle timestamps; it does not
+store an IP address, browser fingerprint, or user agent as the anonymous
+identity. Possession of the credential authorizes access to that session's
+builds, so clients must treat it as sensitive. Expiry or deletion makes it
+unusable.
+
+Raw pasted artifacts are encrypted in private object storage only for the
+bounded queue handoff and are removed after parsing or terminal rejection, with
+a one-hour expiry ceiling. Normalized snapshots and deterministic products are
+encrypted and owner-scoped. Build deletion cascades its snapshots, analyses,
+findings, recommendations, recipes, provenance, policy decisions, and optional
+explanation. Full-session deletion also invalidates the privacy credential.
+Only unlinkable aggregate deletion counts remain in the primary database;
+backup purge and restore-time deletion replay remain release prerequisites.
+
 See the [threat model](security/threat-model.md), [AI operations runbook](operations/ai-gateway.md), and [cost controls](operations/ai-cost-controls.md).
+The exact live, cache, log, session, AI, and backup schedule is maintained in
+[data retention](security/data-retention.md).

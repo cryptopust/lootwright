@@ -5,7 +5,7 @@ namespace Lootwright\Application\Workflow\DTO;
 final readonly class AnalysisProvenanceStatus
 {
     /** @param list<array<string, mixed>> $sources
-     * @param list<array<string, mixed>> $policyDecisions
+     * @param  list<array<string, mixed>>  $policyDecisions
      */
     public function __construct(
         public string $analysisId,

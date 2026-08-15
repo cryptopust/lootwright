@@ -45,7 +45,8 @@ or unmet conditions require review but remain non-executable.
 | RePoE or similar generated datasets | `redistribution`, `monetized_hosting` | `deny` | Hosted redistribution remains disabled while underlying rights are unresolved. |
 | GGG art, item images, logos, music, flavour text, screenshots, and fonts | `public_display`, `redistribution` | `deny` | Protected publisher expression is outside Lootwright's license scope. |
 | OpenAI Responses API | `live_fetch: openai.responses.intent`, `openai.responses.explanation` | `require_review` | A tool-free, stateless, strict-schema adapter is implemented and off by default. Execution remains prohibited until privacy/opt-in UX, provider approval, current evidence, configured credentials, and deployment hard spend limits are reviewed. |
-| Donations and monetized hosting | `monetized_hosting` | `deny` | Requires an explicit policy/legal decision; funding cannot affect functionality or access. |
+| Funding activation request | `monetized_hosting: lootwright.funding.activate` | `deny` | `FUNDING_ENABLED` and operator metadata cannot override the exact denied rule/evidence. A superseding dated review, allowed evidence, accepted ADR, operator action, and visible disclosure are all required. |
+| Donations and monetized hosting | `monetized_hosting: lootwright.donations`, `lootwright.hosting` | `deny` | Requires an explicit policy/legal decision; funding cannot affect functionality, quota, results, ranking, visibility, or access. |
 
 ## Kill switches
 

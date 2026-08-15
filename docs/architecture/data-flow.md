@@ -8,24 +8,30 @@ sequenceDiagram
     participant Web as Laravel / Inertia
     participant Gate as Policy + Provenance Gate
     participant Store as PostgreSQL + encrypted object storage
+    participant Outbox as Transactional workflow outbox
     participant Queue as Redis / Horizon
     participant Parser as PoE1 or PoE2 adapter
     participant Core as Deterministic core
     participant AI as Optional AI port
+    participant Egress as Exact outbound guard
 
     User->>Web: goal + explicit share code/item text
     Web->>Gate: input type, game, capability, provenance
     Gate-->>Web: allow or typed denial
-    Web->>Store: owner-scoped metadata + encrypted raw handoff
-    Web->>Queue: idempotent parse job after commit
+    Web->>Store: owner/session-scoped metadata + encrypted raw handoff
+    Web->>Outbox: parse intent in same PostgreSQL transaction
+    Outbox->>Queue: idempotent parse job after commit
     Queue->>Parser: bounded hostile input + exact adapter
     Parser-->>Store: immutable normalized snapshot + hash
+    Parser->>Outbox: analysis intent + edition/ruleset identity
+    Outbox->>Queue: bounded deterministic-analysis job
     Queue->>Gate: exact ruleset source/version + requested actions
     Gate-->>Queue: allow or typed policy block
     Queue->>Core: snapshot + immutable ruleset identity
     Core-->>Store: hashed immutable findings/recommendations/recipe
     opt AI enabled and permitted
-        Web->>AI: minimal redacted intent/results
+        Web->>Egress: exact operation + fixed HTTPS target + public DNS
+        Egress->>AI: redirect-disabled minimal redacted intent/results
         AI-->>Web: schema-valid intent or explanation
     end
     Web-->>User: deterministic result; AI annotation optional
@@ -88,24 +94,50 @@ sequenceDiagram
 - Explanation receives deterministic outputs, not authority to change them.
 - Prompts exclude secrets, PoB input, unnecessary raw imports, complete private notes, and personal data. Provider requests are stateless, tool-free, token-bounded, opt-in, policy-gated, and budget-reserved.
 - Provider outage, denial, timeout, unsafe output, or schema failure preserves the deterministic result and uses template explanations.
+- All provider egress is disabled independently by default and requires an
+  exact scheme/host/port/path match, public DNS answers, and no redirect.
 - PostgreSQL stores opaque usage/cost/validation metadata, never raw prompts or provider responses by default. Privacy-permitted cache entries contain only validated structured output and have bounded TTL.
 
 ### 8. Persistence and deletion
 
-- PostgreSQL stores normalized snapshots, deterministic results, provenance references, and minimal audit metadata.
+- PostgreSQL stores encrypted normalized snapshots, relational deterministic
+  product projections, provenance/policy references, and minimal audit metadata.
 - The synchronous format-only endpoint never persists raw PoB input.
-  Authenticated queued analysis uses an encrypted private-object-storage handoff
+  Authenticated or expiring privacy-session analysis uses an encrypted private-object-storage handoff
   because request memory cannot cross a queue boundary. Its database row stores
   only the opaque key and minimum metadata; the object is deleted immediately
   after parse or terminal rejection and has an hourly-pruned one-hour ceiling.
 - Normalized imports and analysis input/output snapshots are encrypted,
   owner-scoped, content-hashed, and immutable. Concurrent duplicate requests
   resolve through a unique owner-scoped idempotency hash.
+- Findings, recommendations, and recipes use encrypted hash-verified payloads
+  with only bounded codes/order/severity/priority in searchable columns.
+- Parse and analysis outbox rows are committed with the state transition that
+  requires them. Commit callbacks publish promptly; the minute scheduler
+  recovers pending rows. Publisher and job retries are bounded independently.
 - Redis contains disposable jobs, rate-limit counters, and cache entries, never the sole copy of a result.
 - Logs contain opaque request IDs, not share codes, item text, credentials, or AI prompts.
 - User deletion removes artifacts, analyses, and prior retained imports through
   typed module ports. Only unlinkable aggregate deletion counts remain for
   operational evidence.
+- Portable analysis JSON is canonical and timestamp-free. It contains
+  hash-verified deterministic input/output, products, ruleset/source references,
+  and policy state; it contains no raw share code or lifecycle timestamps.
+
+### 9. Informational funding status
+
+- `FUNDING_ENABLED` records an operator request only. The funding application
+  port also requires canonical dated decision/evidence metadata, explicit
+  operator acknowledgement, a versioned disclosure, and an executable exact
+  Policy Gate allow decision.
+- The current funding rule/evidence denies activation. No payment provider,
+  solicitation, supporter identity, badge, entitlement, or revenue link exists.
+- Monthly low/base/high projections use configuration-only traffic, hosting,
+  token, and official dated pricing assumptions. The calculation reads no
+  player, build, account, analysis, or supporter data and writes to none of
+  those stores.
+- Product request schemas prohibit donor/sponsor state, so it cannot enter
+  deterministic inputs, recommendations, queue priority, quotas, or output.
 
 ## Failure behavior
 

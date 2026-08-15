@@ -18,14 +18,17 @@ final readonly class DeleteBuild
 
     public function handle(string $ownerId, string $buildId): BuildDeletionResult
     {
+        $blobKey = $this->repository->blobKeyForOwner($buildId, $ownerId);
+
+        if ($blobKey === null) {
+            throw new WorkflowNotFound('The build was not found.');
+        }
+
+        $this->storage->delete($blobKey);
         $result = $this->transactions->run(fn (): ?BuildDeletionResult => $this->repository->deleteBuildForOwner($buildId, $ownerId));
 
         if (! $result instanceof BuildDeletionResult) {
             throw new WorkflowNotFound('The build was not found.');
-        }
-
-        if ($result->blobKey !== null) {
-            $this->storage->delete($result->blobKey);
         }
 
         return $result;

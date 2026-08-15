@@ -2,12 +2,16 @@
 
 namespace Lootwright\Application\Workflow\DTO;
 
+use Lootwright\Domain\Analysis\Finding;
+use Lootwright\Domain\Recommendations\Recommendation;
+use Lootwright\Domain\TradePlanning\ManualTradeRecipe;
+
 final readonly class DeterministicAnalysisSnapshot
 {
     /**
-     * @param list<\Lootwright\Domain\Analysis\Finding> $findings
-     * @param list<\Lootwright\Domain\Recommendations\Recommendation> $recommendations
-     * @param list<\Lootwright\Domain\TradePlanning\ManualTradeRecipe|\Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe> $recipes
+     * @param  list<Finding>  $findings
+     * @param  list<Recommendation>  $recommendations
+     * @param  list<ManualTradeRecipe|\Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe>  $recipes
      */
     public function __construct(
         public string $adapterKey,
@@ -22,5 +26,9 @@ final readonly class DeterministicAnalysisSnapshot
         public array $findings = [],
         public array $recommendations = [],
         public array $recipes = [],
+        public ?string $sourceId = null,
+        public ?string $sourceVersion = null,
+        public ?string $patchVersion = null,
+        public ?string $league = null,
     ) {}
 }

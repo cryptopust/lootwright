@@ -232,7 +232,18 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 08 — Findings experience
 
-- Status: Pending.
+- Status: Fixture-backed UI implementation complete on 2026-08-15; production
+  result binding remains blocked on Prompt 04 and Prompt 07.
+- Delivered: responsive findings groups, severity/category labels, explicit
+  confidence, deterministic evidence disclosures, source/ruleset identity,
+  limitations, unresolved/partial states, and keyboard-native `Why?` controls.
+  Vue consumes typed presentation data and performs no authoritative
+  recalculation.
+- Safety: every demo surface is labelled fixture-only, PoE2 is inactive beyond
+  format review, AI wording is separated from calculations, and no protected
+  publisher asset or copied game interface is present.
+- Verification: Vitest covers evidence disclosure and edition identity;
+  Playwright covers the critical findings path and responsive fixture visuals.
 - Scope: present deterministic findings, severity, certainty, evidence, ruleset identity, unsupported facts, and actionable explanations in the Inertia/Vue UI.
 - Gate: accessibility, responsive behavior, XSS protection, empty/error/loading states, and no client-side authoritative recalculation.
 
@@ -281,49 +292,171 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 12 — Persistence, privacy, and workspace lifecycle
 
-- Status: In progress as of 2026-08-14; primary-store orchestration and
-  lifecycle are implemented, while production backup deletion and public
-  account UX remain release prerequisites.
+- Status: Application and primary-store implementation complete on 2026-08-15;
+  production backup deletion and public account/session UX remain release
+  prerequisites.
 - Application workflow: added framework-neutral `SubmitBuildArtifact`,
   `ParseAndNormalizeBuild`, `RequestClarification`, `CreateAnalysis`,
   `RunDeterministicAnalysis`, `RetrieveAnalysis`,
   `CompareAnalysisVersions`, `ReanalyzeWithGoalsOrBudget`,
-  `ExplainPolicyDecision`, and `DeleteUserData` use cases with typed ports and
-  no Laravel imports under `src/`.
+  `ExplainPolicyDecision`, `DeleteUserData`, `DeleteBuild`, portable export,
+  provenance retrieval, BuildIntent resolution, prioritized-upgrade creation,
+  manual-recipe orchestration, and constrained explanation persistence use
+  cases with typed ports and no Laravel imports under `src/`.
 - Persistence and queues: added owner-scoped PostgreSQL repositories,
-  encrypted immutable snapshots and hashes, encrypted private raw-artifact
-  handoff with a one-hour ceiling, atomic/idempotent state claims, after-commit
-  events, Redis/Horizon routing, three-attempt transient-only backoff, and
-  terminal invalid/policy outcomes.
-- Privacy and authorization: analysis routes require authentication, owner
-  mismatches return not found, raw text stays out of database JSON/queue
-  payloads/logs, deletion spans Analysis and earlier Build Intake persistence
-  through typed ports, and only unlinkable aggregate deletion counts remain.
+  encrypted immutable snapshots and hashes, relational encrypted
+  finding/recommendation/recipe projections, provenance/policy references,
+  encrypted private raw-artifact handoff with a one-hour ceiling, optimistic
+  completion, and a narrow transactional outbox. Parse/analysis jobs carry
+  edition and selected ruleset checksum, route to isolated Horizon queues, and
+  use bounded transient-only retry; stale rulesets, invalid input, and policy
+  outcomes are terminal.
+- Privacy and authorization: account principals and expiring anonymous
+  privacy-session principals are owner isolated; anonymous secrets are stored
+  only as hashes with no IP/user-agent identity. Raw text stays out of database
+  JSON, queue payloads, and logs. Build or full-principal deletion cascades
+  snapshots/products and earlier Build Intake or AI metadata through typed
+  ports; only unlinkable aggregate deletion counts remain.
 - Fail-closed boundary: the production deterministic engine reports an exact
   ruleset as unavailable until Prompt 04 and Prompt 07 approve and implement
   one. Full completion in tests uses deterministic and Policy Gate fakes; AI
   fakes verify the workflow makes no provider calls.
+- Export and observability: owner-scoped endpoints expose exact provenance and
+  policy state. Portable schema `1.0.0` is canonical, timestamp-free, and
+  contains hash-verified deterministic input/output plus findings,
+  recommendations, recipes, selection, and source/ruleset references.
 - Test coverage: feature/integration tests exercise all visible states,
-  immutable hashes, duplicate submission replay/conflict, transaction rollback,
-  transient retry, terminal invalid/policy denial, clarification, authorization,
-  reanalysis/comparison, expiry pruning, deletion isolation, and audited policy
-  explanation.
+  immutable hashes, concurrent replay/conflict, transaction rollback, partial
+  product failure, optimistic duplicate completion, outbox retry/recovery,
+  sync-queue execution, stale edition/ruleset jobs, clarification,
+  account/anonymous authorization, export/provenance isolation, reanalysis,
+  deletion cascades, AI-disabled fallback, and constrained explanation
+  persistence. Application tests cover deterministic prioritization and typed
+  BuildIntent/clarification resolution.
+- Migration and gate evidence: `migrate:fresh --seed --force` completed against
+  the isolated SQLite `:memory:` test profile, including the application
+  persistence migration and policy seed. Composer validation/audit, Pint,
+  PHPStan, PHPUnit, clean npm install/high-severity audit, ESLint, Vue
+  TypeScript, Vitest, Vite, and documentation validation passed. PHPUnit ran
+  518 tests with 7,385 assertions; Vitest ran 2 tests across 2 files; Composer
+  and npm reported no vulnerability advisories; documentation validation
+  covered 36 Markdown files. A local PostgreSQL service and Docker were not
+  available, so PostgreSQL-driver execution remains a CI/deployment check.
 - Scope: implement PostgreSQL repositories, short-lived raw imports, normalized/result retention, deletion, authorization, encryption, and Redis/Horizon jobs.
 - Gate: tenant/workspace isolation, idempotency, backup/deletion behavior, log redaction, queue limits, and retention UX are verified.
 
 ## Prompt 13 — Production UX and operations
 
-- Status: Pending.
+- Status: UX implementation complete with fixture-only data on 2026-08-15;
+  production data binding and remaining deployment operations stay pending.
+- Delivered: original Lootwright landing page, four-step input/privacy wizard,
+  import review, build overview, findings, prioritized upgrades, Manual Trade
+  Recipes, provenance/policy status, operational states, privacy/deletion,
+  methodology, limitations, non-affiliation, personal AI usage, and
+  funding-disabled pages. Turkish defaults with an English localization
+  foundation.
+- Accessibility and responsive evidence: semantic landmarks, skip navigation,
+  visible focus, keyboard controls, live validation/copy feedback,
+  reduced-motion support, text-plus-color states, and mobile layouts from 320
+  pixels are implemented. Chromium visual references and horizontal-overflow
+  checks cover 390 by 844, 768 by 1024, and 1440 by 1000 pixels.
+- Policy evidence: the recipe UI copies only URL-free Lootwright text after an
+  explicit click and exposes exactly one query-free official PoE1 Trade
+  homepage link. The funding page has no donation, payment, sponsor, waitlist,
+  or contact action. The exact non-affiliation notice is persistent.
+- Test evidence: Vitest runs 13 component tests across 8 files; Playwright runs
+  7 fake-data Chromium tests including the wizard, evidence, manual Trade,
+  localization, and three responsive visual comparisons. See
+  [interface workflows](product/interface-workflows.md).
+- Gate evidence: Composer validation/audit, Pint, PHPStan, PHPUnit, clean npm
+  install/high-severity audit, ESLint, Vue TypeScript, Vitest, Chromium browser
+  tests, Vite production build, and documentation validation passed. PHPUnit
+  ran 519 tests with 7,505 assertions; Vitest ran 13 tests; Playwright ran 7
+  tests; Composer and npm reported no vulnerability advisories; documentation
+  validation covered 39 Markdown files.
 - Scope: complete onboarding, analysis history where approved, accessible responsive UI, Horizon supervision, health/readiness, safe telemetry, deployment configuration, and incident runbooks.
 - Gate: core workflow remains useful without AI/external integrations and exposes the required GGG notice visibly.
 
 ## Prompt 14 — PoE1 release assurance
 
-- Status: Pending.
+- Status: Security hardening baseline implemented on 2026-08-15; public release
+  remains pending production contacts, jurisdiction/legal review, selected
+  backup-provider evidence, isolated restore exercise, and approved rulesets.
+- Delivered: default-off admin boundary and optional account verification,
+  production security headers/CSP, named HMAC-keyed rate limits, strict parser
+  and escaped-rendering regression coverage, exact redirect-disabled public-DNS
+  egress guard, recursive secret/log redaction, queue identity rejection,
+  independent import/ruleset/AI/egress/link switches, 30-day application/AI
+  retention pruning, Redis authentication, and a non-superuser local PostgreSQL
+  application role.
+- Operations: added the [security baseline](security/security-baseline.md),
+  [incident response](security/incident-response.md),
+  [data retention](security/data-retention.md), and
+  [deployment checklist](security/deployment-security-checklist.md).
+- Attack-test evidence: horizontal and vertical authorization, optional email
+  verification, hostile parser inputs, escaped rendering, redirect refusal,
+  rate limits, policy and emergency-switch bypass attempts, public-DNS egress
+  enforcement, malformed queue payloads, retention pruning, and recursive
+  secret redaction are covered by the automated suites. PHPUnit ran 533 tests
+  with 7,600 assertions, Vitest ran 15 tests across 8 files, and Playwright ran
+  7 Chromium tests including CSP-sensitive navigation and responsive fixtures.
+- Gate evidence: Composer validation, Composer audit, Pint, PHPStan, PHPUnit,
+  clean npm install, high-severity npm audit, ESLint, Vue TypeScript, Vitest,
+  Playwright, Vite production build, and documentation validation all passed.
+  Composer and npm reported no known vulnerability advisories; documentation
+  validation covered 43 Markdown files. Docker was unavailable locally, so
+  live PostgreSQL/Redis Compose validation and the isolated backup-restore
+  exercise remain explicit deployment checks and were not claimed as passed.
 - Scope: security review, compliance audit, source/license review, performance budgets, browser/accessibility QA, deterministic regression suite, disaster recovery, and public documentation.
 - Gate: all commands in `AGENTS.md` pass; no unresolved release-blocking policy, privacy, licensing, or provenance issue remains.
 
-## Prompt 15 — PoE2 phase-two adapter
+## Prompt 15 — Conservative funding architecture and request package
+
+- Status: informational architecture complete on 2026-08-15; funding,
+  monetization, payment acceptance, and provider links remain disabled.
+- Evidence: the current GGG Terms response was retrieved at 20:26 UTC (HTTP
+  200; SHA-256
+  `8acc7ccf100a595b499d949cab01bba429f60f265ae53177a41c6e760588f77b`)
+  and retained the summarized personal/non-commercial and prior-written-approval
+  restrictions. No actual GGG support correspondence or written funding
+  permission exists in the repository. Official OpenAI pricing and Codex for
+  Open Source program/terms were reviewed; application does not guarantee
+  eligibility, selection, sponsorship, access, or API credits.
+- Architecture: `FUNDING_ENABLED=false` is an operator request rather than an
+  authorization. Exact dated decision/evidence identifiers, explicit operator
+  acknowledgement, a versioned disclosure, permanent equality conditions, and
+  an executable `monetized_hosting` Policy Gate allow are also required. The
+  seeded rule/evidence explicitly denies activation and no payment adapter
+  exists, so `accepting_funds` is always false.
+- Isolation: low/base/high monthly projections use configuration-only hosting,
+  traffic, token, and dated OpenAI pricing assumptions. They read and write no
+  player, build, account, analysis, or supporter data. Analysis/reanalysis
+  schemas prohibit donor, badge, funding-tier, and sponsor-rank state before
+  product output or queue work can be created.
+- UI: the non-transactional funding page explains open-source/unaffiliated
+  status, disabled policy, projected costs, future aggregate reporting, and the
+  permanent no-advantage rule. It renders no payment, donation, advertising,
+  affiliate, sponsorship, revenue-generating social, waitlist, or contact action.
+- Request package: added the [one-pager](sponsorship/openai-one-pager.md),
+  [technical architecture](sponsorship/technical-architecture.md),
+  [responsible AI/evals](sponsorship/responsible-ai-and-evals.md),
+  [token cost model](sponsorship/token-cost-model.md),
+  [milestones](sponsorship/milestone-plan.md),
+  [project impact](sponsorship/project-impact.md), and unsent
+  [application email](sponsorship/application-email.md). Every document avoids
+  approval, eligibility, free-credit, or endorsement claims.
+- Gate evidence: Composer validation/audit, Pint, PHPStan, PHPUnit, clean npm
+  install/high-severity audit, ESLint, Vue TypeScript, Vitest, Playwright, Vite
+  production build, and documentation validation passed. PHPUnit ran 541 tests
+  with 7,720 assertions; Vitest ran 15 tests across 8 files; Playwright ran 7
+  Chromium tests; documentation validation covered 50 Markdown files. Composer
+  and npm reported no known vulnerability advisories.
+- Remaining blockers: an actual legal/policy approval, preserved primary GGG
+  permission if required, OpenAI selection/award evidence, entity/tax/accounting
+  review, and a separately reviewed payment design. Their absence keeps funding
+  off and is not an implementation failure.
+
+## Prompt 16 — PoE2 phase-two adapter
 
 - Status: Pending and not authorized until PoE1 release gates pass.
 - Format-only exception: a separately namespaced beta PoB2 intake adapter may

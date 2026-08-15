@@ -8,6 +8,9 @@ use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipePolicy;
 use Lootwright\Domain\PolicyProvenance\Capability;
 use Lootwright\Domain\PolicyProvenance\CapabilityDecision;
 use Lootwright\Domain\PolicyProvenance\CapabilityRequest;
+use Lootwright\Domain\PolicyProvenance\PolicyDecision;
+use Lootwright\Domain\PolicyProvenance\PolicyDecisionReason;
+use Lootwright\Domain\PolicyProvenance\PolicyVersion;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
 use Lootwright\Domain\PolicyProvenance\RetrievedAt;
 use Lootwright\Domain\Rulesets\RulesetIdentity;
@@ -24,6 +27,17 @@ final readonly class DatabaseManualTradeRecipePolicy implements ManualTradeRecip
 
     public function authorize(GameEdition $edition, RulesetIdentity $ruleset): void
     {
+        if (! (bool) config('security.emergency.external_links')) {
+            throw new ManualTradePolicyBlocked(new CapabilityDecision(
+                Capability::LinkOut,
+                self::SOURCE_ID,
+                PolicyDecision::Deny,
+                PolicyDecisionReason::GlobalKillSwitch,
+                PolicyVersion::baseline(),
+                'External links are disabled by the emergency switch.',
+            ));
+        }
+
         if ($ruleset->edition !== $edition) {
             throw new RuntimeException('The recipe policy edition and ruleset do not match.');
         }

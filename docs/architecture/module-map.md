@@ -52,9 +52,12 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
+| `app/Modules/Identity` | Expiring anonymous privacy-session credentials, secret generation, and HTTP-principal resolution | Application identity ports, Laravel | GGG credentials, IP/device identity storage, domain rules |
 | `app/Modules/TradePlanning` | Edition routing and exact Policy Gate authorization for local manual-recipe generation and the single generic homepage link | Application Trade Planning ports, isolated game adapters, Policy and Provenance port, Laravel | Trade HTTP clients, listings, prices, encoded links, browser automation |
 | `app/Modules/AI` | OpenAI Responses HTTP adapter, exact Policy Gate adapter, PostgreSQL budget/audit adapters, privacy-gated cache, redaction, and context hashing | AI application ports, Laravel | authoritative facts or scoring, raw prompt logging, provider types in `src/` |
-| `resources/js` | Inertia pages, Vue components, user interaction | typed page contracts | authoritative analysis |
+| `app/Modules/Funding` | Fail-closed funding-status adapter and configuration-only operating-cost projections | Funding application port, Policy and Provenance port, Laravel configuration | payments, donor identity, player/build data, entitlements, recommendation influence |
+| `app/Security` and `app/Http/Middleware` | Security headers, HMAC rate keys, egress allowlist/DNS guard, verification and emergency boundaries | Laravel delivery and infrastructure | game rules, provider authority, raw-content telemetry |
+| `resources/js` | Inertia pages, localized Vue components, accessible fixture states, and explicit manual user interaction | typed page contracts | authoritative analysis, provider calls, Trade automation |
 
 ## Interaction rules
 
@@ -63,6 +66,9 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 - Synchronous calls are preferred inside the process. Queue only bounded, idempotent work that benefits from retry or latency isolation.
 - Laravel events may notify in-process secondary behavior, but event logs are not the source of truth and event sourcing is prohibited.
 - Database transactions end at a use-case boundary. Cross-module transactions must be explicit and tested.
+- The narrow workflow outbox is limited to parse/analysis dispatch. It is a
+  recovery mechanism for the PostgreSQL-to-Redis commit boundary, not a domain
+  event store; publisher rows are locked and retries are bounded.
 - Cross-module deletion uses the application-owned `SupplementalUserDataEraser`
   port; the Analysis repository never reads Build Intake tables directly.
 - Domain results carry evidence and version identities; presentation may format but not recalculate them.
@@ -70,6 +76,9 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 
 The detailed namespace and automated dependency matrix are documented in the
 [domain foundation](domain-foundation.md).
+
+The route-level presentation contract and its fixture/production boundary are
+documented in [interface workflows](../product/interface-workflows.md).
 
 ## Ruleset catalog
 

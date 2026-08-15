@@ -14,6 +14,7 @@ use Lootwright\Application\Workflow\AnalysisState;
 use Lootwright\Application\Workflow\Exception\TransientWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Application\Workflow\UseCases\ParseAndNormalizeBuild;
+use Lootwright\Domain\Shared\Game\GameEdition;
 use PDOException;
 use RedisException;
 use Throwable;
@@ -26,7 +27,10 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 600;
 
-    public function __construct(public readonly string $artifactId) {}
+    public function __construct(
+        public readonly string $artifactId,
+        public readonly ?GameEdition $edition = null,
+    ) {}
 
     /** @return list<int> */
     public function backoff(): array
@@ -41,6 +45,28 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(ParseAndNormalizeBuild $useCase, WorkflowRepository $repository): void
     {
+        if (! $this->validUuid7($this->artifactId) || ! $this->edition instanceof GameEdition) {
+            Log::warning('analysis_parse_invalid_job_identity', [
+                'artifact_id_hash' => hash('sha256', $this->artifactId),
+            ]);
+
+            return;
+        }
+
+        if (! (bool) config('security.emergency.imports')) {
+            $repository->failArtifact($this->artifactId, AnalysisState::PolicyBlocked, 'emergency_imports_disabled');
+
+            return;
+        }
+
+        $artifact = $repository->artifact($this->artifactId);
+
+        if ($artifact !== null && $artifact->edition !== $this->edition) {
+            $repository->failArtifact($this->artifactId, AnalysisState::Failed, 'queued_edition_mismatch');
+
+            return;
+        }
+
         try {
             $useCase->handle($this->artifactId);
         } catch (TransientWorkflowFailure|QueryException|PDOException|RedisException $exception) {
@@ -70,6 +96,20 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
     /** @return list<string> */
     public function tags(): array
     {
-        return ['workflow:parse', 'artifact:'.$this->artifactId];
+        $tags = [
+            'workflow:parse',
+            'artifact:'.$this->artifactId,
+        ];
+
+        if ($this->edition !== null) {
+            $tags[] = 'edition:'.$this->edition->value;
+        }
+
+        return $tags;
+    }
+
+    private function validUuid7(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $value) === 1;
     }
 }

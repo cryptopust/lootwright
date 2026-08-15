@@ -39,6 +39,10 @@ final readonly class PolicyGatedPobImporter
         ?string $idempotencyKey = null,
         ?string $actorId = null,
     ): PobImportExecution {
+        if (! (bool) config('security.emergency.imports')) {
+            throw new PobImportDisabled('Build imports are disabled by the emergency switch.');
+        }
+
         $requestHash = hash('sha256', $input);
 
         try {

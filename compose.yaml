@@ -17,11 +17,12 @@ services:
       DB_HOST: pgsql
       DB_PORT: 5432
       DB_DATABASE: '${DB_DATABASE:-lootwright}'
-      DB_USERNAME: '${DB_USERNAME:-lootwright}'
+      DB_USERNAME: '${DB_USERNAME:-lootwright_app}'
       DB_PASSWORD: '${DB_PASSWORD:-lootwright-local}'
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-lootwright-redis-local}'
       CACHE_STORE: redis
       QUEUE_CONNECTION: redis
       SESSION_DRIVER: redis
@@ -56,10 +57,13 @@ services:
       - '127.0.0.1:${DB_PORT:-5432}:5432'
     environment:
       POSTGRES_DB: '${DB_DATABASE:-lootwright}'
-      POSTGRES_USER: '${DB_USERNAME:-lootwright}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-lootwright-local}'
+      POSTGRES_USER: '${DB_ADMIN_USERNAME:-lootwright_admin}'
+      POSTGRES_PASSWORD: '${DB_ADMIN_PASSWORD:-lootwright-admin-local}'
+      APP_DB_USERNAME: '${DB_USERNAME:-lootwright_app}'
+      APP_DB_PASSWORD: '${DB_PASSWORD:-lootwright-local}'
     volumes:
       - lootwright-postgres:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
         [
@@ -73,13 +77,26 @@ services:
   redis:
     image: redis:8-alpine
     restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-lootwright-redis-local}'
     ports:
       - '127.0.0.1:${REDIS_PORT:-6379}:6379'
-    command: redis-server --appendonly yes
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--requirepass',
+        '${REDIS_PASSWORD:-lootwright-redis-local}',
+      ]
     volumes:
       - lootwright-redis:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test:
+        [
+          'CMD-SHELL',
+          'redis-cli -a "$${REDIS_PASSWORD:-lootwright-redis-local}" --no-auth-warning ping',
+        ]
       interval: 5s
       timeout: 3s
       retries: 10

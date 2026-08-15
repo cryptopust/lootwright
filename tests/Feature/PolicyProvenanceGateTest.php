@@ -148,8 +148,9 @@ class PolicyProvenanceGateTest extends TestCase
 
         $this->getJson('/admin/policy/evidence')->assertNotFound();
 
-        Config::set('policy.admin_token', 'test-policy-admin-token');
-        $this->withHeader('X-Lootwright-Policy-Admin-Token', 'test-policy-admin-token')
+        Config::set('security.policy_admin.enabled', true);
+        Config::set('policy.admin_token', 'test-policy-admin-token-000000000000');
+        $this->withHeader('X-Lootwright-Policy-Admin-Token', 'test-policy-admin-token-000000000000')
             ->getJson('/admin/policy/evidence')
             ->assertOk()
             ->assertJsonStructure(['evidence']);
@@ -157,8 +158,9 @@ class PolicyProvenanceGateTest extends TestCase
 
     public function test_admin_can_manage_evidence_and_scoped_kill_switches_without_storing_secrets(): void
     {
-        Config::set('policy.admin_token', 'test-policy-admin-token');
-        $headers = ['X-Lootwright-Policy-Admin-Token' => 'test-policy-admin-token'];
+        Config::set('security.policy_admin.enabled', true);
+        Config::set('policy.admin_token', 'test-policy-admin-token-000000000000');
+        $headers = ['X-Lootwright-Policy-Admin-Token' => 'test-policy-admin-token-000000000000'];
 
         $this->withHeaders($headers)->postJson('/admin/policy/evidence', [
             'id' => 'POBBIN-REVIEW-TEST',
@@ -187,7 +189,7 @@ class PolicyProvenanceGateTest extends TestCase
             'reviewer_role' => 'policy_admin',
         ]);
         $this->assertDatabaseMissing('policy_permission_evidence', [
-            'summary' => 'test-policy-admin-token',
+            'summary' => 'test-policy-admin-token-000000000000',
         ]);
         $this->assertDatabaseHas('policy_kill_switches', [
             'scope' => 'source',

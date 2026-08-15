@@ -4,6 +4,9 @@ use App\Http\Controllers\ReadinessController;
 use App\Http\Middleware\EnsurePolicyAdminTokenIsValid;
 use App\Http\Middleware\EnsureReadinessTokenIsValid;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireEmergencyCapability;
+use App\Http\Middleware\RequireVerifiedEmailWhenConfigured;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -33,9 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'emergency' => RequireEmergencyCapability::class,
             'policy.admin' => EnsurePolicyAdminTokenIsValid::class,
             'readiness' => EnsureReadinessTokenIsValid::class,
+            'verified.optional' => RequireVerifiedEmailWhenConfigured::class,
         ]);
+
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->web(append: [
             HandleInertiaRequests::class,

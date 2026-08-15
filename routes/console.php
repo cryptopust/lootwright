@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('pob:prune-imports')->hourly()->withoutOverlapping();
 Schedule::command('analysis:prune-artifacts')->hourly()->withoutOverlapping();
+Schedule::command('security:prune-retained-data')->dailyAt('03:15')->withoutOverlapping();
+Schedule::command('workflow:dispatch-outbox')->everyMinute()->withoutOverlapping();

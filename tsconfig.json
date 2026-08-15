@@ -121,6 +121,8 @@
         "resources/js/**/*.d.ts",
         "resources/js/**/*.tsx", 
         "resources/js/**/*.vue",
+        "tests/e2e/**/*.ts",
+        "playwright.config.ts",
         "vite.config.ts",
         "vitest.config.ts"
     ]

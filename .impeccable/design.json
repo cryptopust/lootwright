@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-15T00:00:00Z",
+  "title": "Design System: Lootwright",
+  "extensions": {
+    "colorMeta": {
+      "obsidian": { "role": "neutral", "displayName": "Obsidian Workbench", "canonical": "#111318", "tonalRamp": ["#111318", "#1A1D24", "#252932", "#343943", "#505762", "#747B83", "#A7ABB0", "#E7E5DF"] },
+      "bone": { "role": "neutral", "displayName": "Bone Paper", "canonical": "#F2ECDD", "tonalRamp": ["#211F1A", "#38342C", "#5A5448", "#7C7464", "#A39A87", "#C5BCA8", "#E1D9C8", "#F2ECDD"] },
+      "ember": { "role": "primary", "displayName": "Ember Action", "canonical": "#E36A3D", "tonalRamp": ["#32150D", "#572317", "#7E3522", "#A7482D", "#C95836", "#E36A3D", "#F5A187", "#FCE0D5"] },
+      "arcane": { "role": "secondary", "displayName": "Arcane Evidence", "canonical": "#5BC0BE", "tonalRamp": ["#102C2D", "#174748", "#206466", "#2C8283", "#3AA1A0", "#5BC0BE", "#98DDDB", "#DCF5F2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Brand Display", "purpose": "Landing statements only." },
+      "body": { "displayName": "Product Body", "purpose": "Controls and readable evidence." },
+      "label": { "displayName": "Ledger Label", "purpose": "Versions, filters, and provenance." }
+    },
+    "shadows": [
+      { "name": "floating-mobile", "value": "0 16px 40px rgba(5, 7, 10, 0.32)", "purpose": "Mobile navigation disclosure only." }
+    ],
+    "motion": [
+      { "name": "state", "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Control and disclosure state changes." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The next explicit user action.",
+      "html": "<button class=\"ds-btn-primary\">Analizi başlat</button>",
+      "css": ".ds-btn-primary{background:var(--color-ember,#E36A3D);color:var(--color-obsidian,#111318);border:1px solid var(--color-ember,#E36A3D);border-radius:6px;padding:12px 18px;font:650 13px/1.2 ui-sans-serif,system-ui;transition:background 180ms cubic-bezier(.16,1,.3,1),color 180ms cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover{background:var(--color-bone,#F2ECDD)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-arcane,#5BC0BE);outline-offset:3px}"
+    },
+    {
+      "name": "Analysis Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Hostile user input with a clear label and boundary.",
+      "html": "<label class=\"ds-field\">PoB kodu<textarea class=\"ds-input\" rows=\"3\"></textarea></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:var(--color-bone,#F2ECDD);font:650 13px/1.3 ui-sans-serif,system-ui}.ds-input{background:var(--color-obsidian,#111318);color:var(--color-bone,#F2ECDD);border:1px solid #454B57;border-radius:6px;padding:12px 14px;font:400 14px/1.5 ui-monospace,monospace}.ds-input:focus-visible{outline:2px solid var(--color-arcane,#5BC0BE);outline-offset:2px}"
+    },
+    {
+      "name": "Edition Badge",
+      "kind": "chip",
+      "description": "Persistent cross-edition safety marker.",
+      "html": "<span class=\"ds-edition\">POE 1</span>",
+      "css": ".ds-edition{display:inline-flex;align-items:center;border:1px solid var(--color-arcane,#5BC0BE);border-radius:999px;padding:5px 9px;color:var(--color-arcane,#5BC0BE);font:650 11px/1 ui-monospace,monospace;letter-spacing:.08em}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Forge Ledger",
+    "overview": "A dark technical atelier for deliberate build decisions. Familiar product controls are paired with ledger-like evidence rows and immutable version stamps.",
+    "keyCharacteristics": ["Evidence-forward hierarchy", "Fixed semantic color roles", "Flat bordered surfaces", "Persistent edition identity", "Meaning-preserving mobile layouts"],
+    "rules": [
+      { "name": "Fixed Role", "body": "Ember marks actions and Arcane marks evidence.", "section": "colors" },
+      { "name": "Calculation Voice", "body": "Mono identifies data but never imitates a game overlay.", "section": "typography" },
+      { "name": "Workbench", "body": "Spacing and tone take precedence over shadows.", "section": "elevation" }
+    ],
+    "dos": ["Use exact brand roles", "Repeat edition at consequential boundaries", "Label AI wording", "Design every operational state"],
+    "donts": ["Imitate official game UI", "Use protected assets", "Present estimates as facts", "Add donation pressure or payment actions"]
+  }
+}

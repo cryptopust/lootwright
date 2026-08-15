@@ -11,6 +11,7 @@ use App\Modules\AI\LaravelAiResponseCache;
 use App\Modules\AI\OpenAi\LaravelOpenAiHttpTransport;
 use App\Modules\AI\OpenAi\OpenAiHttpTransport;
 use App\Modules\AI\OpenAi\OpenAiResponsesProvider;
+use App\Modules\AI\PostgresAnalysisExplanationRepository;
 use App\Modules\Analysis\Infrastructure\CompositeSupplementalUserDataEraser;
 use App\Modules\Analysis\Infrastructure\DatabaseAnalysisPolicyGate;
 use App\Modules\Analysis\Infrastructure\EncryptedArtifactStorage;
@@ -20,12 +21,20 @@ use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
 use App\Modules\Analysis\Infrastructure\PolicyGatedArtifactParser;
 use App\Modules\Analysis\Infrastructure\UnavailableDeterministicAnalysisEngine;
 use App\Modules\Analysis\Persistence\PostgresWorkflowRepository;
+use App\Modules\Funding\PolicyGatedFundingStatusProvider;
+use App\Modules\Identity\LaravelSecretGenerator;
+use App\Modules\Identity\PostgresPrivacySessionRepository;
 use App\Modules\PolicyProvenance\DatabaseCapabilityPolicy;
 use App\Modules\TradePlanning\DatabaseManualTradeRecipePolicy;
 use App\Modules\TradePlanning\EditionManualTradeRecipeGenerator;
+use App\Security\OutboundRequestGuard;
+use App\Security\RateLimitKey;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Lootwright\Application\AIGateway\DTO\AiGatewayConfiguration;
@@ -34,13 +43,19 @@ use Lootwright\Application\AIGateway\Ports\AiExecutionPolicy;
 use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\AiResponseCache;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
+use Lootwright\Application\AIGateway\Ports\AnalysisExplanationRepository;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Services\ProviderNeutralAiGateway;
+use Lootwright\Application\Funding\Ports\FundingStatusProvider;
+use Lootwright\Application\Identity\Ports\PrivacySessionRepository;
+use Lootwright\Application\Identity\Ports\SecretGenerator;
 use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipeGenerator;
 use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipePolicy;
+use Lootwright\Application\Workflow\Ports\AnalysisDocumentRepository;
 use Lootwright\Application\Workflow\Ports\AnalysisPolicyGate;
 use Lootwright\Application\Workflow\Ports\ArtifactParser;
 use Lootwright\Application\Workflow\Ports\ArtifactStorage;
+use Lootwright\Application\Workflow\Ports\BuildLifecycleRepository;
 use Lootwright\Application\Workflow\Ports\DeterministicAnalysisEngine;
 use Lootwright\Application\Workflow\Ports\IdentifierGenerator;
 use Lootwright\Application\Workflow\Ports\SupplementalUserDataEraser;
@@ -67,6 +82,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PolicyEvaluator::class);
         $this->app->bind(CapabilityPolicy::class, DatabaseCapabilityPolicy::class);
         $this->app->bind(WorkflowRepository::class, PostgresWorkflowRepository::class);
+        $this->app->bind(AnalysisDocumentRepository::class, PostgresWorkflowRepository::class);
+        $this->app->bind(BuildLifecycleRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(ArtifactStorage::class, EncryptedArtifactStorage::class);
         $this->app->bind(WorkflowDispatcher::class, LaravelWorkflowDispatcher::class);
         $this->app->bind(IdentifierGenerator::class, LaravelIdentifierGenerator::class);
@@ -77,6 +94,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AnalysisPolicyGate::class, DatabaseAnalysisPolicyGate::class);
         $this->app->bind(ManualTradeRecipeGenerator::class, EditionManualTradeRecipeGenerator::class);
         $this->app->bind(ManualTradeRecipePolicy::class, DatabaseManualTradeRecipePolicy::class);
+        $this->app->bind(PrivacySessionRepository::class, PostgresPrivacySessionRepository::class);
+        $this->app->bind(SecretGenerator::class, LaravelSecretGenerator::class);
+        $this->app->bind(FundingStatusProvider::class, PolicyGatedFundingStatusProvider::class);
         $this->app->singleton(AiGatewayConfiguration::class, static function (): AiGatewayConfiguration {
             $prices = config('ai.prices_micro_usd_per_million');
 
@@ -102,6 +122,11 @@ class AppServiceProvider extends ServiceProvider
             (string) config('ai.api_key'),
             (int) config('ai.timeout_seconds'),
             (int) config('ai.connect_timeout_seconds'),
+            app(OutboundRequestGuard::class),
+        ));
+        $this->app->singleton(OutboundRequestGuard::class, static fn (): OutboundRequestGuard => new OutboundRequestGuard(
+            (bool) config('security.outbound.enabled'),
+            (array) config('security.outbound.targets', []),
         ));
         $this->app->singleton(StructuredAiProvider::class, static fn ($app): StructuredAiProvider => new OpenAiResponsesProvider(
             $app->make(OpenAiHttpTransport::class),
@@ -129,6 +154,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(AiResponseCache::class),
         ));
         $this->app->bind(AiTelemetry::class, DatabaseAiTelemetry::class);
+        $this->app->bind(AnalysisExplanationRepository::class, PostgresAnalysisExplanationRepository::class);
         $this->app->bind(AiGateway::class, ProviderNeutralAiGateway::class);
         $this->app->singleton(PobImportCoordinator::class, static fn (): PobImportCoordinator => new PobImportCoordinator(
             new PobEnvelopeDecoder,
@@ -155,6 +181,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
+        $this->configureRateLimits();
+
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
@@ -167,5 +195,30 @@ class AppServiceProvider extends ServiceProvider
                 ->symbols()
             : null,
         );
+    }
+
+    private function configureRateLimits(): void
+    {
+        RateLimiter::for('authentication', static fn (Request $request): array => self::limits($request, 'authentication', 5, 25));
+        RateLimiter::for('anonymous-sessions', static fn (Request $request): array => self::limits($request, 'anonymous-sessions', 3, 20));
+        RateLimiter::for('imports', static fn (Request $request): array => self::limits($request, 'imports', 10, 100));
+        RateLimiter::for('analysis-submit', static fn (Request $request): array => self::limits($request, 'analysis-submit', 6, 60));
+        RateLimiter::for('analysis-read', static fn (Request $request): array => self::limits($request, 'analysis-read', 60, 1_000));
+        RateLimiter::for('ai', static fn (Request $request): array => self::limits($request, 'ai', 5, 50));
+        RateLimiter::for('export', static fn (Request $request): array => self::limits($request, 'export', 5, 30));
+        RateLimiter::for('deletion', static fn (Request $request): array => self::limits($request, 'deletion', 3, 10));
+        RateLimiter::for('policy-read', static fn (Request $request): array => self::limits($request, 'policy-read', 30, 300));
+        RateLimiter::for('policy-admin', static fn (Request $request): array => self::limits($request, 'policy-admin', 10, 50));
+    }
+
+    /** @return list<Limit> */
+    private static function limits(Request $request, string $scope, int $perMinute, int $perDay): array
+    {
+        $key = RateLimitKey::for($request, $scope);
+
+        return [
+            Limit::perMinute($perMinute)->by($key.':minute'),
+            Limit::perDay($perDay)->by($key.':day'),
+        ];
     }
 }

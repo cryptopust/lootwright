@@ -9,6 +9,7 @@ use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
 use Lootwright\Application\Workflow\Exception\TransientWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\ArtifactParser;
 use Lootwright\Application\Workflow\Ports\ArtifactStorage;
+use Lootwright\Application\Workflow\Ports\TransactionManager;
 use Lootwright\Application\Workflow\Ports\WorkflowDispatcher;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 
@@ -20,6 +21,7 @@ final readonly class ParseAndNormalizeBuild
         private ArtifactParser $parser,
         private WorkflowDispatcher $dispatcher,
         private RequestClarification $clarifications,
+        private TransactionManager $transactions,
     ) {}
 
     public function handle(string $artifactId): void
@@ -34,17 +36,23 @@ final readonly class ParseAndNormalizeBuild
             $contents = $this->storage->get($artifact->blobKey);
             $parsed = $this->parser->parse($artifact->artifactType, $contents, $artifact->edition);
             $this->guardParsedArtifact($artifact->edition->value, $parsed);
-            $this->repository->saveParsedArtifact($artifactId, $parsed);
+            $this->transactions->run(function () use ($artifactId, $parsed, $artifact): void {
+                $this->repository->saveParsedArtifact($artifactId, $parsed);
+
+                if ($parsed->clarifications !== []) {
+                    $this->clarifications->handle($artifact->analysisId, $parsed->clarifications);
+
+                    return;
+                }
+
+                $this->repository->transitionAnalysis($artifact->analysisId, AnalysisState::Queued);
+                $this->dispatcher->analyze(
+                    $artifact->analysisId,
+                    $artifact->edition,
+                    $this->selectedRulesetChecksum($artifact->analysisId),
+                );
+            });
             $this->deleteRawArtifact($artifactId, $artifact->blobKey);
-
-            if ($parsed->clarifications !== []) {
-                $this->clarifications->handle($artifact->analysisId, $parsed->clarifications);
-
-                return;
-            }
-
-            $this->repository->transitionAnalysis($artifact->analysisId, AnalysisState::Queued);
-            $this->dispatcher->analyze($artifact->analysisId);
         } catch (PolicyBlocked $exception) {
             $this->repository->failArtifact($artifactId, AnalysisState::PolicyBlocked, $exception->decision->reason->value);
             $this->deleteRawArtifact($artifactId, $artifact->blobKey);
@@ -56,6 +64,17 @@ final readonly class ParseAndNormalizeBuild
 
             throw $exception;
         }
+    }
+
+    private function selectedRulesetChecksum(string $analysisId): ?string
+    {
+        $analysis = $this->repository->analysis($analysisId);
+        $parameters = $analysis === null ? null : json_decode($analysis->parametersSnapshot, true);
+        $checksum = is_array($parameters) && is_array($parameters['selection'] ?? null)
+            ? ($parameters['selection']['ruleset_checksum_sha256'] ?? null)
+            : null;
+
+        return is_string($checksum) ? $checksum : null;
     }
 
     private function deleteRawArtifact(string $artifactId, string $blobKey): void

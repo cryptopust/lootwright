@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePobImportRequest;
 use App\Modules\BuildIntake\PobImportConflict;
+use App\Modules\BuildIntake\PobImportDisabled;
 use App\Modules\BuildIntake\PobImportRejected;
 use App\Modules\BuildIntake\PobPolicyDenied;
 use App\Modules\BuildIntake\PolicyGatedPobImporter;
@@ -32,6 +33,11 @@ class PobImportController extends Controller
                 $request->header('Idempotency-Key'),
                 $actorId,
             );
+        } catch (PobImportDisabled) {
+            return response()->json([
+                'status' => 'temporarily_disabled',
+                'capability' => 'imports',
+            ], 503, ['Cache-Control' => 'no-store']);
         } catch (PobImportConflict) {
             return response()->json([
                 'status' => 'idempotency_conflict',

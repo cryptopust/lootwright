@@ -12,7 +12,34 @@ class FoundationTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('Lootwright')
-            ->assertInertia(fn (Assert $page): Assert => $page->component('Welcome'));
+            ->assertInertia(fn (Assert $page): Assert => $page->component('Landing'));
+    }
+
+    public function test_product_pages_render_without_protected_publisher_assets(): void
+    {
+        $pages = [
+            '/analyses/new' => 'Analysis/New',
+            '/analyses/demo/import' => 'Analysis/ImportReview',
+            '/analyses/demo/overview' => 'Analysis/Workspace',
+            '/analyses/demo/findings' => 'Analysis/Workspace',
+            '/analyses/demo/upgrades' => 'Analysis/Workspace',
+            '/analyses/demo/trade' => 'Analysis/Workspace',
+            '/analyses/demo/provenance' => 'Analysis/Workspace',
+            '/analyses/demo/states' => 'Analysis/Workspace',
+            '/privacy' => 'Information',
+            '/data-deletion' => 'Information',
+            '/methodology' => 'Information',
+            '/limitations' => 'Information',
+            '/non-affiliation' => 'Information',
+            '/usage' => 'Usage',
+            '/funding' => 'Funding',
+        ];
+
+        foreach ($pages as $path => $component) {
+            $this->get($path)
+                ->assertOk()
+                ->assertInertia(fn (Assert $page): Assert => $page->component($component));
+        }
     }
 
     public function test_public_liveness_endpoint_discloses_no_dependencies(): void

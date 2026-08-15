@@ -1,9 +1,9 @@
 import { config, shallowMount } from '@vue/test-utils';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import Welcome from './Welcome.vue';
+import Landing from './Landing.vue';
 
-describe('Welcome', () => {
+describe('Landing', () => {
     beforeAll(() => {
         config.global.renderStubDefaultSlot = true;
     });
@@ -12,8 +12,8 @@ describe('Welcome', () => {
         config.global.renderStubDefaultSlot = false;
     });
 
-    it('renders the neutral foundation shell and required notice', () => {
-        const wrapper = shallowMount(Welcome, {
+    it('renders the product boundary without protected imagery or Trade links', () => {
+        const wrapper = shallowMount(Landing, {
             global: {
                 stubs: {
                     Head: true,
@@ -21,11 +21,8 @@ describe('Welcome', () => {
             },
         });
 
-        expect(wrapper.get('h1').text()).toContain('Build decisions');
-        expect(wrapper.text()).toContain(
-            "This product isn't affiliated with or endorsed by Grinding Gear Games in any way.",
-        );
+        expect(wrapper.get('h1').text()).toContain('Build kararlarını');
         expect(wrapper.findAll('img')).toHaveLength(0);
-        expect(wrapper.html()).not.toContain('pathofexile.com');
+        expect(wrapper.html()).not.toContain('pathofexile.com/trade');
     });
 });

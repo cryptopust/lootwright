@@ -38,7 +38,7 @@ final class PolicyDefaults
             self::source('REPOE-CANDIDATE', 'RePoE or similar generated datasets', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Candidate generated game data with unresolved underlying rights.'),
             self::source('GGG-PROTECTED-ASSETS', 'GGG protected media and expression', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Artwork, images, logos, music, flavour text, screenshots, and fonts.'),
             self::source('OPENAI-API', 'OpenAI API', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Optional provider remains disabled until an explicit reviewed provider decision.'),
-            self::source('LOOTWRIGHT-FUNDING', 'Donations and monetized hosting', SourceType::ThirdPartySite, AccessMode::AuthenticatedApi, 'Funding and monetized hosting are disabled pending explicit review.'),
+            self::source('LOOTWRIGHT-FUNDING', 'Lootwright funding policy', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Funding and monetized hosting are disabled pending explicit review.'),
         ];
     }
 
@@ -61,7 +61,7 @@ final class PolicyDefaults
             ['source_id' => 'REPOE-CANDIDATE', 'version' => 'unreviewed-2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-PROTECTED-ASSETS', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'OPENAI-API', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
         ];
     }
 
@@ -89,7 +89,7 @@ final class PolicyDefaults
             self::evidenceRecord('OPENAI-GPT54-NANO-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/models/gpt-5.4-nano', PermissionStatus::Allowed, 'Official model documentation confirms Responses API and Structured Outputs support.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('OPENAI-PRICING-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/pricing', PermissionStatus::Allowed, 'Official pricing documents the configured GPT-5.4 nano token prices.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('OPENAI-SPEND-LIMITS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/spend-limits', PermissionStatus::Allowed, 'Official OpenAI documentation describes enforceable organization and project spend limits.', false, retrievedAt: '2026-08-15T00:00:00Z'),
-            self::evidenceRecord('LOOTWRIGHT-FUNDING-DENIAL', 'LOOTWRIGHT-FUNDING', '2026-08-14', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/funding-policy.md', PermissionStatus::Denied, 'Funding and monetized hosting remain disabled pending explicit review.', false),
+            self::evidenceRecord('LOOTWRIGHT-FUNDING-DENIAL', 'LOOTWRIGHT-FUNDING', '2026-08-15', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/funding-policy.md', PermissionStatus::Denied, 'No legal approval, GGG approval, or support correspondence establishes permission; funding and monetized hosting remain disabled.', false, retrievedAt: '2026-08-15T20:15:22Z'),
         ];
     }
 
@@ -157,8 +157,9 @@ final class PolicyDefaults
         $rules[] = self::rule('OPENAI-API', '2026-08-15', Capability::LiveFetch, 'openai.responses.intent', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'The tested adapter exists but remains non-executable until privacy disclosure, opt-in UX, provider approval, and deployment spend controls are reviewed.');
         $rules[] = self::rule('OPENAI-API', '2026-08-15', Capability::LiveFetch, 'openai.responses.explanation', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'The tested adapter exists but remains non-executable until privacy disclosure, opt-in UX, provider approval, and deployment spend controls are reviewed.');
 
-        $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-14', Capability::MonetizedHosting, 'lootwright.donations', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Donations remain disabled pending explicit policy and legal review.');
-        $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-14', Capability::MonetizedHosting, 'lootwright.hosting', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Monetized hosting remains disabled pending explicit policy and legal review.');
+        $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-15', Capability::MonetizedHosting, 'lootwright.funding.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, ['dated_policy_decision', 'permission_evidence_recorded', 'operator_activation', 'public_disclosure_versioned', 'funding_equality_permanent', 'visible_disclosure'], 'The operator switch cannot activate funding without a superseding reviewed allow rule and allowed evidence.');
+        $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-15', Capability::MonetizedHosting, 'lootwright.donations', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Donations remain disabled pending explicit policy and legal review.');
+        $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-15', Capability::MonetizedHosting, 'lootwright.hosting', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Monetized hosting remains disabled pending explicit policy and legal review.');
 
         return $rules;
     }

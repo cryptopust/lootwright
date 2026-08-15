@@ -1,9 +1,9 @@
 # GGG Integration Policy
 
-Status: binding, deny by default. This document is an engineering policy based
-on sources retrieved and re-verified on 2026-08-14 at 13:16 UTC; it is not legal
-advice. The re-verification found no material policy-text change from the
-earlier review that day, so no capability was broadened or enabled.
+Status: binding, deny by default. This document is an engineering policy, not
+legal advice. Developer/API sources were re-verified on 2026-08-14 at 13:16 UTC;
+the Terms were retrieved again on 2026-08-15 at 20:26 UTC. No capability was
+broadened or enabled.
 
 ## Sources reviewed
 
@@ -11,7 +11,7 @@ earlier review that day, so no capability was broadened or enabled.
 | --- | --- | --- | --- |
 | GGG Developer Docs, including API Policies, Third-Party Requirements, available resources, developer guidelines, errors, rate limits, and authorization | <https://www.pathofexile.com/developer/docs> | 2026-08-14 13:16 UTC | HTTP 200, title `Developer Docs - Path of Exile`; registration remains unavailable |
 | GGG API Reference | <https://www.pathofexile.com/developer/docs/reference> | 2026-08-14 13:16 UTC | HTTP 200, title `Developer Docs - Path of Exile`; named internal Trade paths absent |
-| Path of Exile & Path of Exile 2 Terms of Use and Privacy Policy | <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy> | 2026-08-14 13:16 UTC | HTTP 200, title `Path of Exile`; privacy notice still states last updated October 2024 |
+| Path of Exile & Path of Exile 2 Terms of Use and Privacy Policy | <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy> | 2026-08-15 20:26 UTC | HTTP 200, 92,114-byte response, SHA-256 `8acc7ccf100a595b499d949cab01bba429f60f265ae53177a41c6e760588f77b`; summarized restrictions remained present |
 
 The official pages can change without notice. Re-read and record them before enabling or materially changing any GGG-facing capability, and at least before each public release.
 
@@ -30,6 +30,11 @@ The Developer Docs state that:
 The Terms prohibit, without prior written approval, automated software or bots, data-gathering/extraction tools against the Website, unauthorized server connections, modification of the game client or its data, and reverse engineering of the Website, Materials, or Services. The Terms also restrict reproduction, storage, distribution, display, and derivative works from protected material, and describe the granted license as personal and non-commercial.
 
 These are conservative engineering interpretations. If a proposed use is ambiguous, the capability remains disabled pending documented GGG permission and legal review.
+
+The repository contains no actual GGG support correspondence or written
+permission for Lootwright funding. The developer page's application-registration
+status is not a support reply. Absence of a reply or preserved primary evidence
+cannot authorize monetization.
 
 ## Allowed product behavior
 

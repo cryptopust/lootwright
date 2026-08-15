@@ -3,20 +3,35 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
 use App\Modules\Analysis\Jobs\ParseBuildArtifactJob;
 use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use Database\Seeders\PolicyDefaultsSeeder;
+use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Contracts\Queue\Queue as QueueContract;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Queue\SyncQueue;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Lootwright\Application\AIGateway\DTO\AiGatewayOutcome;
+use Lootwright\Application\AIGateway\DTO\AiRequestContext;
 use Lootwright\Application\AIGateway\DTO\AnalysisExplanationRequest;
+use Lootwright\Application\AIGateway\DTO\ExplanationBundle;
+use Lootwright\Application\AIGateway\DTO\GatewayExplanationRequest;
 use Lootwright\Application\AIGateway\DTO\IntentExtractionRequest;
+use Lootwright\Application\AIGateway\DTO\NaturalLanguageIntentRequest;
+use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\IntentExtractor;
 use Lootwright\Application\AIGateway\Ports\ResultExplainer;
+use Lootwright\Application\AIGateway\Services\GenerateConstrainedAnalysisExplanation;
+use Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe as ApplicationManualTradeRecipe;
+use Lootwright\Application\TradePlanning\DTO\RecipeVariant;
 use Lootwright\Application\Workflow\AnalysisState;
 use Lootwright\Application\Workflow\DTO\AnalysisParameters;
 use Lootwright\Application\Workflow\DTO\AnalysisRecord;
@@ -37,6 +52,9 @@ use Lootwright\Application\Workflow\UseCases\ExplainPolicyDecision;
 use Lootwright\Application\Workflow\UseCases\ParseAndNormalizeBuild;
 use Lootwright\Application\Workflow\UseCases\RunDeterministicAnalysis;
 use Lootwright\Application\Workflow\UseCases\SubmitBuildArtifact;
+use Lootwright\Domain\Analysis\Finding;
+use Lootwright\Domain\Analysis\FindingSeverity;
+use Lootwright\Domain\BuildIntake\Intent\UpgradePriority;
 use Lootwright\Domain\PolicyProvenance\Capability;
 use Lootwright\Domain\PolicyProvenance\CapabilityDecision;
 use Lootwright\Domain\PolicyProvenance\CapabilityRequest;
@@ -44,12 +62,16 @@ use Lootwright\Domain\PolicyProvenance\PolicyDecision;
 use Lootwright\Domain\PolicyProvenance\PolicyDecisionReason;
 use Lootwright\Domain\PolicyProvenance\PolicyVersion;
 use Lootwright\Domain\PolicyProvenance\RetrievedAt;
+use Lootwright\Domain\Recommendations\Recommendation;
+use Lootwright\Domain\Recommendations\RecommendationImpact;
 use Lootwright\Domain\Shared\Error\DomainResult;
 use Lootwright\Domain\Shared\Game\GameEdition;
+use Lootwright\Domain\Shared\Identity\AnalysisId;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Lootwright\Domain\Shared\Value\Locale;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\DomainFixtures;
 use Tests\TestCase;
 use Throwable;
 
@@ -311,7 +333,7 @@ class AnalysisWorkflowTest extends TestCase
             'failure_code' => 'explicit_denial',
         ]);
 
-        $job = new ParseBuildArtifactJob($transientId);
+        $job = new ParseBuildArtifactJob($transientId, GameEdition::Poe1);
         self::assertSame(3, $job->tries);
         self::assertSame([10, 30, 90], $job->backoff());
     }
@@ -471,6 +493,426 @@ class AnalysisWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_parse_persists_minimal_import_snapshot_and_edition_scoped_build_projection(): void
+    {
+        $user = User::factory()->create();
+        $response = $this->actingAs($user)->postJson('/api/analyses', [
+            ...$this->payload(),
+            'platform_realm' => 'pc',
+            'league' => 'fixture.league',
+            'content_goal' => 'fixture.content',
+            'ruleset_id' => DomainFixtures::POE1_RULESET_UUID,
+            'ruleset_version' => '1.0.0',
+            'ruleset_checksum_sha256' => str_repeat('b', 64),
+        ], ['Idempotency-Key' => str_repeat('m', 32)])->assertAccepted();
+        $artifactId = $response->json('artifact_id');
+        self::assertIsString($artifactId);
+
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+
+        $this->assertDatabaseHas('build_import_attempts', [
+            'artifact_id' => $artifactId,
+            'game_edition' => 'poe1',
+            'state' => 'completed',
+            'attempt_count' => 1,
+        ]);
+        $this->assertDatabaseHas('normalized_build_snapshots', [
+            'artifact_id' => $artifactId,
+            'adapter_key' => 'pob1-fixture',
+            'parser_version' => '1.0.0',
+        ]);
+        self::assertNull(DB::table('build_artifacts')->where('id', $artifactId)->value('normalized_snapshot_encrypted'));
+        $this->assertDatabaseHas('builds', [
+            'id' => $artifactId,
+            'game_edition' => 'poe1',
+            'platform_realm' => 'pc',
+            'league' => 'fixture.league',
+            'content_goal' => 'fixture.content',
+            'selected_ruleset_id' => DomainFixtures::POE1_RULESET_UUID,
+            'selected_ruleset_checksum_sha256' => str_repeat('b', 64),
+        ]);
+        self::assertSame(
+            DB::table('build_artifacts')->where('id', $artifactId)->value('normalized_hash_sha256'),
+            DB::table('normalized_build_snapshots')->where('artifact_id', $artifactId)->value('payload_hash_sha256'),
+        );
+    }
+
+    public function test_noncanonical_ruleset_selection_is_rejected_at_the_http_boundary(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/analyses', [
+            ...$this->payload(),
+            'ruleset_id' => DomainFixtures::POE1_RULESET_UUID,
+            'ruleset_version' => 'latest',
+            'ruleset_checksum_sha256' => str_repeat('b', 64),
+        ], ['Idempotency-Key' => str_repeat('a', 29).'xyz'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('ruleset_version');
+
+        $this->assertDatabaseCount('build_artifacts', 0);
+        $this->assertDatabaseCount('workflow_outbox', 0);
+    }
+
+    public function test_portable_export_is_hash_stable_timestamp_free_and_owner_scoped(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $submission = $this->submit($owner, str_repeat('z', 32));
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine(true));
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
+
+        DB::table('analysis_policy_decisions')->insert([
+            'analysis_id' => $analysisId,
+            'source_id' => 'LOOTWRIGHT-001',
+            'source_version' => 'fixture-1',
+            'capability' => 'derivative_analysis',
+            'operation' => 'ruleset.deterministic_analysis',
+            'decision' => 'allow',
+            'reason' => 'active_evidence',
+            'policy_version' => '1.0.0',
+            'evidence_ids' => json_encode(['fixture-evidence'], JSON_THROW_ON_ERROR),
+            'evaluated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($owner)->get('/api/analyses/'.$analysisId.'/export')->assertOk();
+        $body = $response->getContent();
+        self::assertIsString($body);
+        self::assertSame(hash('sha256', $body), $response->headers->get('X-Content-SHA256'));
+        self::assertStringNotContainsString('created_at', $body);
+        self::assertStringNotContainsString('updated_at', $body);
+        $document = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($analysisId, $document['analysis_output']['analysis_id']);
+        self::assertSame('fixture.finding', $document['findings'][0]['code']);
+        self::assertSame('fixture.recommendation', $document['recommendations'][0]['code']);
+        self::assertSame('fixture.helmet', $document['recipes'][0]['slot']);
+        self::assertSame('LOOTWRIGHT-001', $document['provenance'][0]['source_id']);
+        self::assertSame('allow', $document['policy_decisions'][0]['decision']);
+
+        $this->actingAs($owner)->getJson('/api/analyses/'.$analysisId.'/provenance')
+            ->assertOk()
+            ->assertJsonPath('provenance.sources.0.ruleset_checksum_sha256', str_repeat('b', 64))
+            ->assertJsonPath('provenance.policyDecisions.0.decision', 'allow');
+        $this->actingAs($other)->get('/api/analyses/'.$analysisId.'/export')->assertNotFound();
+        $this->actingAs($other)->getJson('/api/analyses/'.$analysisId.'/provenance')->assertNotFound();
+    }
+
+    public function test_anonymous_privacy_session_is_secret_hash_only_authorized_expirable_and_deletable(): void
+    {
+        $sessionResponse = $this->postJson('/api/privacy-sessions')->assertCreated();
+        $token = $sessionResponse->json('session.token');
+        $sessionId = $sessionResponse->json('session.id');
+        self::assertIsString($token);
+        self::assertIsString($sessionId);
+        self::assertStringStartsWith($sessionId.'.', $token);
+        self::assertSame(0, DB::table('privacy_sessions')->where('access_token_hash_sha256', $token)->count());
+
+        $submission = $this->postJson('/api/analyses', $this->payload(), [
+            'Idempotency-Key' => str_repeat('n', 32),
+            'X-Lootwright-Privacy-Session' => $token,
+        ])->assertAccepted();
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->getJson('/api/analyses/'.$analysisId)->assertUnauthorized();
+        $this->getJson('/api/analyses/'.$analysisId, ['X-Lootwright-Privacy-Session' => $token])->assertOk();
+
+        $otherToken = $this->postJson('/api/privacy-sessions')->json('session.token');
+        self::assertIsString($otherToken);
+        $this->getJson('/api/analyses/'.$analysisId, ['X-Lootwright-Privacy-Session' => $otherToken])->assertNotFound();
+
+        $this->deleteJson('/api/user-data', [], ['X-Lootwright-Privacy-Session' => $token])
+            ->assertOk()
+            ->assertJsonPath('artifacts_deleted', 1);
+        $this->assertDatabaseHas('privacy_sessions', ['id' => $sessionId, 'status' => 'deleted']);
+        $this->getJson('/api/analyses/'.$analysisId, ['X-Lootwright-Privacy-Session' => $token])->assertUnauthorized();
+
+        $this->travel(61)->seconds();
+        $expiring = $this->postJson('/api/privacy-sessions')->assertCreated()->json('session');
+        self::assertIsArray($expiring);
+        DB::table('privacy_sessions')->where('id', $expiring['id'])->update(['expires_at' => now()->subSecond()]);
+        $this->postJson('/api/analyses', $this->payload(), [
+            'Idempotency-Key' => str_repeat('q', 32),
+            'X-Lootwright-Privacy-Session' => $expiring['token'],
+        ])->assertUnauthorized();
+    }
+
+    public function test_build_deletion_cascades_products_but_cannot_cross_owner_boundary(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        [$buildId, $analysisId] = $this->completeWithProducts($owner, str_repeat('k', 32));
+
+        $this->actingAs($other)->deleteJson('/api/builds/'.$buildId)->assertNotFound();
+        $this->assertDatabaseHas('analyses', ['id' => $analysisId]);
+        $this->actingAs($owner)->deleteJson('/api/builds/'.$buildId)
+            ->assertOk()
+            ->assertJsonPath('analyses_deleted', 1);
+
+        $this->assertDatabaseMissing('builds', ['id' => $buildId]);
+        $this->assertDatabaseMissing('analyses', ['id' => $analysisId]);
+        $this->assertDatabaseCount('analysis_findings', 0);
+        $this->assertDatabaseCount('analysis_recommendations', 0);
+        $this->assertDatabaseCount('manual_trade_recipes', 0);
+        $this->assertDatabaseHas('user_data_deletion_records', ['reason' => 'build_deleted']);
+    }
+
+    public function test_stale_ruleset_selection_and_mismatched_queued_identity_fail_terminally(): void
+    {
+        $user = User::factory()->create();
+        $payload = [
+            ...$this->payload(),
+            'ruleset_id' => DomainFixtures::POE1_RULESET_UUID,
+            'ruleset_version' => '1.0.0',
+            'ruleset_checksum_sha256' => str_repeat('c', 64),
+        ];
+        $submission = $this->actingAs($user)->postJson('/api/analyses', $payload, [
+            'Idempotency-Key' => str_repeat('s', 32),
+        ])->assertAccepted();
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine);
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
+        $this->assertDatabaseHas('analyses', [
+            'id' => $analysisId,
+            'state' => 'failed',
+            'failure_code' => 'stale_ruleset_selection',
+        ]);
+
+        $second = $this->submit($user, str_repeat('h', 32), 'second fixture');
+        $secondArtifact = $second->json('artifact_id');
+        $secondAnalysis = $second->json('analysis_id');
+        self::assertIsString($secondArtifact);
+        self::assertIsString($secondAnalysis);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($secondArtifact);
+        (new RunDeterministicAnalysisJob($secondAnalysis, GameEdition::Poe2, str_repeat('b', 64)))->handle(
+            $this->app->make(RunDeterministicAnalysis::class),
+            $this->app->make(WorkflowRepository::class),
+        );
+        $this->assertDatabaseHas('analyses', [
+            'id' => $secondAnalysis,
+            'state' => 'failed',
+            'failure_code' => 'queued_analysis_identity_mismatch',
+        ]);
+    }
+
+    public function test_analysis_completion_is_optimistic_idempotent_and_rolls_back_partial_products(): void
+    {
+        $user = User::factory()->create();
+        $submission = $this->submit($user, str_repeat('l', 32));
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $repository = $this->app->make(WorkflowRepository::class);
+        $analysis = $repository->claimAnalysis($analysisId);
+        $artifact = $repository->artifact($artifactId);
+        self::assertNotNull($analysis);
+        self::assertNotNull($artifact);
+        $engine = new FakeDeterministicAnalysisEngine(true);
+        $snapshot = $engine->run($analysis, $artifact, $engine->resolve($analysis, $artifact));
+        $invalid = new DeterministicAnalysisSnapshot(
+            $snapshot->adapterKey,
+            $snapshot->parserVersion,
+            $snapshot->rulesetId,
+            $snapshot->rulesetVersion,
+            $snapshot->rulesetChecksumSha256,
+            $snapshot->inputSnapshot,
+            $snapshot->inputHashSha256,
+            $snapshot->outputSnapshot,
+            $snapshot->outputHashSha256,
+            [$snapshot->findings[0], $snapshot->findings[0]],
+            $snapshot->recommendations,
+            $snapshot->recipes,
+        );
+
+        try {
+            $repository->completeAnalysis($analysisId, $invalid);
+            self::fail('Expected the duplicate product transaction to fail.');
+        } catch (QueryException) {
+            $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'processing', 'lock_version' => 1]);
+            $this->assertDatabaseCount('analysis_findings', 0);
+            $this->assertDatabaseCount('analysis_recommendations', 0);
+        }
+
+        $repository->completeAnalysis($analysisId, $snapshot);
+        try {
+            $repository->completeAnalysis($analysisId, $snapshot);
+            self::fail('Expected optimistic concurrency to reject duplicate completion.');
+        } catch (TerminalWorkflowFailure $exception) {
+            self::assertSame('analysis_state_conflict', $exception->failureCode);
+        }
+        $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'completed', 'lock_version' => 2]);
+        $this->assertDatabaseCount('analysis_findings', 1);
+        $this->assertDatabaseCount('analysis_recommendations', 1);
+        $this->assertDatabaseCount('manual_trade_recipes', 1);
+    }
+
+    public function test_outbox_retries_transient_dispatch_once_and_recovers_without_duplicate_enqueue(): void
+    {
+        $user = User::factory()->create();
+        $submission = $this->submit($user, str_repeat('f', 32));
+        $artifactId = $submission->json('artifact_id');
+        self::assertIsString($artifactId);
+        Queue::fake();
+        DB::table('workflow_outbox')->where('aggregate_id', $artifactId)->update([
+            'status' => 'pending',
+            'attempts' => 0,
+            'available_at' => now()->subSecond(),
+            'dispatched_at' => null,
+        ]);
+        Queue::shouldReceive('connection')->once()->andThrow(new RuntimeException('redis unavailable'));
+        Queue::shouldReceive('releaseUniqueJobLocks')->andReturnNull();
+
+        try {
+            $this->app->make(LaravelWorkflowDispatcher::class)->flushPending();
+            self::fail('Expected the transient queue dispatch to fail.');
+        } catch (TransientWorkflowFailure) {
+            $this->assertDatabaseHas('workflow_outbox', [
+                'aggregate_id' => $artifactId,
+                'status' => 'pending',
+                'attempts' => 1,
+                'last_error_code' => RuntimeException::class,
+            ]);
+            (new UniqueLock($this->app->make(CacheRepository::class)))->release(
+                new ParseBuildArtifactJob($artifactId, GameEdition::Poe1),
+            );
+        }
+
+        Queue::fake();
+        DB::table('workflow_outbox')->where('aggregate_id', $artifactId)->update(['available_at' => now()->subSecond()]);
+        self::assertSame(1, $this->app->make(LaravelWorkflowDispatcher::class)->flushPending());
+        self::assertSame(0, $this->app->make(LaravelWorkflowDispatcher::class)->flushPending());
+        Queue::assertPushed(ParseBuildArtifactJob::class, 1);
+        $this->assertDatabaseHas('workflow_outbox', ['aggregate_id' => $artifactId, 'status' => 'dispatched', 'attempts' => 2]);
+    }
+
+    public function test_commit_after_queue_outage_preserves_raw_handoff_for_outbox_recovery(): void
+    {
+        $user = User::factory()->create();
+        Queue::shouldReceive('connection')->once()->andThrow(new RuntimeException('redis unavailable'));
+        Queue::shouldReceive('releaseUniqueJobLocks')->andReturnNull();
+
+        $submission = $this->submit($user, str_repeat('a', 30).'yz')->assertAccepted();
+        $artifactId = $submission->json('artifact_id');
+        self::assertIsString($artifactId);
+        $blobKey = DB::table('build_artifacts')->where('id', $artifactId)->value('blob_key');
+        self::assertIsString($blobKey);
+        Storage::disk('analysis-artifacts')->assertExists($blobKey);
+        $this->assertDatabaseHas('workflow_outbox', [
+            'aggregate_id' => $artifactId,
+            'status' => 'pending',
+            'attempts' => 1,
+            'last_error_code' => RuntimeException::class,
+        ]);
+        (new UniqueLock($this->app->make(CacheRepository::class)))->release(
+            new ParseBuildArtifactJob($artifactId, GameEdition::Poe1),
+        );
+    }
+
+    public function test_jobs_execute_through_the_sync_queue_with_edition_and_ruleset_context(): void
+    {
+        $user = User::factory()->create();
+        $submission = $this->submit($user, str_repeat('g', 32));
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine);
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $queue = $this->syncQueue();
+
+        $queue->push(new ParseBuildArtifactJob($artifactId, GameEdition::Poe1));
+        $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'queued']);
+        $queue->push(new RunDeterministicAnalysisJob($analysisId, GameEdition::Poe1, str_repeat('b', 64)));
+        $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'completed']);
+    }
+
+    public function test_constrained_explanation_persists_only_codes_from_completed_deterministic_products(): void
+    {
+        $user = User::factory()->create();
+        $submission = $this->submit($user, str_repeat('a', 31).'x');
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $engine = new FakeDeterministicAnalysisEngine(true);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->instance(DeterministicAnalysisEngine::class, $engine);
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
+        $snapshot = $engine->lastSnapshot;
+        self::assertNotNull($snapshot);
+        $bundle = new ExplanationBundle(
+            'en',
+            'Readable deterministic fixture summary.',
+            [['code' => 'fixture.finding', 'text' => 'This finding comes from deterministic evidence.']],
+            [['code' => 'fixture.recommendation', 'text' => 'This explains the existing recommendation only.']],
+        );
+        $this->app->instance(AiGateway::class, new FixtureAiGateway(new AiGatewayOutcome('provider', $bundle)));
+        $request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            $snapshot->findings,
+            $snapshot->recommendations,
+            new AiRequestContext(str_repeat('a', 64), str_repeat('b', 64), true),
+        );
+
+        $outcome = $this->app->make(GenerateConstrainedAnalysisExplanation::class)->handle(
+            (string) $user->getAuthIdentifier(),
+            $analysisId,
+            $request,
+        );
+
+        self::assertSame('provider', $outcome->status);
+        $this->assertDatabaseHas('analysis_explanations', ['analysis_id' => $analysisId, 'status' => 'provider']);
+        $encrypted = DB::table('analysis_explanations')->where('analysis_id', $analysisId)->value('payload_encrypted');
+        self::assertIsString($encrypted);
+        self::assertStringNotContainsString('Readable deterministic fixture summary', $encrypted);
+    }
+
+    private function syncQueue(): QueueContract
+    {
+        $queue = new SyncQueue;
+        $queue->setContainer($this->app);
+
+        return $queue;
+    }
+
+    /** @return array{string, string} */
+    private function completeWithProducts(User $user, string $idempotencyKey): array
+    {
+        $submission = $this->submit($user, $idempotencyKey);
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
+        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine(true));
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
+
+        return [$artifactId, $analysisId];
+    }
+
     /** @return array{string, string} */
     private function complete(User $user, string $idempotencyKey): array
     {
@@ -506,6 +948,9 @@ class AnalysisWorkflowTest extends TestCase
             'artifact' => $artifact,
             'storage_consent' => true,
             'goals' => ['Improve the deterministic fixture.'],
+            'ruleset_id' => '01890f47-0f7d-7a2b-ac3d-1234567890ab',
+            'ruleset_version' => '1.0.0',
+            'ruleset_checksum_sha256' => str_repeat('b', 64),
         ];
     }
 
@@ -564,6 +1009,10 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
 
     public string $lastOutput = '';
 
+    public ?DeterministicAnalysisSnapshot $lastSnapshot = null;
+
+    public function __construct(private readonly bool $withProducts = false) {}
+
     public function resolve(AnalysisRecord $analysis, ArtifactRecord $artifact): ResolvedAnalysisContext
     {
         return new ResolvedAnalysisContext(
@@ -593,7 +1042,69 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
             'result' => 'fixture-only',
         ]);
 
-        return new DeterministicAnalysisSnapshot(
+        $findings = [];
+        $recommendations = [];
+        $recipes = [];
+
+        if ($this->withProducts) {
+            $build = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+            $identity = DomainFixtures::value(AnalysisId::from(GameEdition::Poe1, $analysis->id), AnalysisId::class);
+            $trace = DomainFixtures::trace($build);
+            $finding = DomainFixtures::value(Finding::create(
+                $build,
+                $identity,
+                'fixture.finding',
+                FindingSeverity::Opportunity,
+                'A persisted deterministic fixture finding.',
+                ['input:fixture'],
+                $trace->steps[0]->rule,
+                $trace,
+            ), Finding::class);
+            $impact = DomainFixtures::value(RecommendationImpact::create(['fixture_dimension' => 1_000]), RecommendationImpact::class);
+            $recommendation = DomainFixtures::value(Recommendation::create(
+                GameEdition::Poe1,
+                $identity,
+                'fixture.recommendation',
+                UpgradePriority::Medium,
+                $impact,
+                [$finding],
+                [],
+                $trace,
+            ), Recommendation::class);
+            $variant = new RecipeVariant('fixture', [], [], []);
+            $recipe = new ApplicationManualTradeRecipe(
+                'poe1',
+                'pc',
+                null,
+                'fixture.helmet',
+                null,
+                null,
+                $variant,
+                $variant,
+                [],
+                null,
+                [],
+                [],
+                [
+                    'id' => $context->rulesetId,
+                    'version' => $context->rulesetVersion,
+                    'checksum_sha256' => $context->rulesetChecksumSha256,
+                    'patch' => '1.2.3',
+                    'league' => null,
+                    'parser_version' => $context->parserVersion,
+                    'source_id' => $context->sourceId,
+                    'source_version' => $context->sourceVersion,
+                ],
+                9_000,
+                'https://www.pathofexile.com/trade',
+                'Open the official Path of Exile Trade homepage',
+            );
+            $findings = [$finding];
+            $recommendations = [$recommendation];
+            $recipes = [$recipe];
+        }
+
+        $this->lastSnapshot = new DeterministicAnalysisSnapshot(
             $context->adapterKey,
             $context->parserVersion,
             $context->rulesetId,
@@ -603,7 +1114,12 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
             hash('sha256', $this->lastInput),
             $this->lastOutput,
             hash('sha256', $this->lastOutput),
+            $findings,
+            $recommendations,
+            $recipes,
         );
+
+        return $this->lastSnapshot;
     }
 }
 
@@ -653,5 +1169,20 @@ final class FakeResultExplainer implements ResultExplainer
         $this->calls++;
 
         return DomainResult::success(null);
+    }
+}
+
+final readonly class FixtureAiGateway implements AiGateway
+{
+    public function __construct(private AiGatewayOutcome $outcome) {}
+
+    public function extractIntent(NaturalLanguageIntentRequest $request): AiGatewayOutcome
+    {
+        return $this->outcome;
+    }
+
+    public function explain(GatewayExplanationRequest $request): AiGatewayOutcome
+    {
+        return $this->outcome;
     }
 }

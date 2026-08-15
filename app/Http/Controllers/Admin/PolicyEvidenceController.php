@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,7 @@ class PolicyEvidenceController extends Controller
             'id' => ['required', 'string', 'max:96', 'regex:/^[A-Z][A-Z0-9-]{2,95}$/'],
             'source_id' => ['required', 'string', 'exists:policy_data_sources,id'],
             'source_version' => ['required', 'string', 'max:128'],
-            'evidence_url' => ['required', 'url:https', 'max:2048'],
+            'evidence_url' => ['required', 'url:https', 'max:2048', $this->approvedEvidenceHost(...)],
             'retrieved_at' => ['required', 'date'],
             'effective_from' => ['required', 'date'],
             'effective_until' => ['nullable', 'date', 'after:effective_from'],
@@ -77,5 +78,26 @@ class PolicyEvidenceController extends Controller
         );
 
         return response()->json(['status' => 'stored'], 201, ['Cache-Control' => 'no-store']);
+    }
+
+    private function approvedEvidenceHost(string $attribute, mixed $value, Closure $fail): void
+    {
+        if (! is_string($value)) {
+            $fail('The evidence URL is invalid.');
+
+            return;
+        }
+
+        $parts = parse_url($value);
+        $host = is_array($parts) && is_string($parts['host'] ?? null) ? strtolower($parts['host']) : null;
+        $port = is_array($parts) ? ($parts['port'] ?? null) : null;
+        $hasCredentials = is_array($parts) && (isset($parts['user']) || isset($parts['pass']));
+        $allowed = config('security.policy_admin.evidence_hosts', []);
+
+        if ($host === null || ! is_array($allowed) || ! in_array($host, $allowed, true)
+            || ($port !== null && $port !== 443) || $hasCredentials
+        ) {
+            $fail('The evidence URL host is not approved.');
+        }
     }
 }
