@@ -49,6 +49,9 @@ jobs:
       - name: Run backend tests
         run: composer run test
 
+      - name: Run fast structural evaluations
+        run: composer run eval:fast
+
       - name: Install frontend dependencies
         run: npm ci
 

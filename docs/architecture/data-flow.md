@@ -139,6 +139,22 @@ sequenceDiagram
 - Product request schemas prohibit donor/sponsor state, so it cannot enter
   deterministic inputs, recommendations, queue priority, quotas, or output.
 
+### 10. Reproducible release evaluation
+
+- Versioned public structural cases exercise the real import boundary, AI schema
+  enforcement through a fake provider, and Manual Trade generation without network
+  access. Synthetic finding cases are labelled as harness-only until production
+  rulesets and the deterministic engine are available.
+- Fast CI and manually invoked extended suites apply critical zero-tolerance edition,
+  trace, replay, unsupported-data, hallucinated-ID, and network gates plus bounded
+  latency, memory, token, and estimated-cost ceilings.
+- Stable baselines contain hashes and non-sensitive outcomes, not raw fixtures,
+  prompts, notes, or user identifiers. Golden changes require a passing public run,
+  a named reviewer, a specific reason, and semantic diff review.
+- Live-provider evaluation is a distinct default-off command. It requires explicit
+  operator confirmation, a hard cost cap, Policy Gate and budget approval, synthetic
+  or authorized/redacted private input, and a non-CI process.
+
 ## Failure behavior
 
 All stages fail closed with typed outcomes: invalid input, unsupported parser, unsupported game/patch, provenance denied, ruleset unavailable, checksum mismatch, analysis limitation, or optional-provider unavailable. Only typed transient failures are retried with bounded backoff; invalid input and policy denial are terminal. Atomic state claims and immutable writes make duplicate jobs safe. A failure must never cause fallback to a different game, unverified source, undocumented endpoint, or AI-generated fact.

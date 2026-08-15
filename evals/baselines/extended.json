@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "suite_version": "2026-08-16.1",
+  "suite": "extended",
+  "source_hash_sha256": "924a095321bbc6cc9f1f40e337248243d03ab017d6be2c0beb205d575c0ef2ba",
+  "cases": [
+    {"id":"extended.parser.replay","kind":"parser_replay","passed":true,"status":"equal","fingerprint":"3a1725a65254c0a3e82078c99f8f9cb171cb730144f2f1b8d7de875c9bd78cf2"},
+    {"id":"extended.deterministic.replay","kind":"deterministic_replay","passed":true,"status":"equal","fingerprint":"3a1725a65254c0a3e82078c99f8f9cb171cb730144f2f1b8d7de875c9bd78cf2"},
+    {"id":"extended.parser.deep_safe_failure","kind":"generated_parser_attack","passed":true,"status":"safe_failure","fingerprint":"28fd83dffaa552d01d1ba14ff05c107a53598db43f0518c33d7d6fa760b38f8d"},
+    {"id":"extended.parser.bomb_safe_failure","kind":"generated_parser_attack","passed":true,"status":"safe_failure","fingerprint":"7029a68be91b1b79b0f1e46e3a933d441eed71c46cd950261594c956ffa77c5f"}
+  ],
+  "metrics": {
+    "case_count": 35,
+    "parser_success_rate_basis_points": 10000,
+    "parser_safe_failure_rate_basis_points": 10000,
+    "edition_detection_precision_basis_points": 10000,
+    "deterministic_finding_precision_basis_points": 10000,
+    "forbidden_cross_edition_recommendations": 0,
+    "unsupported_disclosure_rate_basis_points": 10000,
+    "recommendation_trace_completeness_basis_points": 10000,
+    "trade_trace_completeness_basis_points": 10000,
+    "undocumented_endpoint_or_network_calls": 0,
+    "ai_schema_validity_basis_points": 10000,
+    "ai_canonical_id_resolution_basis_points": 10000,
+    "hallucinated_canonical_ids_accepted": 0,
+    "deterministic_replay_equality_basis_points": 10000,
+    "estimated_input_tokens_per_call_max": 250,
+    "estimated_output_tokens_per_call_max": 100,
+    "estimated_cost_per_call_micro_usd_max": 350
+  },
+  "review": {
+    "reviewer": "codex",
+    "reason": "Reviewed extended replay and hostile parser outcomes against limits.",
+    "reviewed_at": "2026-08-16"
+  }
+}

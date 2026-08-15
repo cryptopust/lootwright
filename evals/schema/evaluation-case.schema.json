@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lootwright.org/schemas/evaluation-case-1.0.0.json",
+  "title": "Lootwright structural evaluation suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suite_version", "cases"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "suite_version": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[0-9]+$"},
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "expected": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "case": {
+      "type": "object",
+      "required": ["id", "kind", "expected"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{2,127}$"},
+        "kind": {
+          "enum": [
+            "parser",
+            "intent",
+            "ruleset",
+            "deterministic",
+            "trade",
+            "parser_replay",
+            "deterministic_replay",
+            "generated_parser_attack"
+          ]
+        },
+        "expected": {"$ref": "#/$defs/expected"},
+        "fixture": {"type": "string", "pattern": "^evals/(fixtures|private)/"},
+        "encoding": {"enum": ["xml", "pob_code"]},
+        "declared_edition": {"enum": ["poe1", "poe2"]},
+        "edition": {"enum": ["poe1", "poe2"]},
+        "locale": {"enum": ["tr-TR", "en-US"]},
+        "description": {"type": "string", "minLength": 1, "maxLength": 500},
+        "provider_mode": {
+          "enum": ["valid", "low_confidence", "disabled", "malformed", "hallucinated_id", "timeout", "budget_exceeded"]
+        },
+        "provider_output": {"type": "object"},
+        "requested": {"type": "object"},
+        "active": {"type": "object"},
+        "facts": {"type": "array", "items": {"type": "object"}},
+        "mode": {"enum": ["broadening", "tightening", "conflict", "unresolved"]},
+        "iterations": {"type": "integer", "minimum": 2, "maximum": 1000},
+        "attack": {"enum": ["deep_xml", "decompression_bomb"]},
+        "user_authorized": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "parser"}}},
+          "then": {"required": ["fixture"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "intent"}}},
+          "then": {"required": ["locale", "edition", "description", "provider_mode"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "ruleset"}}},
+          "then": {"required": ["requested", "active"]}
+        },
+        {
+          "if": {"properties": {"kind": {"enum": ["deterministic", "deterministic_replay"]}}},
+          "then": {"required": ["edition", "facts"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "trade"}}},
+          "then": {"required": ["mode"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "parser_replay"}}},
+          "then": {"required": ["fixture", "iterations"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "generated_parser_attack"}}},
+          "then": {"required": ["attack"]}
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

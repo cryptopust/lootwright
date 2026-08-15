@@ -18,6 +18,9 @@ jurisdiction, controller contact, and legal-hold procedure remain release gates.
 | User deletion aggregate | Operational/legal minimum | Approved legal schedule | Unlinkable counts only |
 | Application logs | 14 days by default | Incident hold approved by incident commander | Rotation and secure deletion |
 | Encrypted PostgreSQL backups | Deployment-defined, maximum 30 days for MVP | Expiry, verified purge, or legal hold | Provider deletion plus restore tombstone replay |
+| Public evaluation fixtures/baselines | Version controlled | Superseded through reviewed code change | Tiny original inputs and outcome hashes only; no user data |
+| Authorized private evaluation fixtures | Local ignored files only | Remove immediately after the approved review | Never committed, uploaded, copied into reports, or used to update baselines |
+| Evaluation reports | Local operational artifact | Replace on next run; delete after review | Hashes and aggregate metrics only; no raw prompt, fixture, note, or provider output |
 
 `security:prune-retained-data` runs daily and removes expired analysis roots,
 AI audit/cache/index data, user/IP budget counters, and expired/deleted privacy

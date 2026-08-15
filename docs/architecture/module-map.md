@@ -56,6 +56,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `app/Modules/TradePlanning` | Edition routing and exact Policy Gate authorization for local manual-recipe generation and the single generic homepage link | Application Trade Planning ports, isolated game adapters, Policy and Provenance port, Laravel | Trade HTTP clients, listings, prices, encoded links, browser automation |
 | `app/Modules/AI` | OpenAI Responses HTTP adapter, exact Policy Gate adapter, PostgreSQL budget/audit adapters, privacy-gated cache, redaction, and context hashing | AI application ports, Laravel | authoritative facts or scoring, raw prompt logging, provider types in `src/` |
 | `app/Modules/Funding` | Fail-closed funding-status adapter and configuration-only operating-cost projections | Funding application port, Policy and Provenance port, Laravel configuration | payments, donor identity, player/build data, entitlements, recommendation influence |
+| `app/Modules/Evaluation` | Versioned structural case loading, real-component/fake-provider execution, critical thresholds, stable snapshots, and redacted JSON/Markdown reports | Public application/domain APIs, isolated adapters, Laravel CLI/filesystem | production authority, raw prompt reporting, live network in CI, private fixture commits |
 | `app/Security` and `app/Http/Middleware` | Security headers, HMAC rate keys, egress allowlist/DNS guard, verification and emergency boundaries | Laravel delivery and infrastructure | game rules, provider authority, raw-content telemetry |
 | `resources/js` | Inertia pages, localized Vue components, accessible fixture states, and explicit manual user interaction | typed page contracts | authoritative analysis, provider calls, Trade automation |
 
@@ -79,6 +80,10 @@ The detailed namespace and automated dependency matrix are documented in the
 
 The route-level presentation contract and its fixture/production boundary are
 documented in [interface workflows](../product/interface-workflows.md).
+
+Release evaluation ownership, metric definitions, private-fixture handling, and
+golden-review rules are documented in the
+[evaluation system](../operations/evaluation-system.md).
 
 ## Ruleset catalog
 

@@ -4,6 +4,7 @@ namespace App\Modules\BuildIntake;
 
 use Carbon\CarbonImmutable;
 use Lootwright\Application\PolicyProvenance\DecideCapability;
+use Lootwright\Domain\BuildIntake\Import\ImportLimits;
 use Lootwright\Domain\BuildIntake\Import\PobImportResult;
 use Lootwright\Domain\PolicyProvenance\Capability;
 use Lootwright\Domain\PolicyProvenance\CapabilityDecision;
@@ -38,6 +39,7 @@ final readonly class PolicyGatedPobImporter
         ?int $retentionHours = null,
         ?string $idempotencyKey = null,
         ?string $actorId = null,
+        ?ImportLimits $limits = null,
     ): PobImportExecution {
         if (! (bool) config('security.emergency.imports')) {
             throw new PobImportDisabled('Build imports are disabled by the emergency switch.');
@@ -49,7 +51,7 @@ final readonly class PolicyGatedPobImporter
             $this->authorize(Capability::Import, 'user_input.pob_code.import', self::USER_SOURCE, self::USER_VERSION, ['explicit_user_submission']);
             $this->authorize(Capability::TransientProcess, 'user_input.pob_code.process', self::USER_SOURCE, self::USER_VERSION, ['explicit_user_submission']);
 
-            $preparedResult = $this->importer->prepare($input);
+            $preparedResult = $this->importer->prepare($input, $limits);
 
             if ($preparedResult->isFailure()) {
                 throw new PobImportRejected($preparedResult->error());
@@ -62,7 +64,7 @@ final readonly class PolicyGatedPobImporter
             }
 
             $this->authorizeFormat($prepared->edition());
-            $result = $this->importer->normalize($prepared);
+            $result = $this->importer->normalize($prepared, $limits);
 
             if ($result->isFailure()) {
                 throw new PobImportRejected($result->error());

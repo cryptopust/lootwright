@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding>
+  <Build targetVersion="fixture_poe1" level="12" className="Fixture One"/>
+  <Tree><Spec classInternalId="fixture_one" nodes="1"/></Tree>
+  <Skills><Skill enabled="true"><Gem skillId="fixture_melee" level="1" enabled="true"/></Skill></Skills>
+  <Items><Item id="1">Fixture item text</Item></Items>
+</PathOfBuilding>

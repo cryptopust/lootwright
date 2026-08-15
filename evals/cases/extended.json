@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "suite_version": "2026-08-16.1",
+  "cases": [
+    {"id":"extended.parser.replay","kind":"parser_replay","fixture":"evals/fixtures/poe1-tiny.xml","iterations":50,"expected":{"equality":true}},
+    {"id":"extended.deterministic.replay","kind":"deterministic_replay","edition":"poe1","iterations":50,"facts":[{"code":"fixture.replay","edition":"poe1","supported":true}],"expected":{"equality":true}},
+    {"id":"extended.parser.deep_safe_failure","kind":"generated_parser_attack","attack":"deep_xml","expected":{"status":"safe_failure","error_code":"input_too_large"}},
+    {"id":"extended.parser.bomb_safe_failure","kind":"generated_parser_attack","attack":"decompression_bomb","expected":{"status":"safe_failure","error_code":"decompression_limit"}}
+  ]
+}

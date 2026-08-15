@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding>
+  <Build level="1" className="Fixture" futureAttribute="fixture"/>
+  <FixtureUnsupported mechanic="original_test_only"/>
+</PathOfBuilding>

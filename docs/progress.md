@@ -456,6 +456,38 @@ This is the controlled implementation sequence. A later prompt may refine earlie
   review, and a separately reviewed payment design. Their absence keeps funding
   off and is not an implementation failure.
 
+## Reproducible evaluation system
+
+- Status: implemented on 2026-08-16 with default-off live-provider execution;
+  production game-accuracy evaluation remains blocked until reviewed production
+  rulesets and the deterministic engine exist.
+- Coverage: 31 fast structural cases cover PoE1/PoE2 import, ambiguity/mismatch,
+  incomplete and hostile inputs, intent categories/goals/budgets in Turkish and
+  English, conflicting constraints, stale/cross-edition rulesets, AI failure modes,
+  reviewed synthetic findings, and Manual Trade broadening/refusal/unresolved paths.
+  The 35-case extended suite adds 50-run parser/deterministic replay and generated
+  deep-XML/decompression-bomb failures.
+- Gates: parser and safe-failure rates, edition precision, structural finding
+  precision, unsupported disclosure, recommendation/Trade trace completeness, AI
+  schema/ID resolution, and deterministic replay require 100%. Cross-edition output,
+  undocumented network calls, and accepted hallucinated IDs require zero. Per-case
+  latency/memory and estimated token/cost ceilings are enforced separately.
+- Reproducibility: committed JSON Schema, original tiny fixtures, reviewed stable
+  baselines, redacted JSON/Markdown reports, case/source fingerprints, CI fast-suite
+  enforcement, and a documented non-rubber-stamp golden-review process are in place.
+- Privacy and provider isolation: ignored private fixtures require explicit user
+  authorization and may run only in the manual extended suite. Live OpenAI evaluation
+  is never in normal CI and additionally requires explicit confirmation, configuration,
+  secret, Policy Gate allow, local budget reservation, a hard operator cost cap, and
+  redaction. No live provider evaluation was run for this change.
+- Operations: see the [evaluation system](operations/evaluation-system.md).
+- Gate evidence: fast (31 cases) and extended (35 cases) evals, Composer validation
+  and audit, Pint, PHPStan, PHPUnit, clean npm install and high-severity audit, ESLint,
+  Vue TypeScript, Vitest, Playwright, Vite production build, and documentation
+  validation passed. PHPUnit ran 549 tests with 7,751 assertions; Vitest ran 15 tests;
+  Playwright ran 7 Chromium tests; documentation validation covered 54 Markdown
+  files. Composer and npm reported no known vulnerability advisories.
+
 ## Prompt 16 — PoE2 phase-two adapter
 
 - Status: Pending and not authorized until PoE1 release gates pass.

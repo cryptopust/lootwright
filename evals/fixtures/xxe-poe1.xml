@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fixture [<!ENTITY xxe SYSTEM "file:///not-read">]>
+<PathOfBuilding><Build>&xxe;</Build></PathOfBuilding>

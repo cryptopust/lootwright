@@ -137,6 +137,7 @@ class DomainBoundaryTest extends TestCase
 
         $allowedCoordinatorConsumers = [
             '/app/Console/Commands/ImportPobFixture.php',
+            '/app/Modules/BuildIntake/LocalEvaluationPobImporter.php',
             '/app/Modules/BuildIntake/PolicyGatedPobImporter.php',
             '/app/Providers/AppServiceProvider.php',
         ];
@@ -155,6 +156,10 @@ class DomainBoundaryTest extends TestCase
             );
             self::assertNotSame([], $matched, "{$file} bypasses the policy-gated PoB import use case.");
         }
+
+        $evaluationImporter = file_get_contents(dirname(__DIR__, 2).'/app/Modules/BuildIntake/LocalEvaluationPobImporter.php') ?: '';
+        self::assertStringContainsString('PolicyGatedPobImporter', $evaluationImporter);
+        self::assertStringContainsString('LocalFixtureCapabilityPolicy', $evaluationImporter);
     }
 
     public function test_provider_neutral_application_layer_cannot_import_concrete_game_adapters(): void
