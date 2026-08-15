@@ -12,6 +12,7 @@ final readonly class AnalysisParameters
         public array $goals,
         public ?string $budgetAmount,
         public ?string $budgetCurrency,
+        public ?AnalysisSelection $selection = null,
     ) {}
 
     public function canonicalJson(): string
@@ -26,6 +27,7 @@ final readonly class AnalysisParameters
                 'currency' => $this->budgetCurrency,
             ],
             'goals' => $this->goals,
+            'selection' => $this->selection,
         ]);
     }
 

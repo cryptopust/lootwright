@@ -83,10 +83,12 @@ sequenceDiagram
 
 ### 7. Optional AI
 
-- Intent extraction maps natural language into an allowlisted schema. Invalid or unsupported values are rejected or confirmed by the user.
+- A local deterministic intent parser runs first; simple closed-vocabulary requests do not consume provider quota.
+- Intent extraction maps natural language into strict BuildIntent or Clarification schemas and resolves every term against the exact edition/patch vocabulary. Invalid or unsupported values are rejected or confirmed by the user.
 - Explanation receives deterministic outputs, not authority to change them.
-- Prompts exclude secrets, unnecessary raw imports, and personal data.
+- Prompts exclude secrets, PoB input, unnecessary raw imports, complete private notes, and personal data. Provider requests are stateless, tool-free, token-bounded, opt-in, policy-gated, and budget-reserved.
 - Provider outage, denial, timeout, unsafe output, or schema failure preserves the deterministic result and uses template explanations.
+- PostgreSQL stores opaque usage/cost/validation metadata, never raw prompts or provider responses by default. Privacy-permitted cache entries contain only validated structured output and have bounded TTL.
 
 ### 8. Persistence and deletion
 

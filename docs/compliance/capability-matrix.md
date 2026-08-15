@@ -44,7 +44,7 @@ or unmet conditions require review but remain non-executable.
 | RePoE or similar generated datasets | `import`, `derivative_analysis` | `require_review` | Underlying data rights and current GGG policy must be documented. |
 | RePoE or similar generated datasets | `redistribution`, `monetized_hosting` | `deny` | Hosted redistribution remains disabled while underlying rights are unresolved. |
 | GGG art, item images, logos, music, flavour text, screenshots, and fonts | `public_display`, `redistribution` | `deny` | Protected publisher expression is outside Lootwright's license scope. |
-| OpenAI API | `live_fetch` for intent extraction or explanation | `require_review` | No provider adapter is enabled. Future review requires configured credentials, privacy disclosure, data minimization, provider approval, current policy evidence, and an enforced spend limit. |
+| OpenAI Responses API | `live_fetch: openai.responses.intent`, `openai.responses.explanation` | `require_review` | A tool-free, stateless, strict-schema adapter is implemented and off by default. Execution remains prohibited until privacy/opt-in UX, provider approval, current evidence, configured credentials, and deployment hard spend limits are reviewed. |
 | Donations and monetized hosting | `monetized_hosting` | `deny` | Requires an explicit policy/legal decision; funding cannot affect functionality or access. |
 
 ## Kill switches
@@ -84,6 +84,10 @@ GGG sessions and credentials remain denied.
 - GGG Terms: <https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy>
 - OpenAI API data controls: <https://developers.openai.com/api/docs/guides/your-data>
 - OpenAI API spend limits: <https://developers.openai.com/api/docs/guides/spend-limits>
+- OpenAI Responses API: <https://developers.openai.com/api/reference/resources/responses/methods/create>
+- OpenAI Structured Outputs: <https://developers.openai.com/api/docs/guides/structured-outputs>
+- OpenAI GPT-5.4 nano: <https://developers.openai.com/api/docs/models/gpt-5.4-nano>
+- OpenAI API pricing: <https://developers.openai.com/api/docs/pricing>
 
 See the [source register](source-register.md) for retrieval and provenance
 details. These links are evidence references; they do not independently enable

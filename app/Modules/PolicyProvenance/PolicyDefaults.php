@@ -60,7 +60,7 @@ final class PolicyDefaults
             ['source_id' => 'POB2-COMMUNITY', 'version' => '5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'REPOE-CANDIDATE', 'version' => 'unreviewed-2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-PROTECTED-ASSETS', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'OPENAI-API', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'OPENAI-API', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
         ];
     }
@@ -83,8 +83,12 @@ final class PolicyDefaults
             self::evidenceRecord('POB2-COMMUNITY-LICENSE-20260814', 'POB2-COMMUNITY', '5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6', 'https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/blob/5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6/LICENSE.md', PermissionStatus::Allowed, 'MIT evidence permits independently implemented beta format interoperability only.', true, 'Attribute Path of Building Community and link its MIT license.'),
             self::evidenceRecord('REPOE-RIGHTS-UNKNOWN', 'REPOE-CANDIDATE', 'unreviewed-2026-08-14', 'https://github.com/brather1ng/RePoE', PermissionStatus::Unknown, 'Repository accessibility does not establish rights in generated underlying game data.', true),
             self::evidenceRecord('GGG-TERMS-ASSETS-20260814', 'GGG-PROTECTED-ASSETS', '2026-08-14', 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy', PermissionStatus::Denied, 'Protected GGG media and expression are outside Lootwright redistribution rights.', true),
-            self::evidenceRecord('OPENAI-DATA-CONTROLS-20260814', 'OPENAI-API', '2026-08-14', 'https://developers.openai.com/api/docs/guides/your-data', PermissionStatus::Allowed, 'Official OpenAI documentation describes API data use and retention controls.', false),
-            self::evidenceRecord('OPENAI-SPEND-LIMITS-20260814', 'OPENAI-API', '2026-08-14', 'https://developers.openai.com/api/docs/guides/spend-limits', PermissionStatus::Allowed, 'Official OpenAI documentation describes enforceable organization and project spend limits.', false),
+            self::evidenceRecord('OPENAI-DATA-CONTROLS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/your-data', PermissionStatus::Allowed, 'Official OpenAI documentation describes API data use and retention controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
+            self::evidenceRecord('OPENAI-RESPONSES-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/reference/resources/responses/methods/create', PermissionStatus::Allowed, 'Official OpenAI API reference documents POST /v1/responses and its stateless request controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
+            self::evidenceRecord('OPENAI-STRUCTURED-OUTPUTS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/structured-outputs', PermissionStatus::Allowed, 'Official OpenAI documentation defines strict JSON Schema Structured Outputs and explicit refusals.', false, retrievedAt: '2026-08-15T00:00:00Z'),
+            self::evidenceRecord('OPENAI-GPT54-NANO-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/models/gpt-5.4-nano', PermissionStatus::Allowed, 'Official model documentation confirms Responses API and Structured Outputs support.', false, retrievedAt: '2026-08-15T00:00:00Z'),
+            self::evidenceRecord('OPENAI-PRICING-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/pricing', PermissionStatus::Allowed, 'Official pricing documents the configured GPT-5.4 nano token prices.', false, retrievedAt: '2026-08-15T00:00:00Z'),
+            self::evidenceRecord('OPENAI-SPEND-LIMITS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/spend-limits', PermissionStatus::Allowed, 'Official OpenAI documentation describes enforceable organization and project spend limits.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('LOOTWRIGHT-FUNDING-DENIAL', 'LOOTWRIGHT-FUNDING', '2026-08-14', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/funding-policy.md', PermissionStatus::Denied, 'Funding and monetized hosting remain disabled pending explicit review.', false),
         ];
     }
@@ -150,8 +154,8 @@ final class PolicyDefaults
         $rules[] = self::rule('GGG-PROTECTED-ASSETS', '2026-08-14', Capability::Redistribution, 'asset.redistribute', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Redistribution of protected GGG expression is denied.');
 
         $openAiConditions = ['configured_credentials', 'current_policy_evidence', 'data_minimization', 'privacy_disclosure', 'provider_approved', 'spend_limit_configured'];
-        $rules[] = self::rule('OPENAI-API', '2026-08-14', Capability::LiveFetch, 'openai.responses.intent', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'OpenAI remains optional and disabled until credentials, privacy, minimization, spend, and provider review controls exist.');
-        $rules[] = self::rule('OPENAI-API', '2026-08-14', Capability::LiveFetch, 'openai.responses.explanation', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'OpenAI remains optional and disabled until credentials, privacy, minimization, spend, and provider review controls exist.');
+        $rules[] = self::rule('OPENAI-API', '2026-08-15', Capability::LiveFetch, 'openai.responses.intent', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'The tested adapter exists but remains non-executable until privacy disclosure, opt-in UX, provider approval, and deployment spend controls are reviewed.');
+        $rules[] = self::rule('OPENAI-API', '2026-08-15', Capability::LiveFetch, 'openai.responses.explanation', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $openAiConditions, 'The tested adapter exists but remains non-executable until privacy disclosure, opt-in UX, provider approval, and deployment spend controls are reviewed.');
 
         $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-14', Capability::MonetizedHosting, 'lootwright.donations', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Donations remain disabled pending explicit policy and legal review.');
         $rules[] = self::rule('LOOTWRIGHT-FUNDING', '2026-08-14', Capability::MonetizedHosting, 'lootwright.hosting', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Monetized hosting remains disabled pending explicit policy and legal review.');
@@ -186,13 +190,14 @@ final class PolicyDefaults
         string $summary,
         bool $attributionRequired,
         ?string $attributionNotice = null,
+        ?string $retrievedAt = null,
     ): array {
         return [
             'id' => $id,
             'source_id' => $sourceId,
             'source_version' => $sourceVersion,
             'evidence_url' => $url,
-            'retrieved_at' => self::REVIEWED_AT,
+            'retrieved_at' => $retrievedAt ?? self::REVIEWED_AT,
             'effective_from' => '2026-08-14T00:00:00Z',
             'effective_until' => self::REVIEW_EXPIRES_AT,
             'permission_status' => $status->value,

@@ -273,9 +273,11 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Prompt 11 — Optional provider-neutral AI
 
-- Status: Pending and blocked on an approved provider record.
-- Scope: add opt-in constrained intent extraction and deterministic-result explanation through the neutral AI port, plus template fallback.
-- Gate: redaction, schema validation, prompt-injection, timeout, cost/rate controls, provider-off behavior, and canonical-write prohibitions are tested.
+- Status: Implementation complete on 2026-08-15; production execution remains blocked on an explicit provider `allow`, privacy/opt-in UX review, and deployment hard spend-limit verification.
+- Scope delivered: provider-neutral strict DTOs and schemas for BuildIntent candidates, clarification sets, and Turkish/English explanation bundles; deterministic-first parsing; exact ruleset-term and deterministic-reference validation; safe template fallbacks; one bounded schema repair; privacy-permitted normalized caching; and an OpenAI Responses API adapter using Laravel HTTP with no provider SDK dependency.
+- Safety and privacy: `OPENAI_ENABLED=false` by default; every request is opt-in, exact-operation Policy Gate authorized, tool-free, `store: false`, token-bounded, and minimum-context. Raw prompts, responses, secrets, PoB, and personal identifiers are excluded from local audits. Provider refusal, timeout, malformed/schema-invalid output, unknown terms, prompt injection, unsafe prose, policy denial, or disabled configuration gracefully falls back.
+- Cost and operations: PostgreSQL transactionally reserves and settles per-user, per-IP, global daily, and global monthly integer micro-USD budgets. Billing/quota failures are terminal; transient failures alone receive bounded jittered retry. A one-request synthetic smoke command requires explicit confirmation and a caller-supplied cap.
+- Test evidence: fake transports cover valid, malformed, refused, timed-out, temporary rate-limited, billing-limited, schema-invalid, unknown-reference, prompt-injection, budget-exceeded, disabled, low-confidence clarification, strict payload, and deterministic recommendation snapshot cases. The real seeded Policy Gate test proves OpenAI remains `require_review` and non-executable.
 
 ## Prompt 12 — Persistence, privacy, and workspace lifecycle
 

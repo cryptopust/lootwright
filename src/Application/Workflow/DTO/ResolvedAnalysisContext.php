@@ -12,5 +12,8 @@ final readonly class ResolvedAnalysisContext
         public string $rulesetChecksumSha256,
         public string $sourceId,
         public string $sourceVersion,
+        public ?string $patchVersion = null,
+        public ?string $league = null,
+        public ?string $analysisId = null,
     ) {}
 }

@@ -53,6 +53,9 @@ persistence/Redis, operator imports, and optional outbound AI calls.
 | SSRF and network pivot | User text contains a URL or redirect to internal services | Never fetch user-provided URLs; central outbound allowlist with scheme/host/port/path, DNS and redirect revalidation, private-address denial |
 | XSS/content injection | Item text or AI prose contains HTML/script/Markdown payloads | Contextual escaping, sanitized allowlist Markdown only, CSP, no raw AI HTML, safe download content types |
 | Prompt injection | Imported text tells AI to reveal secrets or invent rules | Treat content as data, minimize fields, structured schemas, no secrets/tools in AI context, deterministic authority, output validation |
+| AI authority expansion | Provider prose adds a recommendation, canonical term, price, source, or URL | Closed schemas, exact edition/patch vocabulary resolution, exact finding/recommendation code and order checks, forbidden-content rejection, deterministic snapshot tests |
+| AI spend race or retry storm | Concurrent requests reserve the same budget or billing-limit `429` loops | Transactional per-user/IP/global reservations, monthly circuit breaker, bounded transient-only retries, `Retry-After`, terminal billing/quota codes, provider hard spend limit |
+| AI retention surprise | Stateless request is mistaken for zero retention | `store: false`, no raw local prompt/response audit, explicit disclosure of default abuse-monitoring retention, no ZDR claim without provider approval |
 | Canonical-data corruption | AI or source import creates a plausible stat mapping | AI excluded from canonical writes, two-person source/ruleset review, immutable versions, checksum verification, typed provenance |
 | Cross-game confusion | PoE2 identifier resolves through PoE1 mapping or cache | Non-null game IDs, separate namespaces/catalogs/cache keys, database constraints, negative isolation tests, no fallback |
 | Authorization failure | One user replays or deletes another user's import | Authentication condition at the persistence gate, keyed owner/idempotency hashes, owner-scoped idempotency, unguessable deletion capability, opaque IDs, policy and deletion tests |
@@ -89,6 +92,7 @@ persistence/Redis, operator imports, and optional outbound AI calls.
   user-deletable in the primary store. Production backup retention and
   restore-deletion procedures remain a release prerequisite.
 - Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
+- Optional provider requests use minimum typed context, `store: false`, no tools, hashed safety identifiers, and bounded tokens. OpenAI documents default abuse-monitoring retention of up to 30 days; Lootwright does not claim Zero Data Retention without approval.
 - Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
 - Backups inherit deletion and access controls; retention and restore-deletion behavior must be tested.
 
@@ -102,6 +106,7 @@ persistence/Redis, operator imports, and optional outbound AI calls.
   denial tests, all kill-switch scopes, admin-boundary tests, and audit-field
   review.
 - AI-off, AI-timeout, prompt-injection, invalid-schema, and policy-denial tests.
+- AI refusal, rate-limit, billing-limit, budget exhaustion, single-repair, unknown-reference, secret-redaction, deterministic-snapshot, and manual-smoke refusal tests.
 - Manual review proving there is no GGG credential field, client/browser integration, scraper, undocumented endpoint, or funding entitlement.
 
 ## Residual and unresolved risks

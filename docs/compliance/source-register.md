@@ -2,7 +2,7 @@
 
 The register controls external facts, formats, APIs, and content. Absence from this file means disabled. An entry marked `policy-reference` may inform engineering policy but does not authorize importing or redistributing its content. An entry marked `candidate` is not approved for implementation.
 
-Last reviewed and re-verified: 2026-08-14 at 13:16 UTC.
+Last reviewed and re-verified: GGG sources on 2026-08-14 at 13:16 UTC; OpenAI API evidence on 2026-08-15.
 
 The Developer Docs, API Reference, and Terms were retrieved again from the
 exact first-party URLs below. All returned HTTP 200. No material policy-text
@@ -39,7 +39,7 @@ The privacy notice still says `Last Updated: October 2024`.
 | `THIRD-PARTY-BUILD-SITES` | Any third-party build or trade site | None | Scraping is prohibited; API/license/provenance not selected | `disabled` |
 | `POBBIN-REMOTE` | Remote <https://pobb.in/> fetching | Optional future retrieval of a user-selected build | Explicit operator permission, terms, retention, security review, exact host/path policy, and user consent | `disabled-candidate`; pasted codes remain supported |
 | `REPOE-CANDIDATE` | RePoE candidate <https://github.com/brather1ng/RePoE> or a similar generated dataset | Candidate ruleset facts | Exact version, license chain, underlying GGG-data rights, commercial/derivative/redistribution permission, checksum, and attribution | `disabled-candidate`; hosted redistribution prohibited while rights are unknown |
-| `AI-PROVIDER-001` | OpenAI API policy evidence: [data controls](https://developers.openai.com/api/docs/guides/your-data) and [spend limits](https://developers.openai.com/api/docs/guides/spend-limits), retrieved 2026-08-14 | Optional intent extraction and deterministic-result explanation | Configured credentials, user privacy disclosure, data minimization, provider approval, endpoint/model/region/retention decision, schema controls, opt-in UX, and enforced project or organization spend limit | `disabled-candidate`; current evidence is recorded but no provider adapter or allow decision exists |
+| `AI-PROVIDER-001` | Official OpenAI [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5.4 nano](https://developers.openai.com/api/docs/models/gpt-5.4-nano), [pricing](https://developers.openai.com/api/docs/pricing), [data controls](https://developers.openai.com/api/docs/guides/your-data), and [spend limits](https://developers.openai.com/api/docs/guides/spend-limits), retrieved 2026-08-15 | Optional intent extraction, clarification, and deterministic-result explanation through the tested adapter only | User-facing privacy disclosure and opt-in UX, provider approval, deployment endpoint/model/region/retention review, and verified OpenAI project hard spend limit | `disabled-candidate`; adapter exists, but exact operations remain non-executable `require_review` |
 
 ## Record requirements
 
