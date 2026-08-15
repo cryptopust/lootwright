@@ -128,6 +128,29 @@ application role and requires Redis authentication. Production requires a
 separate migration role, TLS verification, Redis ACL/TLS, encrypted backups,
 and tested restores.
 
+## Build and deployment boundary
+
+CI installs only the committed Composer/npm lockfiles and separately runs formatting,
+static analysis, full backend/frontend tests, architecture tests, parser-security
+tests, Policy Gate tests, fast evals, browser checks, audits, a PostgreSQL migration
+forward/rollback/reapply cycle, and production build. A dependency-free repository
+guardrail rejects secret-shaped content, alternate lockfiles, runtime `POESESSID` or
+undocumented Trade endpoint handling, protected binary/public assets or dataset-like
+payloads, payment dependencies/actions, and unsafe funding/AI/egress defaults.
+
+The production image uses exact-version base tags, production-only Composer packages,
+lock-built frontend assets, a non-root UID, and separate web/Horizon/scheduler/migrator
+roles. Compose requires an `@sha256` image digest, read-only root filesystem, dropped
+capabilities, no-new-privileges, explicit CA mounts, and secret injection. CI builds
+and inspects but never pushes the image. Startup preflight rejects HTTP origins,
+untrusted wildcard hosts/proxies, insecure sessions, non-verifying PostgreSQL/Redis,
+enabled AI/egress/funding/Horizon UI, and non-lockdown initial capability state.
+
+Production migration is a one-off expand/contract operation under a DDL-only role;
+web and workers never migrate on startup. Rollback selects the prior image against the
+expanded schema instead of automatically running destructive down migrations. Backup
+recovery remains isolated until deletion/retention replay and integrity checks pass.
+
 ## Emergency controls
 
 - `POLICY_GLOBAL_KILL_SWITCH=true` denies every Policy Gate capability.

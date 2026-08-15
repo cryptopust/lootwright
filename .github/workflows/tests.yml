@@ -9,9 +9,28 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.0-alpine
+        env:
+          POSTGRES_DB: lootwright_ci
+          POSTGRES_USER: lootwright_ci
+          POSTGRES_PASSWORD: ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lootwright_ci -d lootwright_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -31,8 +50,19 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Enforce repository security and policy guardrails
+        run: php scripts/ci/guardrails.php
+
+      - name: Validate production shell entrypoints
+        run: >-
+          bash -n
+          deploy/container/entrypoint.sh
+          deploy/container/start-web.sh
+          deploy/container/start-scheduler.sh
+          scripts/operations/verify-restore.sh
+
       - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Validate Composer metadata
         run: composer validate --strict
@@ -49,8 +79,38 @@ jobs:
       - name: Run backend tests
         run: composer run test
 
+      - name: Run architecture boundary tests
+        run: composer run test:architecture
+
+      - name: Run parser security tests
+        run: composer run test:parser-security
+
+      - name: Run Policy Gate tests
+        run: composer run test:policy-gate
+
       - name: Run fast structural evaluations
         run: composer run eval:fast
+
+      - name: Verify PostgreSQL migrations forward, rollback, and reapply
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: lootwright_ci
+          DB_USERNAME: lootwright_ci
+          DB_PASSWORD: ci-local-only
+          DB_SSLMODE: disable
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+        run: |
+          php artisan config:clear --no-ansi
+          php artisan migrate:fresh --force --no-interaction
+          php artisan migrate:status --no-ansi
+          php artisan migrate:rollback --step=1 --force --no-interaction
+          php artisan migrate --force --no-interaction
 
       - name: Install frontend dependencies
         run: npm ci
@@ -67,9 +127,91 @@ jobs:
       - name: Run frontend tests
         run: npm run test
 
+      - name: Install Chromium for browser checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests with original fixtures
+        run: npm run test:e2e
+
       - name: Build frontend
         run: npm run build
 
       - name: Validate documentation
         shell: pwsh
         run: ./scripts/validate-docs.ps1
+
+  production-package:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate production process definition without creating resources
+        env:
+          LOOTWRIGHT_IMAGE_REPOSITORY: lootwright
+          LOOTWRIGHT_IMAGE_DIGEST: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          LOOTWRIGHT_ENV_FILE: ./env.production.example
+          LOOTWRIGHT_SECRETS_DIR: .
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_PASSWORD: ci-database-password
+          REDIS_PASSWORD: ci-local-password
+          READINESS_TOKEN: ci-readiness-token-not-for-production
+          DB_MIGRATION_USERNAME: lootwright_migrator
+          DB_MIGRATION_PASSWORD: ci-migration-password
+        run: docker compose --file deploy/compose.production.yaml config --quiet
+
+      - name: Build production image without publishing
+        run: >-
+          docker build
+          --file Dockerfile.production
+          --build-arg APP_RELEASE_SHA=${GITHUB_SHA}
+          --tag lootwright:ci
+          .
+
+      - name: Verify immutable runtime contents and non-root user
+        run: |
+          test "$(docker image inspect lootwright:ci --format '{{.Config.User}}')" = "10001:10001"
+          docker run --rm --entrypoint php lootwright:ci artisan --version
+          docker run --rm --entrypoint sh lootwright:ci -c 'test ! -d /app/node_modules && test ! -d /app/tests && test -f /app/public/build/manifest.json'
+
+      - name: Verify safe production configuration without external credentials
+        run: |
+          docker run --rm --entrypoint php \
+            -e APP_ENV=production \
+            -e APP_DEBUG=false \
+            -e APP_URL=https://lootwright.org \
+            -e APP_RELEASE_SHA=${GITHUB_SHA} \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            -e DB_CONNECTION=pgsql \
+            -e DB_HOST=postgres.internal \
+            -e DB_USERNAME=lootwright_ci \
+            -e DB_PASSWORD=ci-database-password \
+            -e DB_SSLMODE=verify-full \
+            -e DB_SSLROOTCERT=/run/secrets/postgres-ca.pem \
+            -e REDIS_SCHEME=tls \
+            -e REDIS_USERNAME=lootwright_ci \
+            -e REDIS_PASSWORD=ci-local-password \
+            -e REDIS_TLS_CA_FILE=/run/secrets/redis-ca.pem \
+            -e CACHE_STORE=redis \
+            -e QUEUE_CONNECTION=redis \
+            -e SESSION_DRIVER=redis \
+            -e SESSION_SECURE_COOKIE=true \
+            -e SESSION_ENCRYPT=true \
+            -e READINESS_TOKEN=ci-readiness-token-not-for-production \
+            -e TRUSTED_HOSTS='^lootwright\.org$' \
+            -e TRUSTED_PROXIES=127.0.0.1 \
+            -e LOG_CHANNEL=stderr \
+            -e POLICY_GLOBAL_KILL_SWITCH=true \
+            -e IMPORTS_ENABLED=false \
+            -e RULESETS_ENABLED=false \
+            -e EXTERNAL_LINKS_ENABLED=false \
+            -e OPENAI_ENABLED=false \
+            -e OUTBOUND_NETWORK_ENABLED=false \
+            -e HORIZON_DASHBOARD_ENABLED=false \
+            -e FUNDING_ENABLED=false \
+            lootwright:ci artisan deploy:check-config --no-ansi

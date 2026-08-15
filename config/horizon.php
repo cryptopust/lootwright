@@ -2,6 +2,8 @@
 
 return [
 
+    'dashboard_enabled' => (bool) env('HORIZON_DASHBOARD_ENABLED', false),
+
     /*
     |--------------------------------------------------------------------------
     | Horizon Name
@@ -52,7 +54,7 @@ return [
     |
     */
 
-    'use' => 'default',
+    'use' => env('HORIZON_REDIS_CONNECTION', 'horizon-metadata'),
 
     /*
     |--------------------------------------------------------------------------

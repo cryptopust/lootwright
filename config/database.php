@@ -3,6 +3,16 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$redisStreamOptions = [
+    'verify_peer' => (bool) env('REDIS_TLS_VERIFY_PEER', env('APP_ENV') === 'production'),
+    'verify_peer_name' => (bool) env('REDIS_TLS_VERIFY_PEER_NAME', env('APP_ENV') === 'production'),
+];
+$redisCaFile = env('REDIS_TLS_CA_FILE');
+if (is_string($redisCaFile) && trim($redisCaFile) !== '') {
+    $redisStreamOptions['cafile'] = $redisCaFile;
+}
+$redisStreamContext = ['stream' => $redisStreamOptions];
+
 return [
 
     /*
@@ -97,6 +107,10 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', env('APP_ENV') === 'production' ? 'require' : 'prefer'),
+            'sslcert' => env('DB_SSLCERT'),
+            'sslkey' => env('DB_SSLKEY'),
+            'sslrootcert' => env('DB_SSLROOTCERT'),
+            'application_name' => env('DB_APPLICATION_NAME', 'lootwright'),
         ],
 
         'sqlsrv' => [
@@ -165,6 +179,7 @@ return [
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
             'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+            'context' => $redisStreamContext,
         ],
 
         'cache' => [
@@ -179,6 +194,37 @@ return [
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
             'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+            'context' => $redisStreamContext,
+        ],
+
+        'queue' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_QUEUE_DB', '2'),
+            'scheme' => env('REDIS_SCHEME', env('APP_ENV') === 'production' ? 'tls' : 'tcp'),
+            'max_retries' => env('REDIS_MAX_RETRIES', 3),
+            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
+            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
+            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+            'context' => $redisStreamContext,
+        ],
+
+        'horizon-metadata' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_HORIZON_DB', '3'),
+            'scheme' => env('REDIS_SCHEME', env('APP_ENV') === 'production' ? 'tls' : 'tcp'),
+            'max_retries' => env('REDIS_MAX_RETRIES', 3),
+            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
+            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
+            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+            'context' => $redisStreamContext,
         ],
 
     ],

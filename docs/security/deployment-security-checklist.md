@@ -3,6 +3,11 @@
 Every production deployment must record the operator, UTC time, release SHA,
 ruleset identities, environment, evidence links, and result for each item.
 
+Packaging and rollout details are in the [deployment runbook](../operations/deployment.md),
+[environment reference](../operations/environment-reference.md),
+[backup/restore runbook](../operations/backup-restore.md), and
+[release policy checklist](../operations/release-policy-checklist.md).
+
 ## Before deployment
 
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://lootwright.org`,
@@ -58,6 +63,9 @@ ruleset identities, environment, evidence links, and result for each item.
 - [ ] `composer validate --strict`, `composer audit`, Pint, PHPStan, PHPUnit,
   `npm audit --audit-level=high`, ESLint, Vue TypeScript, Vitest, Playwright,
   Vite build, and documentation validation pass on the release SHA.
+- [ ] Dedicated architecture, parser-security, Policy Gate, fast-eval, repository
+  guardrail, PostgreSQL migration, Compose-render, and non-root production-image
+  checks pass. CI contains no registry push, artifact publication, or deploy step.
 - [ ] Direct dependency/version/license/maintainer/install-script changes were
   reviewed. Production installs use Composer optimized autoload without dev
   packages and do not run unreviewed lifecycle scripts.

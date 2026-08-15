@@ -1,0 +1,89 @@
+# syntax=docker/dockerfile:1.7
+
+ARG PHP_IMAGE=php:8.4.24-fpm-bookworm
+ARG NODE_IMAGE=node:24.14.1-bookworm-slim
+ARG COMPOSER_IMAGE=composer:2.10.2
+
+FROM ${COMPOSER_IMAGE} AS composer-runtime
+
+FROM ${PHP_IMAGE} AS php-extensions
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes $PHPIZE_DEPS libpq-dev \
+    && docker-php-ext-install -j"$(nproc)" dom pcntl pdo_pgsql posix \
+    && pecl install redis \
+    && docker-php-ext-enable redis
+
+FROM ${NODE_IMAGE} AS node-dependencies
+WORKDIR /app
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci
+
+FROM php-extensions AS vendor
+COPY --from=composer-runtime /usr/bin/composer /usr/bin/composer
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-autoloader \
+    --no-progress \
+    --no-scripts \
+    --prefer-dist
+COPY app ./app
+COPY artisan ./artisan
+COPY bootstrap ./bootstrap
+COPY config ./config
+COPY database ./database
+COPY public ./public
+COPY resources ./resources
+COPY routes ./routes
+COPY src ./src
+RUN composer dump-autoload --classmap-authoritative --no-dev --no-interaction --no-scripts \
+    && php artisan package:discover --ansi
+
+FROM vendor AS frontend
+COPY --from=node-dependencies /usr/local/ /usr/local/
+COPY --from=node-dependencies /app/node_modules /app/node_modules
+COPY package.json package-lock.json .npmrc vite.config.ts tsconfig.json components.json ./
+RUN npm run build
+
+FROM ${PHP_IMAGE} AS runtime
+ARG APP_RELEASE_SHA=unversioned
+LABEL org.opencontainers.image.title="Lootwright" \
+      org.opencontainers.image.description="Deterministic build analysis and manual item-search planning" \
+      org.opencontainers.image.revision="${APP_RELEASE_SHA}" \
+      org.opencontainers.image.source="https://lootwright.org"
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes libpq5 nginx-light tini \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* \
+    && groupadd --gid 10001 lootwright \
+    && useradd --uid 10001 --gid 10001 --home-dir /app --no-create-home --shell /usr/sbin/nologin lootwright
+
+COPY --from=php-extensions /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+COPY --from=php-extensions /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+COPY --from=vendor --chown=10001:10001 /app /app
+COPY --from=frontend --chown=10001:10001 /app/public/build /app/public/build
+COPY deploy/container/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/container/php.ini /usr/local/etc/php/conf.d/99-lootwright.ini
+COPY deploy/container/php-fpm.conf /usr/local/etc/php-fpm.d/zz-lootwright.conf
+COPY deploy/container/entrypoint.sh deploy/container/start-web.sh deploy/container/start-scheduler.sh /app/deploy/container/
+
+RUN rm -f /usr/local/etc/php-fpm.d/www.conf /etc/nginx/sites-enabled/default \
+    && mkdir -p \
+        /app/bootstrap/cache \
+        /app/storage/app/private/analysis-artifacts \
+        /app/storage/framework/cache/data \
+        /app/storage/framework/sessions \
+        /app/storage/framework/views \
+        /app/storage/logs \
+    && chown -R 10001:10001 /app/bootstrap/cache /app/storage \
+    && chmod 0555 /app/deploy/container/*.sh
+
+WORKDIR /app
+USER 10001:10001
+EXPOSE 8080
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/app/deploy/container/entrypoint.sh"]
+CMD ["web"]

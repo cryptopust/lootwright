@@ -35,6 +35,19 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustHosts(
+            static function (): array {
+                $hosts = config('deployment.trusted_hosts', []);
+
+                return is_array($hosts) ? $hosts : [];
+            },
+            subdomains: false,
+        );
+        $middleware->trustProxies(
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->alias([
             'emergency' => RequireEmergencyCapability::class,
             'policy.admin' => EnsurePolicyAdminTokenIsValid::class,

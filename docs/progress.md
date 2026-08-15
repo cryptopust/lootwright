@@ -488,6 +488,51 @@ This is the controlled implementation sequence. A later prompt may refine earlie
   Playwright ran 7 Chromium tests; documentation validation covered 54 Markdown
   files. Composer and npm reported no known vulnerability advisories.
 
+## CI/CD and production packaging
+
+- Status: implementation complete on 2026-08-16 without publishing an image,
+  uploading an artifact, creating infrastructure, registering a domain, or deploying.
+- CI: lockfile-only Composer/npm installation, validation/audits, formatting/lint,
+  PHPStan, full backend/frontend suites, separately visible architecture,
+  parser-security and Policy Gate suites, fast eval, browser tests, production frontend
+  build, documentation validation, and a PostgreSQL migration
+  fresh/status/rollback/reapply cycle are required. A second job renders the production
+  Compose definition, builds the image, proves its non-root/runtime-only contents, and
+  runs the offline production configuration preflight; it has no push/deploy step.
+- Release guardrails: a dependency-free scan covers committed and untracked candidate
+  files and fails on credential-shaped content, secret-valued environment examples,
+  alternate lockfiles, runtime GGG-session or undocumented Trade endpoint handling,
+  protected binary assets/dataset payloads, payment dependencies/actions, or enabled
+  funding/AI/egress defaults.
+- Package: exact-version PHP/Node/Composer build stages produce one application image
+  deployed only by OCI digest. Separate web (Nginx/PHP-FPM), Horizon, scheduler, and
+  one-off migrator roles run as UID/GID 10001 with read-only root, dropped capabilities,
+  explicit private artifact volume, verified PostgreSQL/Redis TLS, and secret injection.
+  Web/worker startup never runs migrations.
+- Operations: added the [deployment runbook](operations/deployment.md),
+  [environment reference](operations/environment-reference.md),
+  [backup/restore procedure](operations/backup-restore.md),
+  [ruleset release runbook](operations/ruleset-release.md), and
+  [GGG/OpenAI release checklist](operations/release-policy-checklist.md). Ruleset
+  activation remains explicitly blocked because no approved production source or
+  importer exists.
+- Health/privacy: `/up` remains dependency-free; protected `/ready` checks only
+  PostgreSQL/Redis. Horizon UI is local-only and default-off. Nginx/Laravel telemetry
+  excludes bodies, queries, IP/user-agent/referrer, secrets, imports, prompts, and
+  private notes. Retention/deletion and isolated restore-time pruning are documented.
+- Local gate evidence: Composer validation/audit, Pint, PHPStan, PHPUnit, guardrails,
+  fast eval, clean npm install/audit, ESLint, Vue TypeScript, Vitest, Playwright, Vite
+  build, documentation validation, targeted architecture/parser/Policy suites, and an
+  isolated SQLite migration fresh/rollback/reapply cycle passed. PHPUnit ran 553 tests
+  with 7,777 assertions; Vitest ran 15 tests; Playwright ran 7 Chromium tests; docs
+  validation covered 59 Markdown files; dependency audits reported no known
+  vulnerabilities.
+- Environment limitation: Docker, Bash, PostgreSQL client/server, and Redis were not
+  installed locally, so no container was built and no PostgreSQL/Redis resource was
+  created. The checked CI workflow performs Docker/Compose/shell and ephemeral
+  PostgreSQL verification before merge. Production restore remains a release blocker
+  until a provider is selected and the first recorded isolated exercise passes.
+
 ## Prompt 16 — PoE2 phase-two adapter
 
 - Status: Pending and not authorized until PoE1 release gates pass.

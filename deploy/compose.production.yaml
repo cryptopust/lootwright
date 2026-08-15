@@ -1,0 +1,84 @@
+name: lootwright-production
+
+x-application: &application
+    image: '${LOOTWRIGHT_IMAGE_REPOSITORY:?Set the approved image repository}@sha256:${LOOTWRIGHT_IMAGE_DIGEST:?Set the 64-character approved image digest}'
+    restart: unless-stopped
+    env_file:
+        - '${LOOTWRIGHT_ENV_FILE:-./env.production}'
+    environment: &runtime-secrets
+        APP_KEY: '${APP_KEY:?Inject APP_KEY from a secret manager}'
+        DB_PASSWORD: '${DB_PASSWORD:?Inject the PostgreSQL runtime password}'
+        REDIS_PASSWORD: '${REDIS_PASSWORD:?Inject the Redis password}'
+        READINESS_TOKEN: '${READINESS_TOKEN:?Inject a random readiness token}'
+    volumes:
+        - lootwright-artifacts:/app/storage/app/private
+        - '${LOOTWRIGHT_SECRETS_DIR:?Mount a directory containing only approved CA files}:/run/secrets:ro'
+    tmpfs:
+        - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+        - /app/bootstrap/cache:rw,noexec,nosuid,size=16m,uid=10001,gid=10001,mode=0700
+        - /app/storage/framework:rw,noexec,nosuid,size=128m,uid=10001,gid=10001,mode=0700
+    read_only: true
+    user: '10001:10001'
+    cap_drop:
+        - ALL
+    security_opt:
+        - no-new-privileges:true
+    stop_grace_period: 60s
+
+services:
+    web:
+        <<: *application
+        command: ['web']
+        ports:
+            - '127.0.0.1:${LOOTWRIGHT_HTTP_PORT:-8080}:8080'
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'php',
+                    '-r',
+                    "exit(@file_get_contents('http://127.0.0.1:8080/up') === 'OK' ? 0 : 1);",
+                ]
+            interval: 15s
+            timeout: 3s
+            retries: 5
+            start_period: 20s
+
+    queue:
+        <<: *application
+        command: ['queue']
+        healthcheck:
+            test: ['CMD', 'php', 'artisan', 'horizon:status']
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+
+    scheduler:
+        <<: *application
+        command: ['scheduler']
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'php',
+                    '-r',
+                    "exit(is_file('/tmp/lootwright-scheduler-heartbeat') && time() - filemtime('/tmp/lootwright-scheduler-heartbeat') < 180 ? 0 : 1);",
+                ]
+            interval: 30s
+            timeout: 3s
+            retries: 4
+            start_period: 90s
+
+    migrate:
+        <<: *application
+        profiles: ['migration']
+        restart: 'no'
+        command: ['migrate']
+        environment:
+            <<: *runtime-secrets
+            DB_USERNAME: '${DB_MIGRATION_USERNAME:?Inject the separate migration role}'
+            DB_PASSWORD: '${DB_MIGRATION_PASSWORD:?Inject the separate migration password}'
+
+volumes:
+    lootwright-artifacts:

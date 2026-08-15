@@ -1,0 +1,79 @@
+# Production Environment Reference
+
+Status: safe-default reference for the immutable application image. The canonical
+copyable template is `deploy/env.production.example`; blank values are intentional.
+
+## Application and HTTP boundary
+
+| Variable | Required production value | Secret | Notes |
+| --- | --- | --- | --- |
+| `APP_ENV` | `production` | No | Other values fail production preflight. |
+| `APP_KEY` | Secret-managed Laravel key | Yes | Encrypts retained content; rotation requires a re-encryption plan. |
+| `APP_DEBUG` | `false` | No | Never enable for public requests. |
+| `APP_URL` | Canonical `https://` origin | No | `https://lootwright.org` for the primary deployment. |
+| `APP_RELEASE_SHA` | Lowercase 40/64-character digest | No | Must identify the reviewed source; image deployment also pins an OCI digest. |
+| `DEPLOYMENT_LOCKDOWN_MODE` | `true` initially | No | Enforces global and capability-off startup state. |
+| `TRUSTED_HOSTS` | Comma-separated exact regexes | No | No wildcard; include only served hosts. |
+| `TRUSTED_PROXIES` | Exact proxy IPs/CIDRs | No | Edge must strip spoofed forwarded headers. |
+| `LOG_CHANNEL` | `stderr` | No | Redacted structured application logs only. |
+
+## PostgreSQL
+
+| Variable | Baseline | Secret | Notes |
+| --- | --- | --- | --- |
+| `DB_CONNECTION` | `pgsql` | No | SQLite is tests/local only. |
+| `DB_HOST`, `DB_PORT`, `DB_DATABASE` | Private exact endpoint | No | No public listener. |
+| `DB_USERNAME`, `DB_PASSWORD` | Least-privilege runtime role | Password | DML only; no DDL ownership. |
+| `DB_SSLMODE` | `verify-full` | No | Hostname and CA verification are mandatory. |
+| `DB_SSLROOTCERT` | Mounted CA path | CA trust material | Must exist below the read-only secret mount. |
+| `DB_SSLCERT`, `DB_SSLKEY` | Optional mTLS paths | Private key | Use only when the database requires client certificates. |
+| `DB_APPLICATION_NAME` | Release/environment-specific name | No | Must not contain user or build identifiers. |
+| `DB_MIGRATION_USERNAME`, `DB_MIGRATION_PASSWORD` | Separate DDL role | Password | Supplied only to the one-off `migrate` profile. |
+
+## Redis, queue, cache, and session
+
+| Variable | Baseline | Secret | Notes |
+| --- | --- | --- | --- |
+| `REDIS_HOST`, `REDIS_PORT` | Private exact endpoint | No | No public listener. |
+| `REDIS_USERNAME`, `REDIS_PASSWORD` | Dedicated ACL identity | Password | Restrict command/key access to Lootwright prefixes. |
+| `REDIS_SCHEME` | `tls` | No | Plain TCP is local/test only. |
+| `REDIS_TLS_VERIFY_PEER`, `REDIS_TLS_VERIFY_PEER_NAME` | `true` | No | Both must remain enabled. |
+| `REDIS_TLS_CA_FILE` | Mounted CA path | CA trust material | Exact deployment CA. |
+| `REDIS_DB`, `REDIS_CACHE_DB`, `REDIS_QUEUE_DB`, `REDIS_HORIZON_DB` | `0`, `1`, `2`, `3` | No | Separation is defense-in-depth; ACL/prefix isolation is still required. |
+| `REDIS_QUEUE_CONNECTION` | `queue` | No | Routes Laravel queues to the isolated Redis connection. |
+| `CACHE_STORE`, `QUEUE_CONNECTION`, `SESSION_DRIVER` | `redis` | No | Redis is disposable except for in-flight work/session availability. |
+| `SESSION_ENCRYPT`, `SESSION_SECURE_COOKIE`, `SESSION_HTTP_ONLY` | `true` | No | SameSite remains `lax` for the current first-party UI. |
+| `HORIZON_REDIS_CONNECTION` | `horizon-metadata` | No | Separate from queue payload keys. |
+| `HORIZON_DASHBOARD_ENABLED` | `false` | No | Production UI is never exposed. |
+
+## Health, policy, privacy, and retention
+
+| Variable | Safe default | Secret | Notes |
+| --- | --- | --- | --- |
+| `READINESS_TOKEN` | Random 32+ characters | Yes | Protects `/ready`; liveness `/up` needs none. |
+| `POLICY_GLOBAL_KILL_SWITCH` | `true` initially | No | Overrides all allows during lockdown/incident response. |
+| `POLICY_ADMIN_ENABLED` | `false` | No | Maintenance-only boundary. |
+| `POLICY_ADMIN_TOKEN` | Empty while disabled | Yes | Rotate after every approved window. |
+| `IMPORTS_ENABLED`, `RULESETS_ENABLED`, `EXTERNAL_LINKS_ENABLED` | `false` initially | No | Enable individually only after release evidence and tests. |
+| `AUTH_REQUIRE_VERIFIED_EMAIL` | `false` until accounts launch | No | Review account UX before enabling. |
+| `ANALYSIS_RAW_ARTIFACT_TTL_MINUTES` | `60` | No | Maximum encrypted queue-handoff lifetime. |
+| `POB_IMPORT_RETENTION_HOURS`, `POB_IMPORT_MAX_RETENTION_HOURS` | `24`, `168` | No | Consent and owner deletion still apply. |
+| `ANALYSIS_RETENTION_DAYS`, `AI_AUDIT_RETENTION_DAYS` | `30`, `30` | No | Must not exceed approved schedule. |
+| `DELETED_SESSION_TOMBSTONE_DAYS` | `7` | No | Unlinkable operational tombstones only. |
+
+## AI, outbound access, and funding
+
+| Variable | Required default | Secret | Notes |
+| --- | --- | --- | --- |
+| `OPENAI_ENABLED` | `false` | No | Deterministic workflow remains complete without AI. |
+| `OUTBOUND_NETWORK_ENABLED` | `false` | No | Central egress guard denies before transport. |
+| `OPENAI_API_KEY` | Empty | Yes | Not required for CI, health, deployment, or AI-off operation. |
+| `OPENAI_LIVE_EVALS_ENABLED` | `false` | No | Live eval never runs in normal CI. |
+| Token/model/timeout/budget variables | Template values | No | Changing model/pricing requires official-document review. |
+| `FUNDING_ENABLED` | `false` | No | Operator request only; code and Policy Gate still deny funding. |
+| Funding decision/evidence/disclosure variables | Empty | No | Cannot be fabricated to enable funding. |
+
+GGG OAuth credentials, `POESESSID`, payment-provider variables, live game datasets,
+and Trade endpoint settings do not exist in the reference because Lootwright neither
+needs nor accepts them.
+

@@ -13,7 +13,6 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     public function boot(): void
     {
         parent::boot();
-
     }
 
     /**
@@ -25,7 +24,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         Gate::define(
             'viewHorizon',
-            static fn (): bool => app()->environment('local'),
+            static fn (): bool => app()->environment('local')
+                && (bool) config('horizon.dashboard_enabled'),
         );
     }
 }
