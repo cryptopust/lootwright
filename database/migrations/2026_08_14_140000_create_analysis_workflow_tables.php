@@ -61,10 +61,13 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->foreign('artifact_id')->references('id')->on('build_artifacts')->cascadeOnDelete();
-            $table->foreign('parent_analysis_id')->references('id')->on('analyses')->nullOnDelete();
             $table->unique(['artifact_id', 'version']);
             $table->index(['owner_id_hash', 'created_at']);
             $table->index(['state', 'updated_at']);
+        });
+
+        Schema::table('analyses', function (Blueprint $table): void {
+            $table->foreign('parent_analysis_id')->references('id')->on('analyses')->nullOnDelete();
         });
 
         Schema::create('user_data_deletion_records', function (Blueprint $table): void {

@@ -262,6 +262,12 @@ enable scheduled work that depends on a disabled capability.
 - Do not automatically run `migrate:rollback` during application rollback.
 - If a migration is irreversible or integrity is uncertain, restore only into
   isolation and follow the backup/restore and incident-response runbooks.
+- If an initial PostgreSQL migration fails, inspect `php artisan migrate:status`
+  before retrying. A failed transactional migration should remain `Pending`;
+  deploy the reviewed fix and let `php artisan migrate --force` retry it. Do not
+  manually create constraints or run `migrate:fresh` against the Cloud database.
+  If the migration is marked applied or orphaned tables remain, stop and inspect
+  the schema before another deployment.
 
 ## 9. Cost control
 
