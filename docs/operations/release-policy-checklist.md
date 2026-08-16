@@ -52,8 +52,8 @@ program eligibility.
   guardrails, backup freshness, and isolated restore evidence pass for the release SHA.
 - [ ] Privacy jurisdiction/controller/security contacts, age policy, breach timelines,
   backup provider terms, RPO/RTO, and legal blockers are resolved.
-- [ ] Image digest, database migration plan, previous-image rollback, Horizon restart,
-  capability state, on-call owner, and incident switches were exercised in staging.
+- [ ] Image digest, database migration plan, previous-image rollback, active queue
+  worker lifecycle when applicable, capability state, on-call owner, and incident
+  switches were exercised in staging.
 - [ ] No external resource, image publication, domain change, or deployment proceeds
   without explicit operator authorization.
-

@@ -13,8 +13,12 @@ class ReadinessController extends Controller
     {
         $checks = [
             'database' => $this->databaseIsReady(),
-            'redis' => $this->redisIsReady(),
         ];
+
+        if ($this->redisIsRequired()) {
+            $checks['redis'] = $this->redisIsReady();
+        }
+
         $ready = ! in_array(false, $checks, true);
 
         return response()->json(
@@ -49,5 +53,17 @@ class ReadinessController extends Controller
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private function redisIsRequired(): bool
+    {
+        $cacheStore = config('cache.default');
+        $queueConnection = config('queue.default');
+
+        return (is_string($cacheStore)
+                && config("cache.stores.{$cacheStore}.driver") === 'redis')
+            || config('session.driver') === 'redis'
+            || (is_string($queueConnection)
+                && config("queue.connections.{$queueConnection}.driver") === 'redis');
     }
 }

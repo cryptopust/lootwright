@@ -39,20 +39,25 @@ required nor recommended for this stage.
 
 ## 2. Choose the minimum resources
 
+Set the application runtime to:
+
+- PHP 8.4
+- Node.js 24
+
 - Select the smallest Starter application compute suitable for a Laravel 13
-  pre-alpha shell.
-- Attach Serverless PostgreSQL. Keep the Cloud-injected connection values as
-  the authority; do not paste the local `.env.example` database password into
-  Cloud.
+  pre-alpha shell (the smallest viable Flex application compute), and enable
+  Scale to Zero.
+- Attach Serverless PostgreSQL and enable its Scale to Zero setting. Keep the
+  Cloud-injected connection values as the authority; do not paste the local
+  `.env.example` database password into Cloud.
 - Do not create Valkey initially. Database-backed cache and sessions are
   adequate for the locked-down foundation.
 - Do not create a managed queue or background worker initially. Imports,
   rulesets, external links, AI, and queued analysis remain disabled.
 - Do not add Reverb. The application has no WebSocket requirement.
-- Enable Scale to Zero or hibernation only where the selected resource supports
-  it and after checking wake behavior. When uninterrupted queued work becomes
-  necessary, use a reviewed managed queue rather than relying on an application
-  process that may sleep.
+- Check cold-start behavior after enabling Scale to Zero. When uninterrupted
+  queued work becomes necessary, use a reviewed managed queue rather than
+  relying on an application process that may sleep.
 - Enable the scheduler only when retention or outbox commands are intended to
   run in this environment. Laravel Cloud runs `schedule:run` every minute when
   its Scheduler toggle is enabled.
@@ -63,41 +68,72 @@ Enter values in the Laravel Cloud environment UI. Values marked **secret** must
 come from the platform secret store and must never be committed or copied into
 issues, logs, or screenshots.
 
-### Required application settings
+### Required initial application settings
 
-| Variable | Staging value | Secret | Notes |
-| --- | --- | --- | --- |
-| `APP_NAME` | `Lootwright` | No | Display name only. |
-| `APP_ENV` | `production` | No | Staging uses production security behavior. |
-| `APP_KEY` | Cloud/operator generated Laravel key | **Yes** | Generate once; rotation needs a retained-data migration plan. |
-| `APP_DEBUG` | `false` | No | Never enable on the public Cloud hostname. |
-| `APP_URL` | `https://<generated-environment>.laravel.cloud` | No | Replace with the exact generated domain, then redeploy. |
-| `APP_RELEASE_SHA` | Exact deployed Git commit SHA | No | Do not use `latest` or a branch name. |
-| `LOG_CHANNEL` | `stderr` | No | Laravel Cloud collects process output. |
-| `LOG_LEVEL` | `info` | No | Logs remain content/secret redacted. |
-| `DB_CONNECTION` | `pgsql` | No | Serverless PostgreSQL is authoritative. |
-| `CACHE_STORE` | `database` | No | Use while no Valkey resource exists. |
-| `SESSION_DRIVER` | `database` | No | Avoid ephemeral file sessions. |
-| `SESSION_ENCRYPT` | `true` | No | Required privacy baseline. |
-| `SESSION_SECURE_COOKIE` | `true` | No | Generated Cloud domain uses HTTPS. |
-| `QUEUE_CONNECTION` | `sync` | No | Safe only while asynchronous product capabilities stay disabled. |
-| `FILESYSTEM_DISK` | `local` | No | Temporary framework files only; never durable user artifacts. |
-| `READINESS_TOKEN` | Random 32+ character value | **Yes** | Protects `/ready`; never put it in a URL. |
-| `DEPLOYMENT_LOCKDOWN_MODE` | `true` | No | Required for first deployment. |
-| `POLICY_GLOBAL_KILL_SWITCH` | `true` | No | Denies every gated capability. |
-| `IMPORTS_ENABLED` | `false` | No | Local artifact storage is not Cloud-durable. |
-| `RULESETS_ENABLED` | `false` | No | No approved production ruleset exists. |
-| `EXTERNAL_LINKS_ENABLED` | `false` | No | Enable only through reviewed policy. |
-| `OUTBOUND_NETWORK_ENABLED` | `false` | No | No provider egress in initial staging. |
-| `OPENAI_ENABLED` | `false` | No | Core boot and health need no provider. |
-| `FUNDING_ENABLED` | `false` | No | Funding remains policy-disabled. |
-| `HORIZON_DASHBOARD_ENABLED` | `false` | No | Horizon is not a Cloud requirement. |
-| `MAIL_MAILER` | `log` | No | No production mail credential is needed. |
+Enter this initial profile. Generate `APP_KEY` and `READINESS_TOKEN` as distinct,
+random secrets in Laravel Cloud; the placeholders below are not literal values.
 
-Laravel Cloud injects connection fields for attached resources. Do not overwrite
-its database host, port, database, username, password, URL, CA, cache, or queue
-values with the local examples. Inspect variable names in the environment UI
-before changing Laravel connection settings.
+```dotenv
+APP_NAME=Lootwright
+APP_ENV=production
+APP_KEY=<generated-secret>
+APP_DEBUG=false
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+LOG_LEVEL=info
+DB_CONNECTION=pgsql
+DB_SSLMODE=require
+SESSION_DRIVER=database
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIE=true
+CACHE_STORE=database
+QUEUE_CONNECTION=sync
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+MAIL_MAILER=log
+READINESS_TOKEN=<generated-secret>
+VITE_APP_NAME=Lootwright
+```
+
+Laravel Cloud automatically configures stderr logging. Do not force
+`LOG_CHANNEL` in source or add local file logging as a Cloud requirement; allow
+Cloud's injected logging configuration to select the existing `stderr` channel.
+That channel uses `php://stderr` and the application sensitive-data redactor.
+
+When Serverless PostgreSQL is attached, do not manually enter any of these:
+
+```dotenv
+DB_HOST
+DB_PORT
+DB_DATABASE
+DB_USERNAME
+DB_PASSWORD
+```
+
+Laravel Cloud injects those values. Never copy local credentials from
+`.env.example`, and never commit real Cloud credentials.
+
+### Required pre-alpha lockdown settings
+
+The application currently has an encrypted local artifact handoff that is not
+durable on Cloud. Until private object storage and asynchronous workers are
+implemented and reviewed, keep the feature and outbound capability switches off:
+
+```dotenv
+DEPLOYMENT_LOCKDOWN_MODE=true
+POLICY_GLOBAL_KILL_SWITCH=true
+IMPORTS_ENABLED=false
+RULESETS_ENABLED=false
+EXTERNAL_LINKS_ENABLED=false
+OUTBOUND_NETWORK_ENABLED=false
+OPENAI_ENABLED=false
+FUNDING_ENABLED=false
+HORIZON_DASHBOARD_ENABLED=false
+```
+
+Do not hardcode `APP_URL` before the first successful deployment. Laravel Cloud
+associates the generated environment domain. If generated links are incorrect
+after deployment, set `APP_URL` to the exact generated HTTPS URL and redeploy.
 
 `TRUSTED_HOSTS` should become one anchored regex matching only the exact
 generated domain after it is known. Do not invent proxy IP ranges. Confirm the
@@ -117,20 +153,17 @@ never use a universal trust value merely to satisfy a preflight script.
 
 ## 4. Build and deploy commands
 
-Use lockfile-only installs. A suitable build command based on the repository is:
+Configure these exact build commands in this order:
 
 ```bash
-composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
-npm ci
+composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+npm ci --no-audit --no-fund
 npm run build
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan optimize
 ```
 
-Configuration, route, and view caches belong in the build phase because they
-are release artifacts and failures should stop the deployment before traffic is
-switched. They must not make a network call or depend on an OpenAI key.
+`php artisan optimize` creates the release caches in the build phase. It must not
+make a network call or depend on an OpenAI key.
 
 Use only the database migration as the deploy command:
 
@@ -138,12 +171,12 @@ Use only the database migration as the deploy command:
 php artisan migrate --force
 ```
 
-Do not blindly append:
+Do not add any of these to the deploy commands:
 
-- `php artisan optimize:clear`: it removes the optimized artifacts just built;
 - `php artisan queue:restart`: no worker exists in the foundation stage, and
   managed queue lifecycle belongs to Cloud;
 - `php artisan horizon:terminate`: Horizon is not the Laravel Cloud worker;
+- `php artisan optimize:clear`: it removes the optimized artifacts just built;
 - `php artisan storage:link`: deploy-command filesystem changes do not persist,
   and public durable uploads are not part of this stage.
 
@@ -158,11 +191,17 @@ Laravel Cloud application compute and deploy-command filesystem changes are not
 durable storage. Never store user artifacts, database backups, uploaded builds,
 or operational evidence on the application container.
 
-The current `analysis-artifacts` adapter uses encrypted local storage for a
-bounded queue handoff. Keep `IMPORTS_ENABLED=false` in Cloud staging until a
-reviewed private object-storage adapter is configured and tested across web and
-worker processes. The synchronous local fixture command does not change this
-production boundary.
+The current `analysis-artifacts` adapter writes persistent user-submitted raw
+artifacts to encrypted local storage for a bounded queue handoff. This is a
+deployment blocker for imports and asynchronous analysis on Cloud. Keep
+`IMPORTS_ENABLED=false` until a reviewed private object-storage adapter is
+configured and tested across web and worker processes.
+
+With that capability disabled, `FILESYSTEM_DISK=local` is temporarily acceptable
+for pre-alpha framework caches, compiled views, logs routed to stderr, and local
+evaluation output. The application has no public upload workflow, and local
+files must never be treated as permanent storage. The local disk's HTTP
+serve/upload routes are disabled.
 
 ## 6. First deployment and verification
 
@@ -170,23 +209,32 @@ production boundary.
 2. Confirm the Cloud environment is in lockdown and contains no live provider,
    GGG, payment, or mail credential.
 3. Deploy from the selected commit through the Laravel Cloud dashboard.
-4. Record the generated domain, set `APP_URL` and anchored `TRUSTED_HOSTS`, and
-   redeploy if those values were not available before the first build.
-5. Confirm `GET /up` returns plain-text `OK` without a database, Valkey, OpenAI,
+4. Record the generated domain. Set `APP_URL` only if generated links are wrong;
+   set an anchored `TRUSTED_HOSTS` value when the exact host is known, then
+   redeploy if either value changes.
+5. Open `GET /` and confirm the pre-alpha landing page and exact GGG
+   non-affiliation notice render.
+6. Confirm `GET /up` returns plain-text `OK` without a database, Valkey, OpenAI,
    GGG, or other external call. Use `/up` as the initial Cloud health probe.
-6. Supply `X-Lootwright-Readiness-Token` manually to test `/ready`. The current
-   implementation checks PostgreSQL and a Redis-compatible service; without
-   Valkey it will report unavailable. Do not provision Valkey merely to turn
-   this optional diagnostic green, and do not expose its token publicly.
-7. Confirm the landing page says pre-alpha and retains the exact GGG
-   non-affiliation notice.
-8. Confirm imports, rulesets, external links, OpenAI egress, funding, and Horizon
+7. Send `GET /ready` with `X-Lootwright-Readiness-Token`. Under the initial
+   database/database/sync profile, the response lists and checks only the
+   database. Redis appears only when an active cache, session, or queue driver
+   uses Redis. Never put the token in a URL or expose it publicly.
+8. Run `php artisan migrate:status` from the Cloud command interface and confirm
+   every migration is applied.
+9. Inspect the deployment logs for build, optimization, boot, and migration
+   errors. Do not copy request credentials, tokens, or user content into issues.
+10. Confirm imports, rulesets, external links, OpenAI egress, funding, and Horizon
    UI remain unavailable.
-9. Inspect stderr logs for boot/migration errors without copying content or
-   secrets into an issue.
 
 No custom domain is required: the generated HTTPS Cloud domain is sufficient
 for this entire stage.
+
+Before deployment, `composer run cloud:preflight` safely runs Composer
+validation, documentation validation, formatting, static analysis, backend
+tests, frontend lint/type/tests, and a production frontend build. It does not
+run migrations or modify production data. Dependency advisory checks remain
+separate required quality-gate commands.
 
 ## 7. Queue and scheduler activation later
 
@@ -229,4 +277,3 @@ enable scheduled work that depends on a disabled capability.
 - Keep OpenAI disabled. If a later reviewed stage enables it, its application
   circuit breaker and provider project limit are separate from the USD 25 Cloud
   ceiling.
-

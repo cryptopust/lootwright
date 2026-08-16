@@ -130,8 +130,9 @@ Horizon route through the edge. Operators use aggregate logs/metrics and
 - `GET /up` is public liveness. It returns only `OK`, checks no dependency, and needs
   no AI, GGG, payment, dataset, database, or Redis credential.
 - `GET /ready` is a protected operator check. A random `READINESS_TOKEN` header is
-  required; it checks only PostgreSQL and Redis and returns `ok`/`failed`, never an
-  exception, host, secret, or row.
+  required. It always checks PostgreSQL and checks Redis only when the active cache,
+  session, or queue driver uses Redis. It returns `ok`/`failed`, never an exception,
+  host, secret, or row, and omits dependencies that are not configured.
 - Compose web health uses local `/up`; queue health uses `horizon:status`; scheduler
   health reads a local heartbeat less than three minutes old.
 

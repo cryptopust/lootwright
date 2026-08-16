@@ -132,6 +132,18 @@
             "@docs:check"
         ],
         "full-quality-gate": "@quality",
+        "cloud:preflight": [
+            "Composer\\Config::disableProcessTimeout",
+            "composer validate --strict",
+            "@docs:check",
+            "@format:check",
+            "@analyse",
+            "@test",
+            "npm run lint",
+            "npm run typecheck",
+            "npm run test",
+            "npm run build"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

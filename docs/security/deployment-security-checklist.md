@@ -30,17 +30,19 @@ Packaging and rollout details are in the [deployment runbook](../operations/depl
 
 ## Network and data stores
 
-- [ ] PostgreSQL and Redis have no public listener or public security-group
-  rule. Administrative access uses a private network and audited bastion.
+- [ ] PostgreSQL, and Redis/Valkey when provisioned, have no public listener or
+  public security-group rule. Administrative access uses a private network and
+  audited bastion.
 - [ ] The Laravel runtime PostgreSQL role is LOGIN, NOSUPERUSER, NOCREATEDB,
   NOCREATEROLE, NOREPLICATION and has only required schema/table/sequence rights.
   A distinct migration role owns DDL and is unavailable to the web/worker
   process.
 - [ ] PostgreSQL uses `sslmode=verify-full` with the expected CA and hostname.
   Statement/lock/idle transaction timeouts are set for the runtime role.
-- [ ] Redis uses TLS, a dedicated ACL user, a random password, command/network
-  restrictions, separate logical/prefixed queue/cache data, persistence as
-  required, and a memory/eviction policy that cannot make Redis authoritative.
+- [ ] When Redis/Valkey is provisioned, it uses TLS, a dedicated ACL user, a
+  random password, command/network restrictions, separate logical/prefixed
+  queue/cache data, persistence as required, and a memory/eviction policy that
+  cannot make it authoritative.
 - [ ] Private artifact storage denies public ACLs, uses encryption, versioning
   only when compatible with deletion, lifecycle expiry at or below one hour,
   and a service identity limited to its prefix.

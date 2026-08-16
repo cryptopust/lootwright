@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 final class ProductionPackagingTest extends TestCase
@@ -97,5 +98,11 @@ final class ProductionPackagingTest extends TestCase
         $this->app->instance('env', 'production');
 
         $this->get('/horizon')->assertForbidden();
+    }
+
+    public function test_local_filesystem_has_no_http_upload_route(): void
+    {
+        self::assertFalse(Route::has('storage.local'));
+        self::assertFalse(Route::has('storage.local.upload'));
     }
 }
