@@ -5,11 +5,13 @@ OpenAI review, approval, sponsorship, or program eligibility.
 
 ## System boundary
 
-Lootwright is a Laravel 13 modular monolith with PostgreSQL, Redis queues, and
-Horizon. Framework-independent PHP under `src/` owns the deterministic domain
-and application ports. Laravel infrastructure under `app/` owns HTTP, database,
-queue, storage, Policy Gate, and provider adapters. The Vue/Inertia layer renders
-typed results and performs no authoritative calculation.
+Lootwright is a Laravel 13 modular monolith with PostgreSQL and Laravel cache/
+queue abstractions. Local/self-hosted operation may use Redis and Horizon;
+Laravel Cloud resources are demand-driven. Framework-independent PHP under
+`src/` owns the deterministic domain and application ports. Laravel
+infrastructure under `app/` owns HTTP, database, queue, storage, Policy Gate,
+and provider adapters. The Vue/Inertia layer renders typed results and performs
+no authoritative calculation.
 
 ```text
 user input

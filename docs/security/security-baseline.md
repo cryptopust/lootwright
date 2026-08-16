@@ -122,11 +122,12 @@ note fields; it also scrubs bearer/OpenAI/privacy credential patterns and caps
 strings. Application logs use opaque hashes, IDs, exception types, and coarse
 outcomes.
 
-PostgreSQL and Redis are loopback-only in local Compose and must have no public
-listener in production. Local Compose creates a non-superuser PostgreSQL
-application role and requires Redis authentication. Production requires a
-separate migration role, TLS verification, Redis ACL/TLS, encrypted backups,
-and tested restores.
+PostgreSQL and Redis are loopback-only in local Compose. Local Compose creates a
+non-superuser PostgreSQL application role and requires Redis authentication.
+Self-hosted production requires private listeners, a separate migration role,
+TLS verification, Redis ACL/TLS, encrypted backups, and tested restores. Laravel
+Cloud staging follows ADR 0014; Valkey is optional and Cloud-injected settings
+are used only when it is provisioned.
 
 ## Build and deployment boundary
 

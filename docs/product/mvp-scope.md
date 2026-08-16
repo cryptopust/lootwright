@@ -1,5 +1,9 @@
 # MVP Scope
 
+Status: target scope, not current product availability. The repository is
+pre-alpha; the approved ruleset and authoritative PoE1 analysis release gates
+remain open.
+
 ## PoE1 MVP
 
 The first releasable product supports Path of Exile 1 only.
@@ -15,7 +19,10 @@ The first releasable product supports Path of Exile 1 only.
 - Deterministic, prioritized upgrade recommendations with assumptions and trade-offs.
 - Human-readable manual Trade-filter recipes using descriptive fields and ranges. The user reproduces the recipe in the official Trade UI.
 - Optional provider-neutral AI intent extraction and explanations with deterministic fallback.
-- PostgreSQL persistence, Redis queues/cache, and Horizon operations where asynchronous work is justified.
+- PostgreSQL persistence plus Laravel cache/queue abstractions where asynchronous
+  work is justified. Local/self-hosted environments may use Redis/Horizon;
+  Laravel Cloud resources are provisioned only when an implemented feature
+  needs them.
 - Source provenance, ruleset checksums, audit records, deletion controls, and required GGG independence notice.
 
 ### MVP release gates
@@ -49,4 +56,3 @@ Repository inspection on 2026-08-14 found an empty directory: no Git repository,
 - Which deterministic PoE1 analyses make the first vertical slice.
 - Data-retention defaults and anonymous versus account-based workspaces.
 - Any GGG API integration; current registration availability and policy make it unnecessary for MVP.
-

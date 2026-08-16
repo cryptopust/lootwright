@@ -1,34 +1,109 @@
 # Lootwright
 
-Lootwright is a Laravel 13 modular monolith for deterministic, evidence-backed
-Path of Exile 1 build analysis and human-readable manual item-search planning.
-The current implementation includes a bounded, local PoB1 importer and a
-separate beta PoB2 format adapter. A provider-neutral AI Gateway and default-off
-OpenAI Responses adapter are implemented, but production provider execution is
-still blocked by Policy Gate review. No approved game ruleset, production
-deterministic analyzer, market integration, or funding capability exists, so
-the production findings/recommendation/recipe flow remains fail-closed and the
-corresponding UI is explicitly fixture-backed.
+[Türkçe](README.tr.md)
 
-This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
+Lootwright is an open-source, pre-alpha foundation for traceable,
+deterministic Path of Exile build analysis and human-readable manual item-search
+planning. The project is a Laravel 13 modular monolith with an infrastructure-
+independent PHP domain core and an Inertia/Vue interface.
 
-## Runtime baseline
+> This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-- PHP 8.4 with Composer 2
-- Node.js 24 with npm 11
-- PostgreSQL 18
-- Redis 8 and Laravel Horizon
-- Laravel 13, Inertia 3, Vue 3 Composition API, TypeScript, Tailwind CSS 4,
-  shadcn-vue, and Vite 8
+Lootwright is not a public service or a completed end-user MVP. It does not yet
+have an approved production game ruleset or an authoritative production
+analysis engine, so it cannot currently provide real build findings, upgrade
+recommendations, or production Manual Trade Recipes.
 
-The versions in `composer.lock` and `package-lock.json` are authoritative. Docker
-image tags intentionally track the supported PostgreSQL 18 and Redis 8 release
-lines for local development.
+## What works today
 
-## Recommended setup: Docker through Linux or WSL2
+- Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind CSS, and shadcn-vue
+  application foundations.
+- A framework-independent domain and application layer under `src/`, protected
+  by automated dependency-boundary tests.
+- Edition-scoped value objects, DTOs, ports, provenance records, workflow
+  states, persistence mappings, deletion, and portable export contracts.
+- Separate PoE1 and PoE2 namespaces with negative tests preventing identifier
+  and ruleset crossover.
+- Bounded, local, format-only PoB1 import and a separately labelled beta PoB2
+  format reader. This is structural interoperability, not full upstream-format
+  parity or production game analysis.
+- A deny-by-default Policy and Provenance Gate, hardened parser boundaries,
+  security headers, rate limits, redacted logging, and emergency switches.
+- A provider-neutral optional-AI gateway and a default-off OpenAI Responses
+  adapter. Production provider execution remains policy-blocked; normal tests
+  use fakes and deterministic fallback.
+- Deterministic recommendation and Manual Trade Recipe contracts exercised with
+  original fixture vocabulary. These test harnesses are not production game
+  advice and never query live listings or prices.
+- Responsive Turkish/English fixture screens, health/readiness endpoints,
+  reproducible evaluations, and CI/production-packaging foundations.
 
-Install Docker Engine with Compose v2 on Linux, or Docker Desktop using its WSL2
-backend on Windows. From a Linux/WSL2 shell in the repository root:
+See [MVP readiness](docs/release/mvp-readiness.md) for the strict release verdict
+and [delivery progress](docs/progress.md) for the historical implementation log.
+
+## What is planned
+
+- Approve and publish an immutable PoE1 ruleset with exact source permission,
+  version, checksum, parser compatibility, and provenance.
+- Implement and independently verify a narrow authoritative PoE1 deterministic
+  analysis and upgrade-prioritization slice.
+- Bind production analysis pages to owner-scoped application results instead of
+  fixture data.
+- Add durable object storage before enabling queued raw-artifact handoff, then
+  complete staging backup/restore, privacy contacts, and public account UX.
+- Consider full PoE2 analysis only after the PoE1 release gates pass and a
+  separate activation ADR is accepted.
+- Publish only after security, policy, provenance, deletion, and operations
+  blockers are resolved.
+
+## Game scope
+
+Path of Exile 1 is the first intended analysis target. PoE1 has a bounded format
+reader, but no production ruleset or authoritative analysis result.
+
+Path of Exile 2 has only a separate beta format reader. Its rulesets, findings,
+recommendations, and recipes are inactive; cross-edition fallback is forbidden.
+
+## Design principles
+
+- Deterministic calculations before generative wording.
+- Exact evidence and ruleset identity before confidence claims.
+- AI is optional and cannot invent game facts, modifiers, filters, prices,
+  sources, URLs, or recommendations.
+- Unknown or unsupported facts produce typed uncertainty or refusal.
+- No scraping, undocumented Trade endpoints, live market indexing, browser or
+  game-client access, automation, overlays, or session-cookie collection.
+- The core workflow must remain usable when every AI provider is disabled,
+  unavailable, or out of budget.
+
+## Architecture
+
+- `src/Domain`: immutable, framework-independent domain contracts.
+- `src/Application`: transport-neutral use cases, DTOs, and ports.
+- `src/GameAdapters/PoE1` and `src/GameAdapters/PoE2`: isolated format and
+  edition adapters.
+- `app/Modules`: Laravel HTTP, PostgreSQL, queue, storage, policy, identity, and
+  optional provider infrastructure.
+- `resources/js`: Inertia/Vue presentation; never authoritative calculation.
+
+PostgreSQL is the system of record. Laravel cache and queue abstractions isolate
+the application from the runtime. Local Docker and self-hosted deployments may
+use Redis and Horizon. The first staging target is Laravel Cloud Starter in
+Frankfurt, using Serverless PostgreSQL and a generated `*.laravel.cloud` domain.
+Valkey and Cloud queue resources are added only when an enabled feature needs
+them; Horizon is not required on Laravel Cloud.
+
+See the [module map](docs/architecture/module-map.md), [system context](docs/architecture/system-context.md), and [Laravel Cloud ADR](docs/adr/0014-laravel-cloud-staging.md).
+
+## Local setup
+
+Required baseline: PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL, and the
+PHP `dom`, `zlib`, and `pdo_pgsql` extensions. The committed lockfiles are
+authoritative.
+
+### Docker on Linux or WSL2
+
+Install Docker Engine with Compose v2, then run:
 
 ```bash
 cp .env.example .env
@@ -36,99 +111,71 @@ composer run setup:docker
 composer run dev:docker
 ```
 
-Open <http://localhost:8000>. PostgreSQL and Redis are published only on the
-loopback interface. Application dependencies, database data, and Redis data use
-named volumes; the source tree remains bind-mounted for development.
+Open <http://localhost:8000>. The local stack uses PostgreSQL, Redis, and
+Horizon; its data services bind to loopback and use named Docker volumes.
 
-To stop the development stack without deleting data:
+### Host installation
 
-```bash
-docker compose down
-```
-
-## Host setup
-
-Install PHP 8.4 with `dom`, `zlib`, `pdo_pgsql`, and `redis`, Node.js 24, npm 11,
-PostgreSQL, and Redis. Copy `.env.example` to `.env`, change its local-only
-example credentials if needed, then run:
+With local PostgreSQL and Redis available:
 
 ```bash
+cp .env.example .env
 composer run setup
 composer run dev
 ```
 
-Horizon requires the `pcntl` and `posix` extensions and therefore does not run
-under native Windows PHP. On native Windows, use WSL2/Docker as recommended. For
-web-only shell work with separately managed PostgreSQL and Redis, use:
+Horizon needs `pcntl` and `posix`; use WSL2/Docker on Windows, or the web-only workflow:
 
 ```powershell
 composer run setup:windows
 composer run dev:web
 ```
 
-The public liveness endpoint is `GET /up`; it only confirms that Laravel booted.
-The deeper `GET /ready` endpoint checks PostgreSQL and Redis and is hidden unless
-`READINESS_TOKEN` is configured and supplied in the
-`X-Lootwright-Readiness-Token` header. Horizon is available at `/horizon` only in
-the local environment and is denied elsewhere.
-
-## Local PoB import
-
-Run a small local fixture through the safe parser without database, Redis,
-network, or OpenAI access:
+Run the original structural fixture without database, queue, network, or AI:
 
 ```powershell
 php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
 ```
 
-The web boundary accepts pasted raw share codes/XML or an uploaded `text/plain`
-code at `POST /api/build-imports/pob`. URL fetching is intentionally absent. A
-normalized result is transient unless `persist`, explicit `storage_consent`,
-an authenticated Lootwright session, a client-generated high-entropy
-`Idempotency-Key` header, and an optional bounded `retention_hours` are
-supplied. Consented normalized JSON is encrypted; its default retention is 24
-hours and it can be deleted with the capability token returned by the endpoint.
-Transient import remains available without an account. No public login flow is
-implemented yet, so hosted persistence remains unavailable until a reviewed
-authenticated account boundary exists. Run `php artisan
-pob:prune-imports` to prune expired records; the scheduler runs it hourly.
+## Quality gates
 
-Exact limits, supported fields, the pre-ruleset boundary, PoE2 beta status, and
-privacy behavior are documented in [PoB import compatibility](docs/compatibility/pob-import.md).
-The upstream notice is in [Path of Building format attribution](docs/compliance/path-of-building-attribution.md).
+```powershell
+composer validate --strict
+composer audit
+composer run format:check
+composer run analyse
+composer run test
+npm ci
+npm audit --audit-level=high
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs.ps1
+```
 
-Production HTTPS deployments must set `SESSION_SECURE_COOKIE=true`; Lootwright
-session payloads are encrypted, HTTP-only, and SameSite `lax` by default. These
-are Lootwright application sessions only—GGG credentials, cookies, and
-`POESESSID` remain prohibited.
+Additional gates include `composer run ci:guardrails`, `composer run test:architecture`,
+`composer run test:parser-security`, `composer run test:policy-gate`,
+`composer run eval:fast`, and `npm run test:e2e`.
 
-## Development commands
+## Deployment
 
-| Purpose | Command |
-| --- | --- |
-| Setup | `composer run setup` |
-| Start web, Horizon, and Vite | `composer run dev` |
-| Check PHP formatting | `composer run format:check` |
-| Apply PHP formatting | `composer run format` |
-| Static analysis | `composer run analyse` |
-| Backend tests | `composer run backend-test` |
-| Frontend lint | `npm run lint` |
-| Frontend formatting check | `npm run format:check` |
-| Frontend typecheck | `npm run typecheck` |
-| Frontend component tests | `npm run test` |
-| Production asset build | `npm run build` |
-| Complete cross-platform gate | `composer run full-quality-gate` |
+The first deployment is a locked-down pre-alpha staging environment on Laravel
+Cloud Starter. It uses Frankfurt where available, the generated Cloud hostname,
+and Serverless PostgreSQL. The initial monthly target is USD 20, with an
+absolute USD 25 ceiling; these are operator budgets, not billing guarantees.
 
-The merge gate also includes the exact commands listed in [AGENTS.md](AGENTS.md),
-including the PowerShell documentation validator.
+Follow the [Laravel Cloud guide](docs/deployment/laravel-cloud.md). Docker and
+Horizon packaging remains available for local or self-hosted use and is not a
+Laravel Cloud requirement.
 
-## Architecture boundary
+## Security, contribution, and license
 
-Laravel delivery and infrastructure code belongs under `app/`. The
-framework-independent domain, deterministic contracts, and application ports
-belong under `src/` and may not import Laravel or infrastructure types. See the
-[module map](docs/architecture/module-map.md)
-and [domain foundation](docs/architecture/domain-foundation.md), then check the
-[capability matrix](docs/compliance/capability-matrix.md), [source
-register](docs/compliance/source-register.md), and [delivery
-progress](docs/progress.md) before adding application behavior.
+Use [SECURITY.md](SECURITY.md) for private vulnerability reports; never publish
+credentials, private builds, prompts, cookies, or exploit details. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Ruleset and source
+changes require verified permission and provenance.
+
+Lootwright-original code and documentation are MIT licensed. [LICENSE-SCOPE.md](LICENSE-SCOPE.md)
+explains what the project license does not cover, including GGG material,
+third-party data, and user submissions. See also [third-party notices](THIRD_PARTY_NOTICES.md).

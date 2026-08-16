@@ -1,5 +1,8 @@
 # Design System: Lootwright
 
+Status: implemented visual foundation with fixture-backed product screens. It
+does not imply that production analysis or end-user MVP flows are available.
+
 ## Overview
 
 **Creative North Star: "The Forge Ledger"**

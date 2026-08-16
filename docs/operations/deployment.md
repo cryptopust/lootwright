@@ -1,8 +1,11 @@
 # Production Packaging and Deployment
 
-Status: deployable single-host/container-orchestrator package implemented on
-2026-08-16. No image was published, repository pushed, domain registered,
-infrastructure created, or environment deployed by this work.
+Status: self-hosted/container package implemented on 2026-08-16. It remains a
+supported local and self-hosted option, but [ADR 0014](../adr/0014-laravel-cloud-staging.md)
+selects Laravel Cloud for the first pre-alpha staging environment. Follow the
+[Laravel Cloud guide](../deployment/laravel-cloud.md) for that path. No image was
+published, repository pushed, domain registered, infrastructure created, or
+environment deployed by this work.
 
 ## Artifact and trust model
 

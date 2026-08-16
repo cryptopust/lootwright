@@ -15,7 +15,12 @@ This file is binding for every contributor and coding agent. Product and policy 
 
 ## Non-negotiable architecture
 
-- Use a Laravel 13 modular monolith: one repository, one application deployment, one PostgreSQL database, Redis queues/cache, and Laravel Horizon.
+- Use a Laravel 13 modular monolith: one repository, one application deployment,
+  one PostgreSQL database, and Laravel cache/queue abstractions. Local Docker or
+  self-hosted deployments may use Redis and Horizon; Laravel Cloud may use Valkey
+  and Cloud queue/worker facilities when an implemented feature requires them.
+  Do not provision unused cache or queue resources, and do not make Horizon
+  mandatory on Laravel Cloud.
 - The web layer is Inertia 3, Vue 3 Composition API, TypeScript, Tailwind CSS, and shadcn-vue.
 - Keep the deterministic domain and analysis engine in framework-independent PHP under `src/`. It must not import Laravel, Illuminate, Eloquent, HTTP, queue, cache, filesystem, or AI SDK types.
 - Keep Laravel delivery and infrastructure code under `app/`. Controllers and jobs orchestrate application use cases; they do not contain game rules.

@@ -1,5 +1,9 @@
 # Product
 
+Status: product/design target for a pre-alpha repository. Fixture UI and
+technical foundations exist, but no approved production ruleset or authoritative
+deterministic analyzer is active.
+
 ## Register
 
 product
@@ -13,12 +17,12 @@ second screen or mobile device while manually operating the official Trade UI.
 
 ## Product Purpose
 
-Lootwright turns user-supplied goals and PoB, PoB2, or item text into
-edition-scoped deterministic findings, prioritized upgrades, and manual Trade
-filter recipes. Success means the player can see what is known, why a change is
-recommended, which exact ruleset produced it, what remains uncertain, and what
-Lootwright explicitly refuses to automate. The complete core remains useful
-with AI and external integrations disabled.
+Lootwright is designed to turn user-supplied goals and PoB, PoB2, or item text
+into edition-scoped deterministic findings, prioritized upgrades, and manual
+Trade filter recipes. Success means the player can see what is known, why a
+change is recommended, which exact ruleset produced it, what remains uncertain,
+and what Lootwright explicitly refuses to automate. The complete core remains
+useful with AI and external integrations disabled.
 
 ## Brand Personality
 

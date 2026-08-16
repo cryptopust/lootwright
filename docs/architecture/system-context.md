@@ -25,7 +25,8 @@ There is intentionally no connection from Lootwright to the game client, officia
 - The player owns input submission and performs any later Trade-site interaction manually.
 - Contributors implement deterministic rules and parsers from approved, recorded sources.
 - Maintainers approve source records, ruleset publication, dependency changes, and policy changes.
-- Operators deploy one Laravel application with PostgreSQL, Redis, and Horizon, monitor failures, and enforce retention/deletion.
+- Operators deploy one Laravel application with PostgreSQL and the minimum
+  enabled cache/queue resources, monitor failures, and enforce retention/deletion.
 - Legal/policy reviewers decide questions that engineering cannot infer from silence.
 
 ## Trust boundaries
@@ -39,11 +40,19 @@ There is intentionally no connection from Lootwright to the game client, officia
 
 ## Deployment boundary
 
-The modular monolith is one release artifact and one security boundary. HTTP workers and Horizon workers may be separate processes of the same codebase, not separate services. PostgreSQL is the system of record; Redis is disposable coordination/cache state. Ruleset artifacts are content-addressed and backed by database metadata. AI and future documented APIs are replaceable infrastructure adapters, never domain dependencies.
+The modular monolith is one release artifact and one security boundary. HTTP and
+background workers are processes of the same codebase, not separate services.
+PostgreSQL is the system of record; cache and queue backends are disposable
+coordination state. Local/self-hosted operation may use Redis and Horizon.
+Laravel Cloud staging may use Valkey and Cloud queue/background facilities only
+when required. Ruleset artifacts are content-addressed and backed by database
+metadata. AI and future documented APIs are replaceable infrastructure adapters,
+never domain dependencies.
 
 ## Assumptions
 
-- MVP hosting and region are undecided.
+- Initial pre-alpha staging targets Laravel Cloud Starter in Frankfurt, using a
+  generated `*.laravel.cloud` domain and Serverless PostgreSQL. See
+  [ADR 0014](../adr/0014-laravel-cloud-staging.md).
 - No GGG OAuth client is needed for MVP, and the official developer page currently says new registrations cannot be processed.
 - Account requirements are undecided; anonymous short-lived workspaces are preferred until persistence needs prove otherwise.
-

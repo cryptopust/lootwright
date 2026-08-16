@@ -49,7 +49,11 @@ The port does not promise that both games support the same stats, slots, passive
 
 ## PoE1-first delivery
 
-Only the PoE1 adapter is active in the MVP. PoE2 interfaces may be reserved where they prevent lock-in, but no speculative PoE2 rules, placeholder mappings, or generic demo data may ship. Enabling PoE2 requires:
+PoE1 remains the first intended analysis adapter, but no production analysis
+adapter is active in the current pre-alpha. A bounded PoE1 format reader and the
+ADR 0010 beta PoE2 format reader are implemented. PoE2 interfaces may be
+reserved where they prevent lock-in, but no speculative PoE2 rules, placeholder
+mappings, or generic demo data may ship. Enabling PoE2 analysis requires:
 
 1. approved parser and ruleset provenance;
 2. separate fixtures and deterministic conformance tests;

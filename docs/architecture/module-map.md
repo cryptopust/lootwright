@@ -15,7 +15,7 @@ flowchart TB
     RULES[Ruleset Catalog]
     P1[PoE1 adapter]
     P2[PoE2 adapter - inactive]
-    INFRA[PostgreSQL / Redis / AI adapters]
+    INFRA[PostgreSQL / cache / queue / optional AI adapters]
 
     UI --> HTTP --> APP
     APP --> GATE
@@ -49,7 +49,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/GameAdapters/PoE2` | PoE2 parsing and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
 | `src/Application` | Use cases, commands, queries, workflow states, DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
-| `app/Modules/Rulesets` | Import, checksum, review, activation, repository adapter | Application ports, Laravel | mutating published rulesets |
+| `app/Modules/Rulesets` | Reserved for future import, checksum, review, activation, and repository adapter; not implemented | Application ports, Laravel | mutating published rulesets |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
 | `app/Modules/Identity` | Expiring anonymous privacy-session credentials, secret generation, and HTTP-principal resolution | Application identity ports, Laravel | GGG credentials, IP/device identity storage, domain rules |
@@ -65,10 +65,14 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 - Public module APIs are typed PHP interfaces and immutable DTOs. Internal classes stay internal.
 - A module owns its tables and Eloquent models. Other modules use its application port, not direct queries.
 - Synchronous calls are preferred inside the process. Queue only bounded, idempotent work that benefits from retry or latency isolation.
+- Laravel cache and queue abstractions are the infrastructure boundary. Local
+  Docker and self-hosted deployments may use Redis/Horizon; Laravel Cloud may
+  use Valkey and managed queue/background facilities only when an enabled
+  feature requires them. See [ADR 0014](../adr/0014-laravel-cloud-staging.md).
 - Laravel events may notify in-process secondary behavior, but event logs are not the source of truth and event sourcing is prohibited.
 - Database transactions end at a use-case boundary. Cross-module transactions must be explicit and tested.
 - The narrow workflow outbox is limited to parse/analysis dispatch. It is a
-  recovery mechanism for the PostgreSQL-to-Redis commit boundary, not a domain
+  recovery mechanism for the PostgreSQL-to-queue commit boundary, not a domain
   event store; publisher rows are locked and retries are bounded.
 - Cross-module deletion uses the application-owned `SupplementalUserDataEraser`
   port; the Analysis repository never reads Build Intake tables directly.

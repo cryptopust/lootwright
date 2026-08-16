@@ -578,6 +578,52 @@ This is the controlled implementation sequence. A later prompt may refine earlie
   staging, backup/deletion replay, named contacts, jurisdiction/privacy/legal
   decisions, and exact release-time GGG/OpenAI policy review.
 
+## Public repository and Laravel Cloud documentation alignment
+
+- Status: documentation and repository-maintenance alignment completed on
+  2026-08-16; the GitHub repository represents a working **pre-alpha
+  foundation**, not a completed end-user MVP or public production service.
+- Evidence review: the implementation contains more than Prompts 00-02. Later
+  commits provide bounded format-only PoB readers, application/persistence
+  orchestration, Policy Gate enforcement, optional-AI infrastructure,
+  fixture-only findings/upgrade/Manual Trade presentation, security controls,
+  evaluations, and CI packaging. Those technical completions remain recorded in
+  their historical entries and were not removed.
+- Product boundary: no approved production PoE1 ruleset or authoritative
+  deterministic analyzer exists. Real production findings, upgrade priorities,
+  Manual Trade Recipes, production result binding, public authentication, and a
+  public service remain unavailable. Fixture/fake success paths are not product
+  availability claims.
+- Public documentation: rewrote the English README and added a structurally
+  matching professional Turkish README; added a changelog, improved security
+  and contribution guidance, and added pull-request/issue templates. All public
+  copy preserves the GGG non-affiliation notice and prohibited-integration
+  boundaries.
+- Hosting decision: [ADR 0014](adr/0014-laravel-cloud-staging.md) selects Laravel
+  Cloud Starter for the first locked-down pre-alpha staging environment, using
+  Frankfurt where available, a generated Cloud domain, and Serverless
+  PostgreSQL. Valkey and queue/worker resources are demand-driven; Redis/Horizon
+  remains the local/self-hosted path.
+- Cloud limitation: the current encrypted queued-artifact handoff uses local
+  storage, which is not durable across Laravel Cloud compute. Cloud imports stay
+  disabled until reviewed private object storage exists. The dependency-free
+  `/up` endpoint is the initial health probe; `/ready` currently also expects a
+  Redis-compatible service.
+- Cost posture: initial Cloud staging targets USD 20 per month with an absolute
+  USD 25 operator ceiling. These are budgets rather than price guarantees, and
+  current official Laravel Cloud pricing must be checked before resources are
+  created.
+- Validation evidence: Composer metadata/audit, Pint, PHPStan, 555 PHPUnit tests
+  with 7,809 assertions, repository guardrails, architecture/parser/Policy Gate
+  suites, 31 fast and 35 extended evals, clean npm install/audit, ESLint, Vue
+  TypeScript, 15 Vitest tests, 7 Playwright tests, production asset build,
+  Laravel config/route/view caches, YAML parsing, and local-link/documentation
+  validation across 68 Markdown files passed. Native Windows plain
+  `composer install` cannot satisfy Horizon's `ext-pcntl`; the documented
+  Windows install with the exact `pcntl`/`posix` ignores passed. Docker and a
+  local PostgreSQL server were unavailable, so the real PostgreSQL migration
+  cycle remains encoded in CI and must pass on the final commit before staging.
+
 ## Change discipline
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.

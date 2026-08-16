@@ -20,8 +20,9 @@ provider-SDK dependency. Framework delivery and infrastructure remain under
 | `Lootwright\Domain\UsageFunding` | `src/Domain/UsageFunding` | Usage-policy port and the structurally disabled funding baseline |
 | `Lootwright\Application` | `src/Application` | Provider-neutral AI/workflow ports plus checksum-bound manual-recipe DTOs, exact ranges, serialization, unresolved requirements, and use cases; domain entities never depend on these DTOs |
 
-PoE1 and PoE2 adapter namespaces are intentionally absent until an approved
-parser or ruleset source exists. Opaque shared identifier types carry a mandatory
+PoE1 and PoE2 adapter namespaces now contain separate bounded format readers and
+Manual Trade planning adapters. They do not contain an approved production game
+dataset or ruleset. Opaque shared identifier types carry a mandatory
 `GameEdition`; they are not shared game data or mappings.
 
 ## Dependency direction
@@ -110,8 +111,10 @@ cannot be imported by `src/Domain`.
 
 ## Deliberately absent
 
-This foundation contains no real class, skill, passive, item, modifier, stat,
-affix, league, patch, or currency dataset; no parsing implementation; no
-analysis or ranking formula; no provider adapter; no external call; no pricing;
-and no funding activation. Fixture identifiers exercise invariants only and do
-not assert game facts.
+This foundation contains no approved real class, skill, passive, item, modifier,
+stat, affix, league, patch, or currency dataset and no production analysis or
+ranking formula. Bounded format readers, an optional default-off OpenAI adapter,
+and fixture-only recipe/evaluation infrastructure exist, but none is production
+game authority. Provider execution remains Policy-Gate blocked; there is no live
+GGG/Trade connector, pricing, or funding activation. Fixture identifiers
+exercise invariants only and do not assert game facts.

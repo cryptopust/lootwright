@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible defect using original, non-sensitive data.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, POESESSID, cookies, private PoB codes, prompts, personal data, or exploit details. Report vulnerabilities privately through SECURITY.md.
+  - type: input
+    id: revision
+    attributes:
+      label: Commit or version
+      description: Exact commit SHA when available.
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Game boundary
+      options:
+        - Not game-specific
+        - Path of Exile 1
+        - Path of Exile 2 beta format reader
+        - Unknown or ambiguous
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe expected and observed behavior without private data.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use only tiny original structural input and exact commands.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, PHP, Node, database, browser, and relevant disabled/enabled capabilities. Do not include connection strings.
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Data and policy check
+      options:
+        - label: I removed credentials, cookies, private builds, prompts, logs, and personal data.
+          required: true
+        - label: This report does not request scraping, undocumented endpoints, automation, overlays, or live Trade access.
+          required: true
+

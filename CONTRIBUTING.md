@@ -1,51 +1,107 @@
 # Contributing to Lootwright
 
-Lootwright welcomes issue reports and review feedback, but it is not yet ready
-to merge outside code contributions. Contributor licensing and trademark
-governance must first be approved and recorded; opening the source under MIT
-does not authorize a maintainer to accept code, data, or assets whose rights are
-unclear.
+Lootwright welcomes careful issue reports and design review. Code contributions
+must respect the deterministic, provenance-first architecture and the project's
+publisher-data boundaries.
 
-## Before proposing a change
+Contributor licensing and trademark governance are still unresolved. External
+patches may be discussed and reviewed, but maintainers must not merge the first
+outside contribution until an approved inbound-contribution policy is published.
 
-Read `AGENTS.md`, `LICENSE-SCOPE.md`, the relevant ADRs, and the source register.
-If implementation and a governing document disagree, update and review the
-governing decision before changing code.
+## Before you start
 
-Never submit:
+Read:
 
-- GGG or Path of Exile art, logos, item icons, screenshots, fonts, flavour text,
-  datasets, or copied interface material;
-- player builds, private notes, credentials, cookies, `POESESSID`, prompts, or
-  other personal data;
-- scraped material, undocumented Trade endpoint behavior, encoded Trade URLs,
-  market listings, prices, browser/client automation, or game-client access;
-- generated credentials, `.env`, dependency directories, build output, dumps,
-  or live-provider recordings; or
-- code or data without verified provenance and permission for the exact use.
+- `AGENTS.md` for binding engineering rules;
+- `LICENSE-SCOPE.md` for publisher, third-party, and user-data boundaries;
+- the relevant files under `docs/adr/`;
+- `docs/compliance/source-register.md` before using any external fact or format;
+- `docs/progress.md` for current pre-alpha status.
 
-Tiny fixtures must be original and structurally minimal. Private authorized
-fixtures stay under the ignored `evals/private/` boundary and are never used to
-update a committed baseline.
+If code and a governing document disagree, update and review the decision first.
 
-## Engineering workflow
+## Local setup
 
-Keep the deterministic domain and application ports under `src/` independent of
-Laravel, Eloquent, HTTP, queues, storage, and provider SDKs. Keep PoE1 and PoE2
-identities isolated. Add denial-path tests before success-path integration tests,
-and update an ADR when architecture, policy, source, funding, or deterministic
-behavior changes.
+The required baseline is PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL,
+and the PHP `dom`, `zlib`, and `pdo_pgsql` extensions. Docker Engine with Compose
+v2 is the recommended Linux/WSL2 workflow.
 
-Run the exact quality gate in `AGENTS.md`. A change description must identify
-tests actually run, source/provenance effects, privacy or security impact,
-migrations, and residual limitations. Use a small Conventional Commit message;
-do not commit or deploy on behalf of another person without authorization.
+```bash
+cp .env.example .env
+composer run setup:docker
+composer run dev:docker
+```
 
-## Contribution acceptance blocker
+For a host installation with PostgreSQL and Redis already running:
 
-Before the first external pull request is merged, maintainers must publish an
-approved inbound-contribution policy, verified maintainer/security contacts, and
-trademark governance. Until then, external patches may be discussed and reviewed
-for learning, but they must not be represented as accepted project contributions.
+```bash
+cp .env.example .env
+composer run setup
+composer run dev
+```
+
+Native Windows cannot run Horizon because `pcntl` and `posix` are unavailable;
+use WSL2/Docker or the repository's `setup:windows` and `dev:web` scripts.
+
+## Required quality checks
+
+Run the exact gate in `AGENTS.md` before requesting review:
+
+```powershell
+composer validate --strict
+composer audit
+composer run format:check
+composer run analyse
+composer run test
+npm ci
+npm audit --audit-level=high
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs.ps1
+```
+
+Use the focused architecture, parser-security, Policy Gate, evaluation, and
+browser scripts when your change touches those boundaries. Never weaken an
+assertion merely to obtain a green run.
+
+## Architecture rules
+
+- Keep deterministic domain code under `src/` independent from Laravel,
+  Eloquent, HTTP, queues, cache, storage, filesystem, clocks, and AI SDKs.
+- Put Laravel delivery and infrastructure adapters under `app/`.
+- Keep PoE1 and PoE2 adapters, identifiers, rulesets, caches, and fixtures
+  isolated. No cross-edition fallback is allowed.
+- AI may extract closed-schema intent or explain existing deterministic output;
+  it cannot create facts, IDs, rules, filters, prices, sources, URLs, or
+  recommendations.
+- Every ruleset/source change needs exact version, checksum, parser/game scope,
+  permission, provenance, and review evidence before activation.
+- Do not add undocumented GGG endpoints, scraping, Trade automation, browser or
+  game-client access, `POESESSID` handling, overlays, or gameplay automation.
+
+## Fixtures and private data
+
+Commit only tiny, original structural fixtures. Never submit real player builds,
+private notes, prompts, credentials, cookies, protected publisher data, copied
+game assets, logs, database dumps, or provider recordings. Authorized private
+fixtures stay under ignored `evals/private/` storage and never update a public
+golden baseline.
+
+## Pull requests
+
+Keep each pull request small and coherent. Explain:
+
+- the concrete problem and chosen boundary;
+- implementation and documentation changes;
+- tests actually run and exact failures/not-run checks;
+- migration, privacy, security, provenance, policy, and edition-isolation
+  impact; and
+- residual limitations or rollback needs.
+
+Use Conventional Commits. Do not include generated dependencies, `.env`, build
+output, credentials, imported user data, or publisher assets. Do not deploy or
+change external resources as part of a code review.
 
 This product isn't affiliated with or endorsed by Grinding Gear Games in any way.

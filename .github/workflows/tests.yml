@@ -64,6 +64,23 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Verify Laravel production caches without external services
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: pgsql
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+          OPENAI_ENABLED: false
+          OUTBOUND_NETWORK_ENABLED: false
+        run: |
+          php artisan optimize:clear --no-ansi
+          php artisan config:cache --no-ansi
+          php artisan route:cache --no-ansi
+          php artisan view:cache --no-ansi
+          php artisan optimize:clear --no-ansi
+
       - name: Validate Composer metadata
         run: composer validate --strict
 

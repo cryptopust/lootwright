@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/cryptopust/lootwright/security/advisories/new
+    about: Use GitHub's private advisory flow when enabled; never publish credentials or exploit details.
+  - name: Project status and limitations
+    url: https://github.com/cryptopust/lootwright/blob/main/docs/release/mvp-readiness.md
+    about: Read the current pre-alpha readiness verdict before opening a request.
+

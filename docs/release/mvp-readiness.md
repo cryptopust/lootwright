@@ -5,6 +5,11 @@
 Reviewed on 2026-08-16 against Git `0ccc8ec` plus the release-review changes in
 the working tree. This is not a production-ready release.
 
+Hosting addendum: [ADR 0014](../adr/0014-laravel-cloud-staging.md) now selects
+Laravel Cloud for initial pre-alpha staging. Self-hosted Redis/Horizon packaging
+evidence below is historical and does not make Valkey or Horizon mandatory on
+Cloud. The missing production ruleset/analyzer verdict is unchanged.
+
 The implementation, security baseline, parsers, policy controls, persistence
 orchestration, fake-provider AI containment, fixture UI, and production package
 are internally well tested. The defining PoE1 MVP acceptance criterion still

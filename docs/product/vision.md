@@ -1,6 +1,11 @@
 # Product Vision
 
-Lootwright is an open-source web application at `lootwright.org` for people who want to improve a Path of Exile build without surrendering judgment to an opaque model or an automated trading tool.
+Status: future product vision. The repository is a working pre-alpha foundation;
+production game analysis remains blocked on an approved ruleset and analyzer.
+
+Lootwright is intended to become an open-source web application for people who
+want to improve a Path of Exile build without surrendering judgment to an opaque
+model or an automated trading tool. No public `lootwright.org` service exists.
 
 The user deliberately supplies a natural-language goal plus a PoB/PoB2 share code or pasted item text. Lootwright normalizes that input with a game-specific parser, evaluates it against an immutable versioned ruleset, and returns:
 
@@ -36,4 +41,3 @@ See [MVP scope](mvp-scope.md), [non-goals](non-goals.md), and [GGG integration p
 - PoB and PoB2 format provenance and license compatibility must be verified before parser implementation.
 - GGG's current developer page says new application registrations cannot be processed. The MVP therefore assumes no GGG OAuth or API dependency.
 - Commercial-use, donations, trademarks, and any redistribution of canonical game data require documented legal/policy review. Until then, they remain disabled.
-

@@ -1,7 +1,10 @@
 # Production Environment Reference
 
-Status: safe-default reference for the immutable application image. The canonical
-copyable template is `deploy/env.production.example`; blank values are intentional.
+Status: safe-default reference for the self-hosted immutable application image.
+The canonical copyable template is `deploy/env.production.example`; blank values
+are intentional. Laravel Cloud staging instead follows
+[`docs/deployment/laravel-cloud.md`](../deployment/laravel-cloud.md) and must not
+copy self-hosted Redis/Horizon assumptions over Cloud-injected resource values.
 
 ## Application and HTTP boundary
 
@@ -76,4 +79,3 @@ copyable template is `deploy/env.production.example`; blank values are intention
 GGG OAuth credentials, `POESESSID`, payment-provider variables, live game datasets,
 and Trade endpoint settings do not exist in the reference because Lootwright neither
 needs nor accepts them.
-

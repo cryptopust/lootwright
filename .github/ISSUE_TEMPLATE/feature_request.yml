@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose a policy-compatible pre-alpha capability or improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lootwright is pre-alpha. Planned behavior is not current behavior. Requests that require undocumented GGG endpoints, scraping, credentials, client/browser automation, live listings, or AI-authored game facts are out of scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe observable behavior, not a preferred dependency.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Source and policy evidence
+      description: Identify any external source, permission, provenance, game/patch scope, or ADR impact. Write "none" when not applicable.
+    validations:
+      required: true
+  - type: dropdown
+    id: ai
+    attributes:
+      label: AI dependency
+      options:
+        - No AI required
+        - Optional wording only with deterministic fallback
+        - Unclear; requires architecture review
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Product boundaries
+      options:
+        - label: The proposal does not require undocumented endpoints, scraping, POESESSID, game-client access, or automation.
+          required: true
+        - label: The proposal preserves deterministic authority and PoE1/PoE2 isolation.
+          required: true
+
