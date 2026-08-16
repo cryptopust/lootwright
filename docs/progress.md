@@ -542,6 +542,42 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 - Scope: approve PoB2/ruleset sources, create an isolated PoE2 adapter, add PoE2 UI/persistence support, and run shared-port plus cross-game negative tests.
 - Gate: no PoE1 identifiers/rules leak into PoE2, no speculative mappings ship, and a new ADR explicitly activates PoE2.
 
+## Final principal-engineer MVP readiness review
+
+- Status: **FAIL** on 2026-08-16; the repository is not production-ready. See
+  [MVP readiness](release/mvp-readiness.md).
+- Review scope: read the constitution, all documents/ADRs, complete local Git
+  history and worktree; audited product/compliance/provenance/architecture,
+  parser safety, deterministic integrity, Manual Trade, AI, security/privacy,
+  funding, UX/accessibility, operations, and open-source boundaries.
+- Acceptance evidence: added a real-parser, anonymous-session PoE1 workflow that
+  completes against an explicitly fake deterministic engine/ruleset, persists a
+  finding/recommendation plus trace-bearing strict/broad Manual Trade filters,
+  makes no AI call, and fully deletes primary-store data. Strengthened the fake
+  constrained-AI flow to prove the deterministic recommendation record is
+  unchanged. Added a production-binding test proving exact ruleset/analyzer
+  absence still fails closed.
+- Fixed review defects: corrected stale README capability wording; added
+  contribution, security-reporting, and third-party notice policies; made the
+  test recipe materially assert exact filter labels, numeric ranges, relaxation,
+  and finding trace.
+- Final local gates: Composer validation/audit, Pint, PHPStan, 555 PHPUnit tests
+  with 7,809 assertions, repository guardrails, 330
+  architecture checks, 39 parser-security tests, 71 Policy Gate tests, 31 fast
+  evals, 35 extended evals, clean npm install/audit, ESLint, Vue TypeScript, 15
+  Vitest tests, 7 Playwright tests, Vite production build, and documentation
+  validation across 63 Markdown files passed. SQLite migrations passed a
+  fresh/status/rollback-last/reapply cycle. An isolated Windows/SQLite
+  `setup:windows` archive install, full migration, build, and five foundation
+  tests also passed.
+- Critical blockers: no approved PoE1 ruleset source/catalog/activation and no
+  production deterministic analyzer, finding formulas, prioritizer, or
+  production recipe vocabulary. Shipping analysis UI remains fixture-backed.
+- Deployment blockers: Docker/PostgreSQL/Redis production checks and restore
+  exercise were unavailable locally; the final release commit still needs CI,
+  staging, backup/deletion replay, named contacts, jurisdiction/privacy/legal
+  decisions, and exact release-time GGG/OpenAI policy review.
+
 ## Change discipline
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.

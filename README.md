@@ -3,8 +3,12 @@
 Lootwright is a Laravel 13 modular monolith for deterministic, evidence-backed
 Path of Exile 1 build analysis and human-readable manual item-search planning.
 The current implementation includes a bounded, local PoB1 importer and a
-separate beta PoB2 format adapter. Game datasets, analysis formulas, AI
-providers, market integrations, and donations are not implemented.
+separate beta PoB2 format adapter. A provider-neutral AI Gateway and default-off
+OpenAI Responses adapter are implemented, but production provider execution is
+still blocked by Policy Gate review. No approved game ruleset, production
+deterministic analyzer, market integration, or funding capability exists, so
+the production findings/recommendation/recipe flow remains fail-closed and the
+corresponding UI is explicitly fixture-backed.
 
 This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
@@ -120,9 +124,10 @@ including the PowerShell documentation validator.
 
 ## Architecture boundary
 
-Laravel delivery and infrastructure code belongs under `app/`. The future
-framework-independent deterministic core belongs under `src/` and may not import
-Laravel or infrastructure types. See the [module map](docs/architecture/module-map.md)
+Laravel delivery and infrastructure code belongs under `app/`. The
+framework-independent domain, deterministic contracts, and application ports
+belong under `src/` and may not import Laravel or infrastructure types. See the
+[module map](docs/architecture/module-map.md)
 and [domain foundation](docs/architecture/domain-foundation.md), then check the
 [capability matrix](docs/compliance/capability-matrix.md), [source
 register](docs/compliance/source-register.md), and [delivery

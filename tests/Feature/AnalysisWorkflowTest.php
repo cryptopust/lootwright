@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
+use App\Modules\Analysis\Infrastructure\UnavailableDeterministicAnalysisEngine;
 use App\Modules\Analysis\Jobs\ParseBuildArtifactJob;
 use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use Database\Seeders\PolicyDefaultsSeeder;
@@ -31,6 +32,8 @@ use Lootwright\Application\AIGateway\Ports\IntentExtractor;
 use Lootwright\Application\AIGateway\Ports\ResultExplainer;
 use Lootwright\Application\AIGateway\Services\GenerateConstrainedAnalysisExplanation;
 use Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe as ApplicationManualTradeRecipe;
+use Lootwright\Application\TradePlanning\DTO\NumericRange;
+use Lootwright\Application\TradePlanning\DTO\RecipeFilter;
 use Lootwright\Application\TradePlanning\DTO\RecipeVariant;
 use Lootwright\Application\Workflow\AnalysisState;
 use Lootwright\Application\Workflow\DTO\AnalysisParameters;
@@ -141,6 +144,104 @@ class AnalysisWorkflowTest extends TestCase
             ->assertJsonPath('analysis.state', 'completed')
             ->assertJsonPath('analysis.ruleset.version', '1.0.0')
             ->assertJsonPath('analysis.output.analysis_id', $analysisId);
+    }
+
+    public function test_release_harness_runs_real_poe1_import_for_anonymous_user_with_ai_off_and_complete_deletion(): void
+    {
+        config()->set('ai.enabled', false);
+        $session = $this->postJson('/api/privacy-sessions')->assertCreated();
+        $token = $session->json('session.token');
+        self::assertIsString($token);
+
+        $fixture = file_get_contents(base_path('tests/Fixtures/Pob/poe1-minimal.xml'));
+        self::assertIsString($fixture);
+        $fixture = str_replace('targetVersion="3_0"', 'targetVersion="1.2.3"', $fixture);
+        $submission = $this->postJson('/api/analyses', $this->payload($fixture), [
+            'Idempotency-Key' => str_repeat('m', 32),
+            'X-Lootwright-Privacy-Session' => $token,
+        ])->assertAccepted();
+        $artifactId = $submission->json('artifact_id');
+        $analysisId = $submission->json('analysis_id');
+        self::assertIsString($artifactId);
+        self::assertIsString($analysisId);
+
+        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine(true));
+        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
+        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
+
+        $this->assertDatabaseHas('build_artifacts', [
+            'id' => $artifactId,
+            'state' => 'completed',
+            'adapter_key' => 'pob1',
+        ]);
+        $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'completed']);
+        $this->assertDatabaseHas('analysis_findings', ['analysis_id' => $analysisId, 'code' => 'fixture.finding']);
+        $this->assertDatabaseHas('analysis_recommendations', ['analysis_id' => $analysisId, 'code' => 'fixture.recommendation']);
+        $this->assertDatabaseHas('manual_trade_recipes', ['analysis_id' => $analysisId, 'recipe_key' => 'fixture.helmet']);
+        self::assertSame(0, $this->intentExtractor->calls);
+        self::assertSame(0, $this->resultExplainer->calls);
+
+        $encryptedRecipe = DB::table('manual_trade_recipes')
+            ->where('analysis_id', $analysisId)
+            ->value('payload_encrypted');
+        self::assertIsString($encryptedRecipe);
+        $recipe = json_decode(Crypt::decryptString($encryptedRecipe), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('poe1', $recipe['game_edition']);
+        self::assertSame('Fixture maximum life', $recipe['strict']['required'][0]['exact_label']);
+        self::assertSame('50', $recipe['strict']['required'][0]['range']['minimum']);
+        self::assertSame('30', $recipe['broad_fallback']['required'][0]['range']['minimum']);
+        self::assertSame('fixture.finding', $recipe['strict']['required'][0]['finding_code']);
+        self::assertSame('poe1', $recipe['strict']['required'][0]['trace']['edition']);
+        self::assertSame('fixture.step', $recipe['strict']['required'][0]['trace']['steps'][0]['code']);
+
+        $this->deleteJson('/api/user-data', [], ['X-Lootwright-Privacy-Session' => $token])
+            ->assertOk()
+            ->assertJsonPath('artifacts_deleted', 1)
+            ->assertJsonPath('analyses_deleted', 1);
+        $this->assertDatabaseMissing('build_artifacts', ['id' => $artifactId]);
+        $this->assertDatabaseMissing('analyses', ['id' => $analysisId]);
+        $this->assertDatabaseMissing('manual_trade_recipes', ['analysis_id' => $analysisId]);
+    }
+
+    public function test_production_analysis_binding_fails_closed_without_an_approved_ruleset_or_analyzer(): void
+    {
+        $engine = $this->app->make(DeterministicAnalysisEngine::class);
+        self::assertSame(
+            UnavailableDeterministicAnalysisEngine::class,
+            $engine::class,
+        );
+
+        $this->expectException(TerminalWorkflowFailure::class);
+        $this->expectExceptionMessage('No approved immutable ruleset is active');
+        $engine->resolve(
+            new AnalysisRecord(
+                id: DomainFixtures::POE1_ANALYSIS_UUID,
+                artifactId: DomainFixtures::POE1_BUILD_UUID,
+                ownerId: 'release-fixture-owner',
+                edition: GameEdition::Poe1,
+                version: 1,
+                state: AnalysisState::Processing,
+                parametersSnapshot: '{}',
+                parametersHashSha256: hash('sha256', '{}'),
+                adapterKey: 'pob1',
+                parserVersion: '1.0.0',
+            ),
+            new ArtifactRecord(
+                id: DomainFixtures::POE1_BUILD_UUID,
+                ownerId: 'release-fixture-owner',
+                analysisId: DomainFixtures::POE1_ANALYSIS_UUID,
+                edition: GameEdition::Poe1,
+                artifactType: 'pob',
+                blobKey: 'fixture-key',
+                artifactHashSha256: hash('sha256', 'fixture'),
+                state: AnalysisState::Completed,
+                adapterKey: 'pob1',
+                parserVersion: '1.0.0',
+                normalizedSnapshot: '{}',
+                normalizedHashSha256: hash('sha256', '{}'),
+            ),
+        );
     }
 
     public function test_duplicate_submissions_replay_one_database_record_one_blob_and_one_job(): void
@@ -861,6 +962,10 @@ class AnalysisWorkflowTest extends TestCase
         $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
         $snapshot = $engine->lastSnapshot;
         self::assertNotNull($snapshot);
+        $recommendationBeforeAi = DB::table('analysis_recommendations')
+            ->where('analysis_id', $analysisId)
+            ->first(['code', 'payload_hash_sha256', 'payload_encrypted']);
+        self::assertNotNull($recommendationBeforeAi);
         $bundle = new ExplanationBundle(
             'en',
             'Readable deterministic fixture summary.',
@@ -883,6 +988,10 @@ class AnalysisWorkflowTest extends TestCase
 
         self::assertSame('provider', $outcome->status);
         $this->assertDatabaseHas('analysis_explanations', ['analysis_id' => $analysisId, 'status' => 'provider']);
+        $recommendationAfterAi = DB::table('analysis_recommendations')
+            ->where('analysis_id', $analysisId)
+            ->first(['code', 'payload_hash_sha256', 'payload_encrypted']);
+        self::assertEquals($recommendationBeforeAi, $recommendationAfterAi);
         $encrypted = DB::table('analysis_explanations')->where('analysis_id', $analysisId)->value('payload_encrypted');
         self::assertIsString($encrypted);
         self::assertStringNotContainsString('Readable deterministic fixture summary', $encrypted);
@@ -1016,8 +1125,8 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
     public function resolve(AnalysisRecord $analysis, ArtifactRecord $artifact): ResolvedAnalysisContext
     {
         return new ResolvedAnalysisContext(
-            'pob1-fixture',
-            '1.0.0',
+            $artifact->adapterKey ?? 'pob1-fixture',
+            $artifact->parserVersion ?? '1.0.0',
             '01890f47-0f7d-7a2b-ac3d-1234567890ab',
             '1.0.0',
             str_repeat('b', 64),
@@ -1071,7 +1180,30 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
                 [],
                 $trace,
             ), Recommendation::class);
-            $variant = new RecipeVariant('fixture', [], [], []);
+            $strictFilter = new RecipeFilter(
+                'poe1.fixture.maximum_life',
+                'Fixture maximum life',
+                NumericRange::create('50', null),
+                null,
+                'The deterministic fixture finding requires a bounded life filter.',
+                $finding->code,
+                $trace,
+                'fixture.rule',
+                9_000,
+            );
+            $broadFilter = new RecipeFilter(
+                'poe1.fixture.maximum_life',
+                'Fixture maximum life',
+                NumericRange::create('30', null),
+                null,
+                'The broad fallback relaxes only the deterministic minimum.',
+                $finding->code,
+                $trace,
+                'fixture.rule',
+                9_000,
+            );
+            $strictVariant = new RecipeVariant('strict', [$strictFilter], [], []);
+            $broadVariant = new RecipeVariant('broad', [$broadFilter], [], []);
             $recipe = new ApplicationManualTradeRecipe(
                 'poe1',
                 'pc',
@@ -1079,8 +1211,8 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
                 'fixture.helmet',
                 null,
                 null,
-                $variant,
-                $variant,
+                $broadVariant,
+                $strictVariant,
                 [],
                 null,
                 [],
