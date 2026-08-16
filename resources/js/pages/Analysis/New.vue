@@ -261,8 +261,8 @@ function submitPreview(): void {
                     <span>{{
                         form.sourceType === 'pob'
                             ? tx({
-                                  tr: 'Paylaşım kodu veya XML',
-                                  en: 'Share code or XML',
+                                  tr: 'Paylaşım kodu, PoBB.in bağlantısı veya XML',
+                                  en: 'Share code, PoBB.in link, or XML',
                               })
                             : tx({
                                   tr: 'Kopyalanmış eşya metni',
@@ -276,7 +276,7 @@ function submitPreview(): void {
                         spellcheck="false"
                         :placeholder="
                             form.sourceType === 'pob'
-                                ? 'eNrt... / <PathOfBuilding>'
+                                ? 'eNrt... / https://pobb.in/... / <PathOfBuilding>'
                                 : 'Rarity: Rare…'
                         "
                     ></textarea>

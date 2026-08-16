@@ -22,11 +22,18 @@ final class PobEnvelopeDecoder
         }
 
         if (preg_match('~^https?://~i', $trimmed) === 1) {
-            $message = preg_match('~^https?://(?:www\.)?pobb\.in(?:/|$)~i', $trimmed) === 1
-                ? 'Lootwright does not fetch pobb.in URLs. Paste the raw PoB code instead.'
-                : 'Lootwright does not fetch build URLs. Paste the raw PoB code instead.';
+            $pobbMatch = [];
 
-            return $this->failure(DomainErrorCode::UnsupportedInput, $message);
+            if (preg_match('~\Ahttps://(?:www\.)?pobb\.in/([A-Za-z0-9_-]+)\z~iD', $trimmed, $pobbMatch) !== 1) {
+                return $this->failure(
+                    DomainErrorCode::UnsupportedInput,
+                    'Lootwright accepts only a canonical HTTPS pobb.in share-code URL and never fetches build URLs.',
+                );
+            }
+
+            // A canonical pobb.in path is a user-pasted Base64URL share code.
+            // Extract it locally; this adapter must never make an outbound request.
+            $trimmed = $pobbMatch[1];
         }
 
         if (str_starts_with(ltrim($trimmed), '<')) {

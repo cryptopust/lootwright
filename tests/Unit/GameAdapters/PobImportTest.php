@@ -67,13 +67,24 @@ class PobImportTest extends TestCase
         );
     }
 
-    public function test_ambiguous_edition_and_urls_are_rejected_without_fetching(): void
+    public function test_ambiguous_edition_and_non_canonical_urls_are_rejected_without_fetching(): void
     {
         $ambiguous = '<PathOfBuilding><Build/><PathOfBuilding2/></PathOfBuilding>';
 
         self::assertSame(DomainErrorCode::AmbiguousGameEdition, $this->importer()->import($ambiguous)->error()->code);
-        self::assertSame(DomainErrorCode::UnsupportedInput, $this->importer()->import('https://pobb.in/fixture')->error()->code);
-        self::assertStringContainsString('Paste the raw PoB code', $this->importer()->import('https://pobb.in/fixture')->error()->message);
+        self::assertSame(DomainErrorCode::UnsupportedInput, $this->importer()->import('http://pobb.in/fixture')->error()->code);
+        self::assertSame(DomainErrorCode::UnsupportedInput, $this->importer()->import('https://pobb.in/fixture?next=https://127.0.0.1')->error()->code);
+        self::assertSame(DomainErrorCode::UnsupportedInput, $this->importer()->import('https://example.test/fixture')->error()->code);
+    }
+
+    public function test_canonical_pobbin_url_is_decoded_locally_without_a_network_request(): void
+    {
+        $xml = $this->fixture('poe1-minimal.xml');
+        $code = $this->code($xml);
+        $direct = $this->success($this->importer()->import($code));
+        $pobbin = $this->success($this->importer()->import('https://pobb.in/'.$code));
+
+        self::assertSame(CanonicalJson::encode($direct), CanonicalJson::encode($pobbin));
     }
 
     public function test_malformed_base64_and_invalid_compression_are_typed(): void

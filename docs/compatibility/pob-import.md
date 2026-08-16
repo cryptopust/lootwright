@@ -8,12 +8,16 @@ Status: PoE1 MVP import supported; PoE2 format intake is beta. Reviewed
 Lootwright accepts only content a user deliberately pastes or uploads:
 
 - a PoB/PoB2 Base64 or Base64URL share code;
+- a canonical `https://pobb.in/{base64url-share-code}` URL deliberately pasted
+  by the user; the path is extracted locally and is never requested;
 - an uploaded `text/plain` share-code file; or
 - already-decompressed XML pasted as text.
 
-HTTP and HTTPS input is rejected. A `pobb.in` URL is recognized only to explain
-that the raw share code must be pasted. Lootwright does not request that URL or
-any URL discovered inside the build.
+All build URLs other than the canonical HTTPS `pobb.in` wrapper are rejected.
+The wrapper accepts only a single Base64URL path segment: no query, fragment,
+credentials, alternate port, redirect, or additional path is accepted. Lootwright
+extracts that segment as if the user had pasted the share code itself; it does
+not request the URL or any URL discovered inside the build.
 
 The local diagnostic command uses the same framework-independent parser and
 does not access PostgreSQL, Redis, the network, or OpenAI:

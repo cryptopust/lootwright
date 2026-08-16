@@ -20,11 +20,14 @@ rather than provider-neutral `src/Application`. PoE2 is beta and cannot activate
 PoE2 analysis, rulesets, or phase-two game data.
 
 The parser never fetches a URL, executes Lua or embedded content, or invents a
-game edition. `PathOfBuilding` is PoE1 evidence and `PathOfBuilding2` is PoE2
-evidence; conflicting or absent structural markers are rejected. Unknown fields
-are reported explicitly. A parsed snapshot with an unknown patch is not promoted
-to the existing analysis-grade `CanonicalBuild`; exact ruleset binding remains a
-later fail-closed step.
+game edition. A deliberately pasted canonical `https://pobb.in/{base64url-code}`
+wrapper is accepted solely by extracting its one path segment locally; it makes
+no request to pobb.in and is otherwise processed exactly as a pasted share code.
+All other URLs remain rejected. `PathOfBuilding` is PoE1 evidence and
+`PathOfBuilding2` is PoE2 evidence; conflicting or absent structural markers are
+rejected. Unknown fields are reported explicitly. A parsed snapshot with an
+unknown patch is not promoted to the existing analysis-grade `CanonicalBuild`;
+exact ruleset binding remains a later fail-closed step.
 
 ## Consequences
 

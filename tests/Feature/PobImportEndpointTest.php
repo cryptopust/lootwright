@@ -50,6 +50,23 @@ class PobImportEndpointTest extends TestCase
         ]);
     }
 
+    public function test_canonical_pobbin_url_uses_the_local_user_input_pipeline(): void
+    {
+        $code = $this->code($this->fixture('poe1-minimal.xml'));
+
+        $this->postJson('/api/build-imports/pob', [
+            'input' => 'https://pobb.in/'.$code,
+            'persist' => false,
+        ])->assertOk()
+            ->assertJsonPath('status', 'normalized')
+            ->assertJsonPath('import.canonical_build.edition', 'poe1')
+            ->assertJsonPath('retention.persisted', false);
+
+        $this->assertDatabaseMissing('policy_decision_audits', [
+            'source_id' => 'POBBIN-REMOTE',
+        ]);
+    }
+
     public function test_mutating_routes_keep_the_web_csrf_session_boundary_and_safe_session_defaults(): void
     {
         $storeRoute = Route::getRoutes()->getByName('build-imports.pob.store');
