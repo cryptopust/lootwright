@@ -10,6 +10,24 @@ use Tests\TestCase;
 
 final class PostgreSqlMigrationCompatibilityTest extends TestCase
 {
+    public function test_canonical_game_data_migration_compiles_edition_scoped_postgresql_constraints(): void
+    {
+        config(['database.default' => 'pgsql']);
+
+        $queries = DB::connection('pgsql')->pretend(static function (): void {
+            $migration = require database_path('migrations/2026_08_20_140000_create_canonical_game_data_tables.php');
+            $migration->up();
+        });
+        $sql = implode("\n", array_column($queries, 'query'));
+
+        self::assertStringContainsString('create table "canonical_game_data"', $sql);
+        self::assertStringContainsString('canonical_data_ruleset_edition_fk', $sql);
+        self::assertStringContainsString('canonical_data_source_edition_fk', $sql);
+        self::assertStringContainsString('canonical_game_data_parent_fk', $sql);
+        self::assertStringContainsString('canonical_game_data_immutable', $sql);
+        self::assertStringContainsString('jsonb', $sql);
+    }
+
     public function test_analysis_primary_key_is_created_before_its_self_referencing_foreign_key(): void
     {
         config(['database.default' => 'pgsql']);
@@ -82,7 +100,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertSame(0, Artisan::call('migrate:fresh', ['--database' => 'pgsql', '--force' => true]));
         self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
         self::assertTrue(Schema::connection('pgsql')->hasColumn('analyses', 'user_id'));
-        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history'] as $table) {
+        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data'] as $table) {
             self::assertTrue(Schema::connection('pgsql')->hasTable($table));
         }
 
@@ -102,7 +120,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
             join pg_attribute child_attribute on child_attribute.attrelid = child_table.oid and child_attribute.attnum = child_key.attnum
             join pg_attribute parent_attribute on parent_attribute.attrelid = parent_table.oid and parent_attribute.attnum = parent_key.attnum
             where constraint_record.contype = 'f'
-              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history')
+              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data')
             SQL);
 
         self::assertNotEmpty($foreignKeyTypes);
@@ -116,6 +134,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
 
         self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'source_snapshots'::regclass and tgname = 'source_snapshots_immutable' and not tgisinternal"));
         self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'ruleset_versions'::regclass and tgname = 'ruleset_versions_immutable' and not tgisinternal"));
+        self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'canonical_game_data'::regclass and tgname = 'canonical_game_data_immutable' and not tgisinternal"));
 
         self::assertSame(0, Artisan::call('migrate:rollback', ['--database' => 'pgsql', '--force' => true]));
         self::assertFalse(Schema::connection('pgsql')->hasTable('users'));

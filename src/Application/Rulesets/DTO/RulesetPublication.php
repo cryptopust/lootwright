@@ -4,6 +4,10 @@ namespace Lootwright\Application\Rulesets\DTO;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalGameEntity;
+use Lootwright\Domain\Rulesets\DatasetClassification;
+use Lootwright\Domain\Rulesets\ProvenanceStatus;
+use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Shared\Game\GameEdition;
 
 final readonly class RulesetPublication
@@ -11,6 +15,7 @@ final readonly class RulesetPublication
     /**
      * @param  list<string>  $sourceSnapshotIds
      * @param  array<string, mixed>  $canonicalPayload
+     * @param  list<CanonicalGameEntity>  $canonicalData
      */
     public function __construct(
         public string $id,
@@ -25,6 +30,10 @@ final readonly class RulesetPublication
         public array $canonicalPayload,
         public DateTimeImmutable $publishedAt,
         public ?string $supersedesRulesetVersionId = null,
+        public DatasetClassification $datasetClassification = DatasetClassification::Unavailable,
+        public ProvenanceStatus $provenanceStatus = ProvenanceStatus::Pending,
+        public RulesetCompatibilityStatus $compatibilityStatus = RulesetCompatibilityStatus::Unavailable,
+        public array $canonicalData = [],
     ) {
         if (preg_match('/^[0-9a-f-]{36}$/D', $id) !== 1
             || preg_match('/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9a-z.-]+)?$/D', $version) !== 1
@@ -41,6 +50,14 @@ final readonly class RulesetPublication
         foreach ($sourceSnapshotIds as $snapshotId) {
             if (preg_match('/^[0-9a-f-]{36}$/D', $snapshotId) !== 1) {
                 throw new InvalidArgumentException('Ruleset source snapshot IDs must be UUIDs.');
+            }
+        }
+
+        foreach ($canonicalData as $entity) {
+            if ($entity->edition !== $edition
+                || $entity->rulesetVersionId !== $id
+            ) {
+                throw new InvalidArgumentException('Canonical ruleset data must belong to the published ruleset and edition.');
             }
         }
 

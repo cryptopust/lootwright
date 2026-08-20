@@ -35,15 +35,23 @@ registered source/version
        -> invalid: rejected snapshot + quarantine record
        -> valid: immutable normalized snapshot
     -> reviewed published ruleset links exact snapshot IDs
+    -> immutable canonical entities cite the same-edition snapshot
+    -> immutable dataset classification/provenance/compatibility decision
     -> atomic activation for edition + patch + league + parser
     -> exact local resolution during analysis
 ```
 
-The database makes snapshots, published rulesets, source links, and activation
-history append-only on PostgreSQL. Re-importing the same source/edition/checksum
+The database makes snapshots, published rulesets, source links, canonical
+entities, dataset approvals, and activation history append-only on PostgreSQL. Re-importing the same source/edition/checksum
 is idempotent. Reusing an upstream revision with different content enters
 quarantine. Corrections create a new snapshot and ruleset; published payloads
 are not edited.
+
+Legacy or fixture rulesets are never implicitly approved. Production activation
+requires an immutable `approved_import`, `approved` provenance, and `compatible`
+decision. Existing records without that evidence are migrated as unavailable
+decision. Existing records without that evidence remain unavailable and must
+pass the governed publication path before activation.
 
 ## Minimum imported-data identity
 
@@ -104,4 +112,3 @@ provider response bodies.
 See the [source register](../compliance/source-register.md), [source strategy
 ADR](../adr/0017-game-data-source-strategy.md), and [external-source
 architecture](external-data-sources.md).
-

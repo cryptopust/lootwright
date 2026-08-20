@@ -68,7 +68,7 @@ enum EconomyCategory: string
             throw new InvalidArgumentException('Unsupported poe.ninja exchange category.');
         }
 
-return $category;
+        return $category;
     }
 
     public static function stashFrom(string $value): self
@@ -78,6 +78,6 @@ return $category;
             throw new InvalidArgumentException('Unsupported poe.ninja stash category.');
         }
 
-return $category;
+        return $category;
     }
 }

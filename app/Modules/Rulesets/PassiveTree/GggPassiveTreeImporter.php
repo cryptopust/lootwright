@@ -10,7 +10,15 @@ use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotQuarantine;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\Rulesets\Services\GovernedRulesetLifecycle;
+use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
+use Lootwright\Domain\PoeCatalog\Canonical\CharacterClass;
+use Lootwright\Domain\PoeCatalog\Canonical\Keystone;
+use Lootwright\Domain\PoeCatalog\Canonical\PassiveNode;
+use Lootwright\Domain\Rulesets\DatasetClassification;
+use Lootwright\Domain\Rulesets\ProvenanceStatus;
+use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Shared\Game\GameEdition;
+use Lootwright\Domain\Shared\Provenance\SourceProvenanceReference;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
@@ -150,8 +158,10 @@ final readonly class GggPassiveTreeImporter
             }
             $rulesetPayload = [...$payload, 'deterministic_analysis' => Poe1AnalysisRuleset::publishedV1()->jsonSerialize()];
             $rulesetChecksum = hash('sha256', CanonicalJson::encode($rulesetPayload));
+            $rulesetId = (string) Str::uuid7();
+            $canonicalData = $this->canonicalData($tree, $rulesetId, $revision, $snapshotChecksum);
             $rulesetId = $this->lifecycle->publish(new RulesetPublication(
-                (string) Str::uuid7(),
+                $rulesetId,
                 GameEdition::Poe1,
                 $approved['patch'].'-analysis.'.Poe1AnalysisRuleset::publishedV1()->engineVersion.'.skilltree.'.substr($revision, 0, 8),
                 $approved['patch'],
@@ -162,11 +172,78 @@ final readonly class GggPassiveTreeImporter
                 [$record->snapshotId],
                 $rulesetPayload,
                 $retrievedAt,
+                datasetClassification: DatasetClassification::ApprovedImport,
+                provenanceStatus: ProvenanceStatus::Approved,
+                compatibilityStatus: RulesetCompatibilityStatus::Compatible,
+                canonicalData: $canonicalData,
             ));
             $this->lifecycle->activate($rulesetId, 'operator');
         }
 
         return new GggPassiveTreeImportResult($record->status, $revision, $sourceChecksum, $snapshotChecksum, $record->snapshotId, $rulesetId, $record->replayed, count($tree['classes']), count($tree['nodes']));
+    }
+
+    /**
+     * @param  array<string, mixed>  $tree
+     * @return list<CharacterClass|Ascendancy|PassiveNode|Keystone>
+     */
+    private function canonicalData(array $tree, string $rulesetId, string $revision, string $snapshotChecksum): array
+    {
+        $provenance = new SourceProvenanceReference(
+            GameEdition::Poe1,
+            self::SOURCE_CODE,
+            $revision,
+            $snapshotChecksum,
+        );
+
+        $entities = [];
+        /** @var array<string, string> $classIds */
+        $classIds = [];
+        foreach ($tree['classes'] as $class) {
+            $classId = 'class:'.(string) $class['index'];
+            $classIds[(string) $class['name']] = $classId;
+            $entities[] = new CharacterClass(
+                GameEdition::Poe1,
+                $rulesetId,
+                $classId,
+                (string) $class['name'],
+                $provenance,
+                ['upstream_index' => $class['index']],
+            );
+            foreach ($class['ascendancies'] as $ascendancy) {
+                $entities[] = new Ascendancy(
+                    GameEdition::Poe1,
+                    $rulesetId,
+                    'ascendancy:'.(string) $ascendancy['upstream_id'],
+                    (string) $ascendancy['name'],
+                    $provenance,
+                    $classId,
+                );
+            }
+        }
+        foreach ($tree['nodes'] as $node) {
+            $externalId = 'passive:'.(string) $node['id'];
+            $attributes = [
+                'node_type' => $node['node_type'],
+                'is_keystone' => $node['is_keystone'],
+                'is_notable' => $node['is_notable'],
+                'is_mastery' => $node['is_mastery'],
+                'stats' => $node['stats'],
+                'incoming' => $node['incoming'],
+                'outgoing' => $node['outgoing'],
+                'class_external_id' => is_string($node['class']) ? ($classIds[$node['class']] ?? null) : null,
+                'ascendancy_upstream_id' => $node['ascendancy_upstream_id'],
+                'progression_type' => $node['progression_type'],
+                'icon_path_reference' => $node['icon_path'],
+                'mastery_effects' => $node['mastery_effects'],
+            ];
+            $entities[] = new PassiveNode(GameEdition::Poe1, $rulesetId, $externalId, $node['name'], $provenance, $attributes);
+            if ($node['is_keystone'] === true) {
+                $entities[] = new Keystone(GameEdition::Poe1, $rulesetId, $externalId, $node['name'], $provenance, $attributes);
+            }
+        }
+
+        return $entities;
     }
 
     private function quarantine(string $revision, string $sourceUrl, string $sourceChecksum, string $reasonCode): GggPassiveTreeImportResult

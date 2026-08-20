@@ -38,7 +38,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | --- | --- | --- | --- |
 | `src/Domain/Shared` | Game identity, evidence, provenance references, shared value objects and ports | PHP standard library | Laravel, adapters, storage, AI |
 | `src/Domain/BuildIntake` | Player intent, parser snapshots, canonical-build boundary, normalization port | Shared, PoE Catalog, Rulesets | Laravel, persistence, provider SDKs |
-| `src/Domain/PoeCatalog` | Opaque game-scoped catalog identifiers and canonical item selections | Shared | real datasets without approved provenance, adapters, Laravel |
+| `src/Domain/PoeCatalog` | Edition/ruleset-scoped canonical entity contracts, identifiers, relationships, and repository port | Shared | unapproved datasets, adapters, Laravel, Policy implementation |
 | `src/Domain/Rulesets` | Immutable ruleset identity and exact-resolution port | Shared, Policy and Provenance | mutable publication state, Laravel |
 | `src/Domain/Analysis` | Deterministic metrics and findings | Shared, Build Intake, Rulesets | HTTP, Eloquent, queues, AI |
 | `src/Domain/Recommendations` | Deterministic ranking and explanations-as-data | Shared, Build Intake, Analysis | provider prose, market state |
@@ -49,7 +49,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/GameAdapters/PoE2` | PoE2 parsing, Early Access catalog and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
 | `src/Application` | Use cases, commands, queries, workflow states, DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
-| `app/Modules/Rulesets` | Reserved for future import, checksum, review, activation, and repository adapter; not implemented | Application ports, Laravel | mutating published rulesets |
+| `app/Modules/Rulesets` | Governed import, checksum/quarantine, immutable ruleset and canonical-data persistence, historical/exact resolution, and atomic activation | Application/domain ports, Laravel | mutating published rulesets, fixture promotion, cross-edition fallback |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
 | `app/Modules/Identity` | Expiring anonymous privacy-session credentials, secret generation, and HTTP-principal resolution | Application identity ports, Laravel | GGG credentials, IP/device identity storage, domain rules |

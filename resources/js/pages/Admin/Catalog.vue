@@ -24,6 +24,29 @@ const props = defineProps<{
             }>;
         }>;
     }>;
+    rulesets: Array<{
+        id: string;
+        game_edition: 'poe1' | 'poe2';
+        version: string;
+        patch: string;
+        checksum_sha256: string;
+        published_at: string;
+        dataset_classification: string;
+        provenance_status: string;
+        compatibility_status: string;
+        active: boolean;
+        sources: string;
+        source_checksums: string;
+        import_failures: string;
+        entity_counts: Record<string, number>;
+    }>;
+    importFailures: Array<{
+        source_key: string;
+        game_edition: 'poe1' | 'poe2';
+        status: string;
+        failure_code: string | null;
+        started_at: string;
+    }>;
 }>();
 const selectedGame = ref<'poe1' | 'poe2'>('poe1');
 const catalog = computed(
@@ -123,6 +146,37 @@ const counts = computed(() => ({
                     </li>
                 </ul>
             </section>
-        </div></AppShell
+        </div>
+        <section class="catalog-ledger" aria-labelledby="ruleset-heading">
+            <header><h2 id="ruleset-heading">Canonical ruleset kayıtları</h2></header>
+            <article v-for="ruleset in props.rulesets" :key="ruleset.id">
+                <header>
+                    <h3>{{ ruleset.game_edition }} · {{ ruleset.version }}</h3>
+                    <code>{{ ruleset.patch }} · {{ ruleset.active ? 'active' : 'inactive' }}</code>
+                </header>
+                <dl class="review-grid">
+                    <div><dt>Dataset</dt><dd>{{ ruleset.dataset_classification }}</dd></div>
+                    <div><dt>Provenance</dt><dd>{{ ruleset.provenance_status }}</dd></div>
+                    <div><dt>Uyumluluk</dt><dd>{{ ruleset.compatibility_status }}</dd></div>
+                    <div><dt>Import</dt><dd>{{ ruleset.published_at }}</dd></div>
+                    <div><dt>Kaynak</dt><dd>{{ ruleset.sources || 'bilinmiyor' }}</dd></div>
+                    <div><dt>Hata</dt><dd>{{ ruleset.import_failures || 'yok' }}</dd></div>
+                </dl>
+                <p><code>ruleset sha256: {{ ruleset.checksum_sha256 }}</code></p>
+                <p><code>source sha256: {{ ruleset.source_checksums || 'bilinmiyor' }}</code></p>
+                <p><code>{{ JSON.stringify(ruleset.entity_counts) }}</code></p>
+            </article>
+            <p v-if="props.rulesets.length === 0"><em>Onaylı imported canonical ruleset henüz yok.</em></p>
+        </section>
+        <section class="catalog-ledger" aria-labelledby="failures-heading">
+            <header><h2 id="failures-heading">Son import hataları</h2></header>
+            <ul v-if="props.importFailures.length > 0">
+                <li v-for="failure in props.importFailures" :key="`${failure.source_key}:${failure.started_at}`">
+                    <code>{{ failure.game_edition }} · {{ failure.source_key }} · {{ failure.status }}</code>
+                    <span>{{ failure.failure_code || 'ayrıntı yok' }}</span>
+                </li>
+            </ul>
+            <p v-else><em>Kayıtlı import hatası yok.</em></p>
+        </section></AppShell
     >
 </template>

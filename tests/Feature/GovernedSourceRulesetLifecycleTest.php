@@ -13,7 +13,12 @@ use Lootwright\Application\Rulesets\DTO\RulesetPublication;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\Rulesets\Services\GovernedRulesetLifecycle;
+use Lootwright\Domain\Rulesets\DatasetClassification;
+use Lootwright\Domain\Rulesets\Ports\ActiveRulesetResolver;
+use Lootwright\Domain\Rulesets\Ports\RulesetRepository;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
+use Lootwright\Domain\Rulesets\ProvenanceStatus;
+use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Rulesets\RulesetIdentity;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
@@ -194,6 +199,96 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
         $lifecycle->activate($rulesetId);
     }
 
+    public function test_fixture_ruleset_is_published_for_tests_but_cannot_become_active_authority(): void
+    {
+        $lifecycle = $this->app->make(GovernedRulesetLifecycle::class);
+        $payload = ['fixture' => true];
+        $snapshot = $lifecycle->import($this->snapshot($payload, 'fixture-rev'), ['checksum_verified', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope']);
+        $id = (string) Str::uuid7();
+        $lifecycle->publish(new RulesetPublication(
+            $id,
+            GameEdition::Poe1,
+            '8.0.0',
+            '3.28.0',
+            null,
+            '1.0.0',
+            hash('sha256', CanonicalJson::encode($payload)),
+            '1.0.0',
+            [$snapshot->snapshotId],
+            $payload,
+            new DateTimeImmutable('2026-08-20T10:00:00Z'),
+            datasetClassification: DatasetClassification::Fixture,
+            provenanceStatus: ProvenanceStatus::Approved,
+            compatibilityStatus: RulesetCompatibilityStatus::Compatible,
+        ));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Fixture');
+        $lifecycle->activate($id);
+    }
+
+    public function test_checksum_mismatch_and_invalid_provenance_fail_closed(): void
+    {
+        $lifecycle = $this->app->make(GovernedRulesetLifecycle::class);
+        $payload = ['rule' => ['value' => 1]];
+        $snapshot = $lifecycle->import($this->snapshot($payload, 'invalid-provenance-rev'), ['checksum_verified', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope']);
+
+        try {
+            $lifecycle->publish(new RulesetPublication(
+                (string) Str::uuid7(), GameEdition::Poe1, '7.0.0', '3.28.0', null, '1.0.0',
+                str_repeat('0', 64), '1.0.0', [$snapshot->snapshotId], $payload,
+                new DateTimeImmutable('2026-08-20T10:10:00Z'),
+            ));
+            self::fail('A mismatched ruleset checksum must be rejected.');
+        } catch (DomainException $exception) {
+            self::assertStringContainsString('checksum', $exception->getMessage());
+        }
+
+        $id = (string) Str::uuid7();
+        $lifecycle->publish(new RulesetPublication(
+            $id, GameEdition::Poe1, '7.0.1', '3.28.0', null, '1.0.0',
+            hash('sha256', CanonicalJson::encode($payload)), '1.0.0', [$snapshot->snapshotId], $payload,
+            new DateTimeImmutable('2026-08-20T10:11:00Z'),
+            datasetClassification: DatasetClassification::ApprovedImport,
+            provenanceStatus: ProvenanceStatus::Invalid,
+            compatibilityStatus: RulesetCompatibilityStatus::InvalidProvenance,
+        ));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('unapproved');
+        $lifecycle->activate($id);
+    }
+
+    public function test_historical_rulesets_remain_retrievable_and_patch_failures_are_explicit(): void
+    {
+        [, $firstId] = $this->publishRuleset('1.0.0', ['rule' => ['value' => 1]]);
+        [, $secondId] = $this->publishRuleset('1.0.1', ['rule' => ['value' => 2]], 'rev-history-2', $firstId);
+        $lifecycle = $this->app->make(GovernedRulesetLifecycle::class);
+        $lifecycle->activate($firstId);
+        $lifecycle->activate($secondId);
+
+        $repository = $this->app->make(RulesetRepository::class);
+        self::assertSame($firstId, $repository->findById($firstId)?->identity->id->value);
+        self::assertSame($secondId, $repository->findByVersion(GameEdition::Poe1, '1.0.1')?->identity->id->value);
+
+        $resolver = $this->app->make(ActiveRulesetResolver::class);
+        $unsupported = $resolver->resolveActive(
+            GameEdition::Poe1,
+            DomainFixtures::patch(GameEdition::Poe1, '3.27.0'),
+            null,
+            DomainFixtures::parser(GameEdition::Poe1),
+        );
+        $poe2Unavailable = $resolver->resolveActive(
+            GameEdition::Poe2,
+            DomainFixtures::patch(GameEdition::Poe2, '0.5.0'),
+            null,
+            DomainFixtures::parser(GameEdition::Poe2),
+        );
+        self::assertSame(RulesetCompatibilityStatus::UnsupportedPatch, $unsupported->status);
+        self::assertSame(RulesetCompatibilityStatus::Unavailable, $poe2Unavailable->status);
+        self::assertNull($poe2Unavailable->ruleset);
+    }
+
     /** @param array<string, mixed> $payload */
     private function snapshot(array $payload, string $revision): SourceSnapshotImport
     {
@@ -237,6 +332,9 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
             $payload,
             new DateTimeImmutable('2026-08-20T08:05:00Z'),
             $supersedes,
+            DatasetClassification::ApprovedImport,
+            ProvenanceStatus::Approved,
+            RulesetCompatibilityStatus::Compatible,
         ));
 
         return [$snapshot->snapshotId, $rulesetId];

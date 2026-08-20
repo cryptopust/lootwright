@@ -39,6 +39,8 @@ but not game facts:
 | `Recommendation` | Carries an explicit edition; its analysis, findings, and explanation trace must match. The trace contains the exact ruleset ID/version. |
 | Manual recipe | Recipe, recommendation, filters, slot, and evidence trace share an edition. |
 | Source snapshot | Database record has non-null `game_edition`, source identity, revision, checksum, schema, permission context, and immutable normalized content. |
+| Canonical game entity | Identity is edition + immutable ruleset + entity type + stable external ID; source provenance must have the same edition. |
+| `GameRuleset` / `GameVersion` | Publication classification, provenance, and compatibility are explicit; fixture or unavailable data cannot activate. |
 
 Application DTOs may enclose these types. A DTO containing untyped normalized
 arrays must still carry a top-level edition, validate every game-specific value
@@ -91,14 +93,19 @@ duplicating it. Their encrypted canonical payloads retain the edition/ruleset
 trace. Reads must traverse the owning analysis and must not infer edition from a
 human-readable code.
 
+`canonical_game_data` enforces this boundary with edition-matched composite
+foreign keys to `ruleset_versions` and `source_snapshots`. Character and
+Ascendancy relationships are ruleset-local. Repository reads require edition
+and ruleset ID, so a shared external ID cannot cross the boundary even when two
+games use the same display name.
+
 ## Current adapter state
 
 PoE1 has a bounded PoB reader, official passive-tree importer, exact ruleset
 resolver, and narrow production deterministic finding engine. PoE2 has a
 versioned character catalog and beta structural PoB2 reader only. PoE2 has no
-approved production ruleset or deterministic engine, and its manual recipe
+approved canonical dataset, production ruleset or deterministic engine, and its manual recipe
 adapter fails closed.
 
 See the [current-state audit](../audits/current-state.md) and the existing
 [PoE1/PoE2 boundary](poe1-poe2-boundary.md).
-

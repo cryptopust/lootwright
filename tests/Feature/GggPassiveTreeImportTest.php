@@ -2,14 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Modules\Rulesets\PassiveTree\GggPassiveTreeUrl;
 use App\Security\OutboundRequestGuard;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
+use Lootwright\Domain\PoeCatalog\Ports\GameDataRepository;
+use Lootwright\Domain\Shared\Game\GameEdition;
 use Tests\TestCase;
 
 final class GggPassiveTreeImportTest extends TestCase
@@ -163,6 +169,23 @@ final class GggPassiveTreeImportTest extends TestCase
         self::assertStringContainsString('yes', Artisan::output());
         $this->assertDatabaseCount('source_snapshots', 1);
         $this->assertDatabaseCount('ruleset_versions', 1);
+        $this->assertDatabaseHas('ruleset_dataset_approvals', [
+            'ruleset_version_id' => $activeId,
+            'game_edition' => 'poe1',
+            'dataset_classification' => 'approved_import',
+            'provenance_status' => 'approved',
+            'compatibility_status' => 'compatible',
+        ]);
+        $this->assertDatabaseCount('canonical_game_data', 23);
+        $this->assertDatabaseHas('canonical_game_data', ['game_edition' => 'poe1', 'entity_type' => 'character_class', 'external_id' => 'class:0']);
+        $this->assertDatabaseHas('canonical_game_data', ['game_edition' => 'poe1', 'entity_type' => 'ascendancy', 'parent_entity_type' => 'character_class']);
+        $this->assertDatabaseHas('canonical_game_data', ['game_edition' => 'poe1', 'entity_type' => 'keystone', 'external_id' => 'passive:58556']);
+        $this->assertDatabaseMissing('canonical_game_data', ['game_edition' => 'poe2']);
+        $this->assertDatabaseMissing('canonical_game_data', ['entity_type' => 'skill_gem']);
+
+        $repository = $this->app->make(GameDataRepository::class);
+        self::assertCount(7, $repository->listForRuleset(GameEdition::Poe1, $activeId, CanonicalEntityType::CharacterClass));
+        self::assertNull($repository->find(GameEdition::Poe2, $activeId, CanonicalEntityType::CharacterClass, 'class:0'));
         $this->assertDatabaseCount('ruleset_activations', 1);
         self::assertSame($activeId, DB::table('ruleset_activations')->value('ruleset_version_id'));
 
@@ -196,6 +219,51 @@ final class GggPassiveTreeImportTest extends TestCase
         self::assertSame(1, Artisan::call('poe:import-passive-tree', ['--url' => GggPassiveTreeUrl::forRevision($unknown)]));
         self::assertStringContainsString('not approved', Artisan::output());
         Http::assertNothingSent();
+    }
+
+    public function test_database_rejects_cross_edition_canonical_relationships(): void
+    {
+        self::assertSame(0, Artisan::call('poe:import-passive-tree', ['--file' => $this->fixture, '--activate' => true]));
+        $rulesetId = DB::table('ruleset_versions')->value('id');
+        $snapshotId = DB::table('source_snapshots')->value('id');
+
+        try {
+            DB::table('canonical_game_data')->insert([
+                'id' => '11111111-1111-4111-8111-111111111111',
+                'ruleset_version_id' => $rulesetId,
+                'game_edition' => 'poe2',
+                'entity_type' => 'character_class',
+                'external_id' => 'class:0',
+                'display_name' => 'Cross-edition invalid row',
+                'source_snapshot_id' => $snapshotId,
+                'payload' => '{}',
+                'payload_checksum_sha256' => hash('sha256', '{}'),
+                'created_at' => now(),
+            ]);
+            self::fail('A PoE2 canonical row must not reference PoE1 ruleset or source identities.');
+        } catch (QueryException) {
+            self::addToAssertionCount(1);
+        }
+    }
+
+    public function test_authorized_admin_can_inspect_ruleset_provenance_without_canonical_payloads(): void
+    {
+        self::assertSame(0, Artisan::call('poe:import-passive-tree', ['--file' => $this->fixture, '--activate' => true]));
+        $admin = User::factory()->admin()->create(['two_factor_confirmed_at' => now()]);
+        Config::set('inertia.ssr.enabled', false);
+
+        $this->actingAs($admin)->get('/admin/catalog')->assertOk()->assertInertia(
+            fn (AssertableInertia $page): AssertableInertia => $page
+                ->component('Admin/Catalog')
+                ->where('rulesets.0.game_edition', 'poe1')
+                ->where('rulesets.0.dataset_classification', 'approved_import')
+                ->where('rulesets.0.provenance_status', 'approved')
+                ->where('rulesets.0.compatibility_status', 'compatible')
+                ->where('rulesets.0.active', true)
+                ->has('rulesets.0.entity_counts')
+                ->missing('rulesets.0.canonical_payload')
+                ->missing('rulesets.0.normalized_payload'),
+        );
     }
 
     private function publicDns(): void

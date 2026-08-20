@@ -648,6 +648,27 @@ runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
 
+2026-08-20: extended the governed ruleset lifecycle with edition-scoped
+canonical game-data contracts and persistence. `GameVersion`, `GameRuleset`,
+historical/active ruleset repositories, compatibility statuses, and eleven
+canonical entity types are framework-independent. PostgreSQL composite foreign
+keys bind every canonical row to a same-edition immutable ruleset and source
+snapshot; activation requires an approved import, approved provenance, and
+compatible status. Fixture, legacy, invalid, unsupported, and unavailable
+datasets fail closed. The approved GGG PoE1 passive-tree importer now supplies
+only evidenced classes, Ascendancies, passive nodes, and keystones. No PoE2,
+skill, item, modifier, or content-goal facts were invented. Admin catalog
+inspection exposes checksums, import failures, activation, compatibility,
+provenance, and entity counts without raw payloads or an edit surface. See ADR
+0019. Composer validation/audit, Pint, PHPStan, 756 of 758 PHP tests with 9,571
+assertions (two opt-in PostgreSQL tests skipped), architecture tests, guardrails,
+the fast eval suite, npm clean install/audit/lint/typecheck, 21 Vitest tests, 8
+Playwright tests, Vite build, docs validation, route listing, and diff checks
+passed. A disposable SQLite fresh/rollback/reapply cycle passed. No local
+PostgreSQL service, client, or container runtime was available and port 5432
+was closed, so the real PostgreSQL fresh/rollback/reapply gate remains pending;
+SQLite is not claimed as PostgreSQL proof.
+
 2026-08-20: production-bound the versioned PoE1 deterministic finding engine.
 It consumes only normalized PoB facts and the exact locally activated immutable
 GGG passive-tree snapshot; both ruleset and snapshot checksums are reverified.

@@ -14,6 +14,10 @@ use Lootwright\Application\Rulesets\DTO\SourceSnapshotQuarantine;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotRecord;
 use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
+use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalGameEntity;
+use Lootwright\Domain\PoeCatalog\Canonical\Keystone;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use RuntimeException;
@@ -235,7 +239,11 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                     throw new DomainException('Existing ruleset content has incompatible publication metadata.');
                 }
 
-                return $this->string($existingData, 'id');
+                $existingId = $this->string($existingData, 'id');
+                $this->persistDatasetApproval($ruleset, $existingId);
+                $this->persistCanonicalData($ruleset, $existingId);
+
+                return $existingId;
             }
 
             $snapshots = DB::table('source_snapshots')
@@ -292,6 +300,9 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                 ]);
             }
 
+            $this->persistDatasetApproval($ruleset, $ruleset->id);
+            $this->persistCanonicalData($ruleset, $ruleset->id);
+
             return $ruleset->id;
         }, 3);
     }
@@ -313,6 +324,20 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
 
             if ($this->string($data, 'status') !== 'published') {
                 throw new DomainException('Only a published ruleset can be activated.');
+            }
+
+            $approval = DB::table('ruleset_dataset_approvals')
+                ->where('ruleset_version_id', $rulesetVersionId)
+                ->first(['dataset_classification', 'provenance_status', 'compatibility_status']);
+            if ($approval === null) {
+                throw new DomainException('Ruleset activation requires an explicit dataset approval record.');
+            }
+            $approvalData = get_object_vars($approval);
+            if ($this->string($approvalData, 'dataset_classification') !== 'approved_import'
+                || $this->string($approvalData, 'provenance_status') !== 'approved'
+                || $this->string($approvalData, 'compatibility_status') !== 'compatible'
+            ) {
+                throw new DomainException('Fixture, unavailable, incompatible, or unapproved rulesets cannot be activated.');
             }
 
             $sources = DB::table('ruleset_source_snapshots')
@@ -401,6 +426,105 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
         }
 
         return $id;
+    }
+
+    private function persistDatasetApproval(RulesetPublication $ruleset, string $rulesetVersionId): void
+    {
+        $expected = [
+            'game_edition' => $ruleset->edition->value,
+            'dataset_classification' => $ruleset->datasetClassification->value,
+            'provenance_status' => $ruleset->provenanceStatus->value,
+            'compatibility_status' => $ruleset->compatibilityStatus->value,
+            'approved_by_source_snapshot_id' => $ruleset->sourceSnapshotIds[0],
+        ];
+        $existing = DB::table('ruleset_dataset_approvals')->where('ruleset_version_id', $rulesetVersionId)->first();
+        if ($existing !== null) {
+            $data = get_object_vars($existing);
+            foreach ($expected as $key => $value) {
+                if (($data[$key] ?? null) !== $value) {
+                    throw new DomainException('Existing ruleset dataset approval is incompatible with this publication.');
+                }
+            }
+
+            return;
+        }
+
+        DB::table('ruleset_dataset_approvals')->insert([
+            'ruleset_version_id' => $rulesetVersionId,
+            ...$expected,
+            'imported_at' => $ruleset->publishedAt,
+            'created_at' => $ruleset->publishedAt,
+        ]);
+    }
+
+    private function persistCanonicalData(RulesetPublication $ruleset, string $rulesetVersionId): void
+    {
+        $snapshots = DB::table('source_snapshots')
+            ->join('policy_data_source_versions', 'policy_data_source_versions.id', '=', 'source_snapshots.source_version_id')
+            ->whereIn('source_snapshots.id', $ruleset->sourceSnapshotIds)
+            ->get(['source_snapshots.id', 'source_snapshots.source_code', 'source_snapshots.game_edition', 'source_snapshots.checksum_sha256', 'policy_data_source_versions.version as source_version'])
+            ->keyBy(static fn (object $row): string => $row->source_code.'|'.$row->source_version.'|'.$row->checksum_sha256);
+
+        $entities = $ruleset->canonicalData;
+        usort($entities, static function (CanonicalGameEntity $left, CanonicalGameEntity $right): int {
+            $priority = static fn (CanonicalEntityType $type): int => match ($type) {
+                CanonicalEntityType::CharacterClass, CanonicalEntityType::PassiveNode => 0,
+                CanonicalEntityType::Ascendancy, CanonicalEntityType::Keystone => 1,
+                default => 2,
+            };
+
+            return [$priority($left->type()), $left->type()->value, $left->externalId]
+                <=> [$priority($right->type()), $right->type()->value, $right->externalId];
+        });
+
+        foreach ($entities as $entity) {
+            $snapshot = $snapshots->get($entity->provenance->sourceCode.'|'.$entity->provenance->sourceVersion.'|'.$entity->provenance->checksumSha256);
+            if (! is_object($snapshot)
+                || $entity->edition !== $ruleset->edition
+                || $entity->rulesetVersionId !== $ruleset->id
+                || $snapshot->game_edition !== $ruleset->edition->value
+            ) {
+                throw new DomainException('Canonical data must cite an allowed same-edition ruleset snapshot.');
+            }
+
+            [$parentType, $parentExternalId] = match (true) {
+                $entity instanceof Ascendancy => [CanonicalEntityType::CharacterClass->value, $entity->characterClassExternalId],
+                $entity instanceof Keystone => [CanonicalEntityType::PassiveNode->value, $entity->externalId],
+                default => [null, null],
+            };
+            $payload = $entity->jsonSerialize();
+            $payload['ruleset_version_id'] = $rulesetVersionId;
+            $encoded = CanonicalJson::encode($payload);
+            $checksum = hash('sha256', $encoded);
+            $identity = [
+                'game_edition' => $ruleset->edition->value,
+                'ruleset_version_id' => $rulesetVersionId,
+                'entity_type' => $entity->type()->value,
+                'external_id' => $entity->externalId,
+            ];
+            $existing = DB::table('canonical_game_data')->where($identity)->first(['payload_checksum_sha256', 'source_snapshot_id']);
+            if ($existing !== null) {
+                if (! hash_equals((string) $existing->payload_checksum_sha256, $checksum)
+                    || (string) $existing->source_snapshot_id !== (string) $snapshot->id
+                ) {
+                    throw new DomainException('Duplicate canonical data has conflicting content.');
+                }
+
+                continue;
+            }
+
+            DB::table('canonical_game_data')->insert([
+                'id' => (string) Str::uuid7(),
+                ...$identity,
+                'display_name' => $entity->displayName,
+                'parent_entity_type' => $parentType,
+                'parent_external_id' => $parentExternalId,
+                'source_snapshot_id' => (string) $snapshot->id,
+                'payload' => $encoded,
+                'payload_checksum_sha256' => $checksum,
+                'created_at' => $ruleset->publishedAt,
+            ]);
+        }
     }
 
     private function completeRun(string $runId, string $status, ?string $snapshotId, CarbonImmutable $now, ?string $failureCode = null): void

@@ -32,6 +32,7 @@ edition-labelled artifact
     -> immutable normalized artifact snapshot
     -> exact ruleset resolution
        (edition + patch + league + parser + checksum)
+       (approved imported dataset + approved provenance + compatibility)
     -> Policy Gate decision for deterministic analysis
     -> pure edition-specific engine
     -> canonical findings in stable rule order
@@ -93,6 +94,10 @@ provenance to the pure engine.
   vocabulary and are not production advice.
 - There is no PoE2 deterministic engine, PoE2 ruleset, or PoE2 passive-tree
   source adapter. PoE2 input cannot fall back to PoE1.
+- Canonical contracts exist for skills, support gems, item bases, uniques,
+  modifiers, stats, and content goals, but no approved importer currently
+  supplies those datasets. Production reads return unavailable rather than
+  using UI/test fixtures.
 - PoB normalization is intentionally structural and does not copy Path of
   Building formulas or bundled data. Unsupported fields remain disclosed.
 - Character catalog facts are version-controlled code metadata rather than
@@ -122,4 +127,3 @@ HTTP during user analysis.
 
 See the [game-edition contracts](game-editions.md), [data provenance](data-provenance.md),
 and [PoE1 finding ADR](../adr/0018-production-poe1-deterministic-findings.md).
-
