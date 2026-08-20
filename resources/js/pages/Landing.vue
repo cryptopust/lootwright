@@ -3,6 +3,8 @@ import { Head } from '@inertiajs/vue3';
 
 import AppShell from '@/components/app/AppShell.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
+import ItemCard from '@/components/arpg/ItemCard.vue';
+import ScopePanel from '@/components/arpg/ScopePanel.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { locale, tx } = useLocale();
@@ -27,6 +29,32 @@ const workflow = [
         meta: 'PLAYER ACTS MANUALLY',
     },
 ];
+const showcaseItem = {
+    slot: 'HELMET · FIXTURE',
+    name: 'Ember Ledger',
+    baseName: 'Neutral Test Base',
+    rarity: 'rare' as const,
+    ilvl: 84,
+    fixture: true,
+    affixes: [
+        {
+            text: '+# to maximum Life',
+            value: '+92',
+            minimum: 80,
+            maximum: 99,
+            roll: 92,
+            tier: 'T1',
+        },
+        {
+            text: '+#% to Cold Resistance',
+            value: '+41%',
+            minimum: 36,
+            maximum: 41,
+            roll: 41,
+            tier: 'T2',
+        },
+    ],
+};
 </script>
 
 <template>
@@ -84,10 +112,7 @@ const workflow = [
                             })
                         }}
                     </a>
-                    <a
-                        class="button is-secondary"
-                        href="/analyses/demo/overview"
-                    >
+                    <a class="text-link" href="/analyses/demo/overview">
                         {{
                             tx({
                                 tr: 'Fixture demosunu incele',
@@ -111,108 +136,57 @@ const workflow = [
                 </div>
             </div>
 
-            <aside
-                class="truth-ledger"
-                :aria-label="
-                    tx({ tr: 'Ürün sınırları', en: 'Product boundaries' })
-                "
-            >
-                <div class="ledger-heading">
-                    <span>LOOTWRIGHT / SCOPE</span>
-                    <span>POLICY 1.0.0</span>
-                </div>
-                <div class="ledger-split">
-                    <section>
-                        <h2>{{ tx({ tr: 'Yaptığı', en: 'What it does' }) }}</h2>
-                        <ul class="check-list">
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Deterministik bulgular',
-                                        en: 'Deterministic findings',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Kanıtlı yükseltme sırası',
-                                        en: 'Evidence-backed upgrade order',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Manuel Trade filtre tarifi',
-                                        en: 'Manual Trade filter recipe',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Kaynak ve ruleset görünürlüğü',
-                                        en: 'Source and ruleset visibility',
-                                    })
-                                }}
-                            </li>
-                        </ul>
-                    </section>
-                    <section>
-                        <h2>
-                            {{
-                                tx({
-                                    tr: 'Yapmadığı',
-                                    en: 'What it does not do',
-                                })
-                            }}
-                        </h2>
-                        <ul class="cross-list">
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Canlı fiyat veya ilan çekmez',
-                                        en: 'No live prices or listings',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Trade araması otomatikleştirmez',
-                                        en: 'No automated Trade search',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Oyuna veya tarayıcıya dokunmaz',
-                                        en: 'No game or browser control',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'AI ile hesap yapmaz',
-                                        en: 'No AI-authored calculations',
-                                    })
-                                }}
-                            </li>
-                        </ul>
-                    </section>
-                </div>
-                <p class="ledger-footnote">
-                    {{
-                        tx({
-                            tr: 'Fiyat ve bulunabilirlik bilinmiyorsa Lootwright bunu bilinmiyor olarak gösterir.',
-                            en: 'When price or availability is unknown, Lootwright says it is unknown.',
-                        })
-                    }}
+            <ScopePanel
+                :does="[
+                    tx({
+                        tr: 'Deterministik bulgular',
+                        en: 'Deterministic findings',
+                    }),
+                    tx({
+                        tr: 'Kanıtlı yükseltme sırası',
+                        en: 'Evidence-backed upgrade order',
+                    }),
+                    tx({
+                        tr: 'Manuel Trade filtre tarifi',
+                        en: 'Manual Trade filter recipe',
+                    }),
+                    tx({
+                        tr: 'Kaynak ve ruleset görünürlüğü',
+                        en: 'Source and ruleset visibility',
+                    }),
+                ]"
+                :does-not="[
+                    tx({
+                        tr: 'Canlı fiyat veya ilan çekmez',
+                        en: 'No live prices or listings',
+                    }),
+                    tx({
+                        tr: 'Trade araması otomatikleştirmez',
+                        en: 'No automated Trade search',
+                    }),
+                    tx({
+                        tr: 'Oyuna veya tarayıcıya dokunmaz',
+                        en: 'No game or browser control',
+                    }),
+                    tx({
+                        tr: 'AI ile hesap yapmaz',
+                        en: 'No AI-authored calculations',
+                    }),
+                ]"
+            />
+        </section>
+
+        <section class="landing-showcase" aria-labelledby="showcase-title">
+            <div class="section-intro">
+                <p class="kicker">ITEM / EVIDENCE</p>
+                <h2 id="showcase-title">Roll, tier ve kanıt aynı yüzeyde.</h2>
+                <p>
+                    Bu örnek yalnız özgün fixture verisidir. Nadirlik hem renk
+                    hem metinle belirtilir; elde olmayan fiyat açıkça bilinmiyor
+                    kalır.
                 </p>
-            </aside>
+            </div>
+            <ItemCard v-bind="showcaseItem" />
         </section>
 
         <section class="landing-workflow" aria-labelledby="workflow-title">

@@ -72,7 +72,12 @@ defineProps<{
                     <div>
                         <dt>Katalog</dt>
                         <dd>
-                            <span v-for="catalog in catalogs" :key="catalog.game">{{ catalog.game }} {{ catalog.version }} · {{ catalog.data_version }}<br /></span>
+                            <span
+                                v-for="catalog in catalogs"
+                                :key="catalog.game"
+                                >{{ catalog.game }} {{ catalog.version }} ·
+                                {{ catalog.data_version }}<br
+                            /></span>
                         </dd>
                     </div>
                     <div>

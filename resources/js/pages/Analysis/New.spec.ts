@@ -36,7 +36,9 @@ const catalog = {
             id: 'witch',
             name: 'Witch',
             availability: 'available',
-            ascendancies: [{ id: 'elementalist', name: 'Elementalist', type: 'regular' }],
+            ascendancies: [
+                { id: 'elementalist', name: 'Elementalist', type: 'regular' },
+            ],
         },
     ],
 };
@@ -97,9 +99,15 @@ describe('New analysis wizard', () => {
         await flushPromises();
         await wrapper.get('.wizard-actions .is-primary').trigger('click');
 
-        expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('');
-        expect((wrapper.findAll('select')[1].element as HTMLSelectElement).value).toBe('');
-        expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/catalog/poe2/character-options');
+        expect(
+            (wrapper.findAll('select')[0].element as HTMLSelectElement).value,
+        ).toBe('');
+        expect(
+            (wrapper.findAll('select')[1].element as HTMLSelectElement).value,
+        ).toBe('');
+        expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+            '/api/catalog/poe2/character-options',
+        );
     });
 
     it('applies conditional validation for PoB and budget fields', async () => {

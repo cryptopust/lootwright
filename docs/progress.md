@@ -659,3 +659,18 @@ documentation validation, and diff whitespace checks. Source documentation
 URLs returned HTTP 200. No PostgreSQL client, container runtime, or service was
 available and port 5432 refused connections, so real PostgreSQL fresh/rollback/
 reapply remains an explicit deployment gate; SQLite is not claimed as proof.
+
+2026-08-20: implemented the Lootwright ARPG presentation system with semantic
+OKLCH tokens, locally bundled Newsreader, DM Sans, and JetBrains Mono fonts,
+two-pixel geometry, the 32px workbench grid, explicit rarity and unknown states,
+and reusable evidence, item, affix, statistic, finding, upgrade, recipe, and
+scope components. Landing, analysis overview, upgrades, and Manual Trade recipe
+surfaces now use the system; `/style-guide` is a fixture-only component gallery.
+No GGG assets, external requests, live listing claims, or fabricated prices were
+introduced. Composer metadata/audit, Pint, PHPStan, 641 of 643 PHP tests with
+8,305 assertions (two opt-in PostgreSQL tests skipped), clean npm install/audit,
+Prettier, ESLint, Vue TypeScript, 21 Vitest tests, the production build,
+Playwright behavior and responsive visual tests, 72-file documentation
+validation, route inspection, and diff whitespace checks passed. A disposable
+PostgreSQL service remains unavailable locally; SQLite is not claimed as
+PostgreSQL evidence.

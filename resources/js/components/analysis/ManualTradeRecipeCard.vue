@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 
 import ConfidenceMeter from '@/components/app/ConfidenceMeter.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
+import TerminalBlock from '@/components/arpg/TerminalBlock.vue';
 import { useLocale } from '@/composables/useLocale';
 import { demoRecipeText } from '@/data/demo-analysis';
 import type { DemoRecipe } from '@/types/analysis-ui';
@@ -107,6 +108,16 @@ async function copyRecipe(): Promise<void> {
                 })
             }}</template>
         </p>
+
+        <TerminalBlock
+            :content="demoRecipeText"
+            :label="
+                tx({
+                    tr: 'Satır numaralı manuel filtre tarifi',
+                    en: 'Line-numbered manual filter recipe',
+                })
+            "
+        />
 
         <div class="filter-columns">
             <section>

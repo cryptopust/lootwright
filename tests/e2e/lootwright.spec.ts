@@ -10,45 +10,30 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 }
 
-test('completes the fake analysis review flow with local validation', async ({
+test('navigates the edition-aware analysis wizard with local validation', async ({
     page,
 }) => {
-    await page.goto('/');
-    // Wait for the destination wizard to hydrate before exercising its local
-    // validation handler. A merely visible button can still be pre-hydration.
-    await page.locator('a[href="/analyses/new"]').last().click();
-    await page.locator('textarea').first().waitFor();
-
+    const catalogLoaded = page.waitForResponse(
+        (response) =>
+            response.url().includes('/api/catalog/poe1/character-options') &&
+            response.ok(),
+    );
+    await page.goto('/analyses/new');
+    await catalogLoaded;
+    const analyseFlow = page.getByRole('radio', {
+        name: /Var olan buildi analiz et/,
+    });
+    await analyseFlow.check();
+    await expect(analyseFlow).toBeChecked();
     await page.getByRole('button', { name: 'Devam', exact: true }).click();
-    await expect(page.getByRole('alert')).toContainText('en az 12 karakterlik');
-
-    await page.getByRole('textbox').fill('eNrtFixtureBuildInput');
-    await page.getByRole('button', { name: 'Devam' }).click();
-    await page
-        .getByRole('textbox', { name: 'Ne elde etmek istiyorsun?' })
-        .fill('Haritalamada daha dayanıklı olmak istiyorum.');
-    await page.getByRole('button', { name: 'Devam' }).click();
-    await page
-        .getByRole('checkbox', {
-            name: /İşleme açıklamasını okudum/,
-        })
-        .check();
-    await page.getByRole('button', { name: 'Devam' }).click();
-    await expect(
-        page.getByRole('group', { name: 'Gönderim öncesi doğrulama' }),
-    ).toBeVisible();
-    await page
-        .getByRole('button', { name: 'Fixture incelemesini hazırla' })
-        .click();
-
-    await expect(page.getByRole('status')).toContainText(
-        'Fixture import incelemesi hazır',
-    );
-    await page.getByRole('link', { name: 'Import incelemesine geç' }).click();
-    await expect(page).toHaveURL('/analyses/demo/import');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-        'Parser ne gördü?',
-    );
+    await page.getByLabel('Sınıf').selectOption('ranger');
+    await page.getByRole('button', { name: 'Devam', exact: true }).click();
+    await expect(page.getByLabel(/PoB kodu/)).toBeVisible();
+    await page.getByRole('button', { name: 'Devam', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('PoB kodu gereklidir');
+    await page.getByLabel(/PoB kodu/).fill('eNrtFixtureBuildInput');
+    await page.getByRole('button', { name: 'Devam', exact: true }).click();
+    await expect(page.getByRole('group', { name: 'Hedefler' })).toBeVisible();
 });
 
 test('exposes evidence and keeps manual Trade actions within policy', async ({
@@ -121,6 +106,12 @@ for (const visual of [
         path: '/analyses/demo/trade',
         viewport: { width: 1440, height: 1000 },
         snapshot: 'trade-1440.png',
+    },
+    {
+        name: 'style-guide-desktop',
+        path: '/style-guide',
+        viewport: { width: 1440, height: 1000 },
+        snapshot: 'style-guide-1440.png',
     },
 ] as const) {
     test(`matches the ${visual.name} responsive fixture`, async ({ page }) => {

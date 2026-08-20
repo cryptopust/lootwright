@@ -29,6 +29,7 @@ use Inertia\Inertia;
 
 Route::inertia('/', 'Landing')->name('home');
 Route::inertia('/analyses/new', 'Analysis/New')->name('analyses.new');
+Route::inertia('/style-guide', 'StyleGuide')->name('style-guide');
 Route::get('/api/catalog/{game}/character-options', CharacterOptionsController::class)
     ->where('game', 'poe1|poe2')
     ->middleware('throttle:60,1')
