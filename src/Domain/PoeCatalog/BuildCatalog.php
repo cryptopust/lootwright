@@ -3,6 +3,7 @@
 namespace Lootwright\Domain\PoeCatalog;
 
 use JsonSerializable;
+use Lootwright\Domain\PoeCatalog\Character\Poe1CharacterCatalog;
 use Lootwright\Domain\PoeCatalog\Identifier\AscendancyId;
 use Lootwright\Domain\PoeCatalog\Identifier\CharacterClassId;
 use Lootwright\Domain\PoeCatalog\Identifier\KeystoneId;
@@ -59,6 +60,15 @@ final readonly class BuildCatalog implements JsonSerializable
             return DomainResult::failure(DomainError::because(
                 DomainErrorCode::EditionMismatch,
                 'The character class and ascendancy must belong to the build edition.',
+            ));
+        }
+
+        if ($edition === GameEdition::Poe1
+            && ! Poe1CharacterCatalog::current()->supports($characterClass->value, $ascendancy?->value)
+        ) {
+            return DomainResult::failure(DomainError::because(
+                DomainErrorCode::InvalidValue,
+                'The selected PoE1 Ascendancy does not belong to the selected character class.',
             ));
         }
 

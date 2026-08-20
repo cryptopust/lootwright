@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Models\UserRole;
+use App\Models\UserStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -30,6 +32,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => UserRole::Member,
+            'status' => UserStatus::Active,
         ];
     }
 
@@ -41,5 +45,20 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (): array => ['role' => UserRole::Admin]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn (): array => ['role' => UserRole::SuperAdmin]);
+    }
+
+    public function suspended(): static
+    {
+        return $this->state(fn (): array => ['status' => UserStatus::Suspended, 'suspended_at' => now(), 'suspension_reason' => 'Test suspension']);
     }
 }

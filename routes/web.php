@@ -1,25 +1,35 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminPageController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\PolicyEvidenceController;
 use App\Http\Controllers\Admin\PolicyKillSwitchController;
+use App\Http\Controllers\AnalysisDraftController;
 use App\Http\Controllers\AnalysisProvenanceController;
+use App\Http\Controllers\Catalog\Poe1CharacterOptionsController;
 use App\Http\Controllers\CompareAnalysesController;
 use App\Http\Controllers\CreatePrivacySessionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeleteBuildController;
 use App\Http\Controllers\DeletePobImportController;
 use App\Http\Controllers\DeleteUserDataController;
 use App\Http\Controllers\ExportAnalysisController;
 use App\Http\Controllers\FundingController;
+use App\Http\Controllers\MemberAnalysisController;
 use App\Http\Controllers\PobImportController;
 use App\Http\Controllers\PolicyExplanationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReanalyzeController;
 use App\Http\Controllers\RetrieveAnalysisController;
 use App\Http\Controllers\SubmitAnalysisController;
+use App\Http\Controllers\SubmitWizardAnalysisController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::inertia('/', 'Landing')->name('home');
 Route::inertia('/analyses/new', 'Analysis/New')->name('analyses.new');
+Route::get('/api/catalog/poe1/character-options', Poe1CharacterOptionsController::class)->middleware('throttle:60,1')->name('catalog.poe1.characters');
 Route::inertia('/analyses/demo/import', 'Analysis/ImportReview')->name('analyses.demo.import');
 Route::get('/analyses/demo/{section}', static fn (string $section) => Inertia::render('Analysis/Workspace', [
     'section' => $section,
@@ -82,6 +92,32 @@ Route::middleware('verified.optional')->group(function (): void {
         ->name('builds.delete');
     Route::delete('/api/user-data', DeleteUserDataController::class)
         ->middleware('throttle:deletion')->name('user-data.delete');
+});
+
+Route::middleware(['auth', 'active'])->group(function (): void {
+    Route::middleware('verified')->group(function (): void {
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/analyses', [MemberAnalysisController::class, 'index'])->name('member.analyses.index');
+        Route::get('/analyses/{analysis}', [MemberAnalysisController::class, 'show'])->whereUuid('analysis')->name('member.analyses.show');
+        Route::delete('/analyses/{analysis}', [MemberAnalysisController::class, 'destroy'])->whereUuid('analysis')->middleware('password.confirm')->name('member.analyses.destroy');
+        Route::post('/api/analyses/wizard', SubmitWizardAnalysisController::class)->middleware('throttle:analysis-submit')->name('analyses.wizard.submit');
+        Route::get('/api/analysis-draft', [AnalysisDraftController::class, 'show'])->name('draft.show');
+        Route::put('/api/analysis-draft', [AnalysisDraftController::class, 'store'])->name('draft.store');
+        Route::get('/profile', [ProfileController::class, 'profile'])->name('profile');
+        Route::get('/profile/security', [ProfileController::class, 'security'])->name('profile.security');
+        Route::get('/profile/privacy', [ProfileController::class, 'privacy'])->name('profile.privacy');
+    });
+});
+
+Route::prefix('admin')->middleware(['auth', 'active', 'verified', 'role:admin,super_admin', 'admin.2fa'])->group(function (): void {
+    Route::get('/', AdminDashboardController::class)->name('admin.dashboard');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::put('/users/{user}/status', [AdminUserController::class, 'status'])->middleware('password.confirm')->name('admin.users.status');
+    Route::put('/users/{user}/role', [AdminUserController::class, 'role'])->middleware(['password.confirm', 'role:super_admin'])->name('admin.users.role');
+    Route::get('/audit-log', [AdminPageController::class, 'audit'])->name('admin.audit');
+    Route::get('/catalog', [AdminPageController::class, 'catalog'])->name('admin.catalog');
+    Route::get('/system', [AdminPageController::class, 'system'])->name('admin.system');
 });
 
 Route::prefix('/admin/policy')

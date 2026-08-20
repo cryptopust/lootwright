@@ -1,3 +1,8 @@
 <?php
+
 namespace Lootwright\Application\ExternalSources\Ports;
-interface OfficialTradeSearchProvider { public function unavailableReason(): string; }
+
+interface OfficialTradeSearchProvider
+{
+    public function unavailableReason(): string;
+}

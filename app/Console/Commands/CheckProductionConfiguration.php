@@ -37,6 +37,7 @@ final class CheckProductionConfiguration extends Command
             $this->equals('SESSION_ENCRYPT', (bool) config('session.encrypt'), true),
             $this->equals('SESSION_HTTP_ONLY', (bool) config('session.http_only'), true),
             $this->equals('SESSION_SAME_SITE', (string) config('session.same_site'), 'lax'),
+            $this->equals('AUTH_REQUIRE_VERIFIED_EMAIL', (bool) config('security.require_verified_email'), true),
             $this->validateSecret('READINESS_TOKEN', (string) config('services.readiness.token'), 32),
             $this->trustedHosts(config('deployment.trusted_hosts')),
             $this->trustedProxies(config('deployment.trusted_proxies')),

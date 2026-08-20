@@ -7,4 +7,4 @@ interface GggLeaguesProvider {}
 interface GggCurrencyExchangeHistoryProvider {}
 interface GggAccountCharactersProvider {}
 interface GggAccountStashesProvider {}
-final class DisabledGggApiAdapters implements GggLeaguesProvider, GggCurrencyExchangeHistoryProvider, GggAccountCharactersProvider, GggAccountStashesProvider {}
+final class DisabledGggApiAdapters implements GggAccountCharactersProvider, GggAccountStashesProvider, GggCurrencyExchangeHistoryProvider, GggLeaguesProvider {}

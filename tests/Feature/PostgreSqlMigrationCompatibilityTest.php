@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\QueryException;
 use Tests\TestCase;
 
 final class PostgreSqlMigrationCompatibilityTest extends TestCase
@@ -36,7 +37,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
      */
     public function test_real_postgresql_enforces_the_analysis_parent_constraint_when_enabled(): void
     {
-        if (config('database.default') !== 'pgsql' || ! (bool) env('POSTGRES_MIGRATION_INTEGRATION', false)) {
+        if (config('database.default') !== 'pgsql' || ! (bool) config('database.postgres_migration_integration')) {
             self::markTestSkipped('A disposable PostgreSQL integration database is required.');
         }
 
@@ -69,5 +70,22 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertNull($connection->table('analyses')->where('id', $child)->value('parent_analysis_id'));
         $migration->down();
         self::assertFalse(Schema::connection('pgsql')->hasTable('analyses'));
+    }
+
+    public function test_all_migrations_fresh_rollback_and_reapply_on_disposable_postgresql_when_enabled(): void
+    {
+        if (config('database.default') !== 'pgsql' || ! (bool) config('database.postgres_migration_integration')) {
+            self::markTestSkipped('A disposable PostgreSQL integration database is required.');
+        }
+
+        self::assertSame(0, Artisan::call('migrate:fresh', ['--database' => 'pgsql', '--force' => true]));
+        self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
+        self::assertTrue(Schema::connection('pgsql')->hasColumn('analyses', 'user_id'));
+
+        self::assertSame(0, Artisan::call('migrate:rollback', ['--database' => 'pgsql', '--force' => true]));
+        self::assertFalse(Schema::connection('pgsql')->hasTable('users'));
+
+        self::assertSame(0, Artisan::call('migrate', ['--database' => 'pgsql', '--force' => true]));
+        self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
     }
 }

@@ -14,6 +14,11 @@ Lootwright, görünür kaynak ve tazelik bilgisiyle piyasa bağlamı için önbe
 alınmış poe.ninja ekonomi verisini kullanabilir. Canlı Trade ilanlarını çekemez;
 bunun yerine manuel resmi Trade filtre tarifleri üretir. Fiyatlar tahmindir.
 
+PoE1 sihirbazı, Fortify tabanlı üyelik, kullanıcıya ait analiz alanı ve sunucu
+tarafından yetkilendirilen üye/admin panelleri kullanılabilir. İlk doğrulanmış
+super-admin için `php artisan lootwright:admin:promote user@example.com --force`
+komutunu çalıştırın.
+
 Lootwright henüz halka açık bir hizmet veya tamamlanmış bir son kullanıcı MVP'si
 değildir. Onaylı üretim kuralları ve yetkili üretim analiz motoru bulunmadığı için
 şu anda gerçek dizilim bulguları, yükseltme önerileri ya da üretim amaçlı Manuel

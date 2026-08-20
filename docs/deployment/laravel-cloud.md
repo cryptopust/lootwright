@@ -271,6 +271,18 @@ enable scheduled work that depends on a disabled capability.
 
 ## 9. Cost control
 
+For membership, configure an SMTP-compatible mail provider through Cloud
+secrets (`MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
+`MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`). Run
+with `AUTH_REQUIRE_VERIFIED_EMAIL=true` in production. Run
+`php artisan migrate --force`, then promote an already registered and verified
+operator with `php artisan lootwright:admin:promote user@example.com --force`.
+Database sessions/cache/queues are supported; no Redis or Horizon worker is
+required solely for authentication, the wizard, catalog reads, or admin pages.
+The scheduler remains necessary only for the documented pruning/source tasks.
+Rollback one batch with `php artisan migrate:rollback --step=1 --force` after a
+database backup and maintenance-mode activation.
+
 An optional scheduled task may run `php artisan lootwright:sources:sync-poe-ninja`
 every 30 minutes after the source has reviewed policy evidence, a configured
 operator contact, and `POE_NINJA_ENABLED=true`. It uses an atomic cache lock;

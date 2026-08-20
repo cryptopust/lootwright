@@ -38,6 +38,7 @@ final class ProductionPackagingTest extends TestCase
             'session.encrypt' => true,
             'session.http_only' => true,
             'session.same_site' => 'lax',
+            'security.require_verified_email' => true,
             'services.readiness.token' => 'fixture-readiness-token-32-characters',
             'logging.default' => 'stderr',
             'policy.global_kill_switch' => true,

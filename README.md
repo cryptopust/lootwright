@@ -13,6 +13,10 @@ Lootwright can use cached poe.ninja economy data for visible market context. It
 cannot fetch live Trade listings; it generates manual official Trade filter
 recipes instead. Prices are estimates with visible source and freshness.
 
+The PoE1 wizard, Fortify-backed membership, owner-scoped analysis workspace and
+server-authorized member/admin panels are available. Create the first verified
+super-admin with `php artisan lootwright:admin:promote user@example.com --force`.
+
 Lootwright is not a public service or a completed end-user MVP. It does not yet
 have an approved production game ruleset or an authoritative production
 analysis engine, so it cannot currently provide real build findings, upgrade

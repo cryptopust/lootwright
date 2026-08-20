@@ -32,7 +32,7 @@ final class PoeNinjaEndpoint
     {
         $parts = parse_url($url);
         if (! is_array($parts) || ($parts['scheme'] ?? null) !== 'https' || ($parts['host'] ?? null) !== 'poe.ninja'
-            || isset($parts['port'], $parts['user'], $parts['pass'], $parts['fragment'])) {
+            || isset($parts['port']) || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
             throw new InvalidArgumentException('The poe.ninja destination is not allowlisted.');
         }
 

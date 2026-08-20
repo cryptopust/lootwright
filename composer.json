@@ -10,10 +10,11 @@
     ],
     "license": "MIT",
     "require": {
+        "php": "^8.4",
         "ext-dom": "*",
         "ext-zlib": "*",
-        "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
+        "laravel/fortify": "^1.38",
         "laravel/framework": "^13.25",
         "laravel/horizon": "^5.48.0",
         "laravel/tinker": "^3.0",

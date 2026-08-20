@@ -626,10 +626,24 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Change discipline
 
+2026-08-20: implemented the PoE1 character catalog, seven-step analysis wizard,
+Fortify authentication, member ownership, enum RBAC, mandatory admin 2FA,
+append-only admin audit, member/admin Inertia surfaces and PostgreSQL-compatible
+membership migrations. Wiki metadata was verified by HTTP but runtime and
+migrations remain network-free. The final local verification passed 626 of 628
+PHPUnit tests (the two disposable-PostgreSQL integration tests were skipped),
+16 Vitest tests, Composer validation/audit, Pint, PHPStan, npm clean install and
+audit, ESLint, Vue TypeScript, production build, 72-file documentation validation,
+route inspection, and `git diff --check`. Port 5432 was closed and no local
+PostgreSQL, Docker, Podman, `psql`, or `pg_isready` command was available, so a
+real PostgreSQL fresh/rollback/reapply cycle remains a required pre-deployment
+gate; SQLite success is not PostgreSQL evidence.
+
 2026-08-20: added the policy-gated external-source boundary, poe.ninja economy
 candidate implementation, immutable price evidence contracts, source-sync
 migrations, disabled Wiki/GGG adapter skeletons, and PostgreSQL self-reference
 migration-order test correction. Real PostgreSQL verification remains pending
-because this workstation has neither Docker nor a PHP executable on PATH.
+because this workstation has no disposable PostgreSQL service or container
+runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.

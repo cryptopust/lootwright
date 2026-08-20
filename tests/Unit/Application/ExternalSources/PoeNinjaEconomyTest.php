@@ -33,7 +33,12 @@ final class PoeNinjaEconomyTest extends TestCase
             'https://poe.ninja/poe1/api/builds',
             'https://poe.ninja/poe1/api/economy/exchange/current/overview?league=Mirage&type=UniqueWeapon',
         ] as $url) {
-            try { PoeNinjaEndpoint::assertAllowed($url); self::fail("{$url} must be denied."); } catch (InvalidArgumentException) { self::addToAssertionCount(1); }
+            try {
+                PoeNinjaEndpoint::assertAllowed($url);
+                self::fail("{$url} must be denied.");
+            } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
         }
     }
 
@@ -57,7 +62,9 @@ final class PoeNinjaEconomyTest extends TestCase
             try {
                 $normalizer->quotes($body, 'Mirage', EconomyCategory::Currency, CarbonImmutable::now('UTC'), CarbonImmutable::now('UTC')->addMinutes(20));
                 self::fail('Unexpected source schema must fail closed.');
-            } catch (PoeNinjaFailure) { self::addToAssertionCount(1); }
+            } catch (PoeNinjaFailure) {
+                self::addToAssertionCount(1);
+            }
         }
     }
 }
