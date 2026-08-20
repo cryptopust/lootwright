@@ -9,6 +9,10 @@ independent PHP domain core and an Inertia/Vue interface.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
+Lootwright can use cached poe.ninja economy data for visible market context. It
+cannot fetch live Trade listings; it generates manual official Trade filter
+recipes instead. Prices are estimates with visible source and freshness.
+
 Lootwright is not a public service or a completed end-user MVP. It does not yet
 have an approved production game ruleset or an authoritative production
 analysis engine, so it cannot currently provide real build findings, upgrade

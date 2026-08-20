@@ -271,6 +271,11 @@ enable scheduled work that depends on a disabled capability.
 
 ## 9. Cost control
 
+An optional scheduled task may run `php artisan lootwright:sources:sync-poe-ninja`
+every 30 minutes after the source has reviewed policy evidence, a configured
+operator contact, and `POE_NINJA_ENABLED=true`. It uses an atomic cache lock;
+do not provision a worker, Horizon, or Valkey solely for this task.
+
 - Set the operator's initial monthly target to USD 20 and configure an absolute
   Laravel Cloud spending ceiling of USD 25 where the account supports it.
 - Treat the limit as a control, not an exact bill forecast or guarantee.

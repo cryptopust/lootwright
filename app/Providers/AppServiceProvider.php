@@ -29,6 +29,11 @@ use App\Modules\TradePlanning\DatabaseManualTradeRecipePolicy;
 use App\Modules\TradePlanning\EditionManualTradeRecipeGenerator;
 use App\Security\OutboundRequestGuard;
 use App\Security\RateLimitKey;
+use App\Modules\ExternalSources\DisabledOfficialTradeSearchProvider;
+use App\Modules\ExternalSources\PoeNinja\PoeNinjaEconomyClient;
+use App\Modules\ExternalSources\PoeNinja\PoeNinjaNormalizer;
+use App\Modules\ExternalSources\PoeNinja\PoeNinjaPolicyGate;
+use App\Modules\ExternalSources\PoeNinja\PoeNinjaSyncService;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -62,6 +67,7 @@ use Lootwright\Application\Workflow\Ports\SupplementalUserDataEraser;
 use Lootwright\Application\Workflow\Ports\TransactionManager;
 use Lootwright\Application\Workflow\Ports\WorkflowDispatcher;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
+use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
 use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
@@ -97,6 +103,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PrivacySessionRepository::class, PostgresPrivacySessionRepository::class);
         $this->app->bind(SecretGenerator::class, LaravelSecretGenerator::class);
         $this->app->bind(FundingStatusProvider::class, PolicyGatedFundingStatusProvider::class);
+        $this->app->singleton(PoeNinjaEconomyClient::class, static fn (): PoeNinjaEconomyClient => new PoeNinjaEconomyClient(app(OutboundRequestGuard::class)));
+        $this->app->singleton(PoeNinjaNormalizer::class);
+        $this->app->singleton(PoeNinjaPolicyGate::class);
+        $this->app->singleton(PoeNinjaSyncService::class);
+        $this->app->bind(OfficialTradeSearchProvider::class, DisabledOfficialTradeSearchProvider::class);
         $this->app->singleton(AiGatewayConfiguration::class, static function (): AiGatewayConfiguration {
             $prices = config('ai.prices_micro_usd_per_million');
 
@@ -171,6 +182,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (app()->isProduction() && config('external-sources.poe_ninja.enabled') && trim((string) config('external-sources.poe_ninja.contact')) === '') {
+            throw new \RuntimeException('POE_NINJA_CONTACT is required when POE_NINJA_ENABLED=true in production.');
+        }
         $this->configureDefaults();
     }
 

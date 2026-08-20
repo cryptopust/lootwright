@@ -626,4 +626,10 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Change discipline
 
+2026-08-20: added the policy-gated external-source boundary, poe.ninja economy
+candidate implementation, immutable price evidence contracts, source-sync
+migrations, disabled Wiki/GGG adapter skeletons, and PostgreSQL self-reference
+migration-order test correction. Real PostgreSQL verification remains pending
+because this workstation has neither Docker nor a PHP executable on PATH.
+
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.

@@ -10,6 +10,10 @@ arayüzüne sahip Laravel 13 modüler monolitidir.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
+Lootwright, görünür kaynak ve tazelik bilgisiyle piyasa bağlamı için önbelleğe
+alınmış poe.ninja ekonomi verisini kullanabilir. Canlı Trade ilanlarını çekemez;
+bunun yerine manuel resmi Trade filtre tarifleri üretir. Fiyatlar tahmindir.
+
 Lootwright henüz halka açık bir hizmet veya tamamlanmış bir son kullanıcı MVP'si
 değildir. Onaylı üretim kuralları ve yetkili üretim analiz motoru bulunmadığı için
 şu anda gerçek dizilim bulguları, yükseltme önerileri ya da üretim amaçlı Manuel

@@ -56,6 +56,12 @@ Each slot recipe contains:
   and
 - unresolved requirements with a clarification question.
 
+When immutable poe.ninja evidence is available, a recipe may additionally show a
+clearly labelled category estimate, unique-item estimate, gem estimate, or
+currency conversion with source timestamp and freshness. It is never an exact
+rare or modifier-combination price; use “no exact market match available” when
+the category cannot support the target.
+
 Canonical modifier IDs in the DTO are Lootwright-internal, edition-scoped
 identifiers used to preserve evidence. They are not official Trade stat IDs and
 are never transformed into Trade query identifiers.

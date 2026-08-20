@@ -22,6 +22,15 @@ return [
                 'port' => 443,
                 'path' => '/v1/responses',
             ],
+            'poe_ninja.economy.leagues.fetch' => [
+                'scheme' => 'https', 'host' => 'poe.ninja', 'port' => 443, 'path' => '/poe1/api/economy/leagues',
+            ],
+            'poe_ninja.economy.exchange.fetch' => [
+                'scheme' => 'https', 'host' => 'poe.ninja', 'port' => 443, 'path' => '/poe1/api/economy/exchange/current/overview', 'allow_query' => true,
+            ],
+            'poe_ninja.economy.stash_item.fetch' => [
+                'scheme' => 'https', 'host' => 'poe.ninja', 'port' => 443, 'path' => '/poe1/api/economy/stash/current/item/overview', 'allow_query' => true,
+            ],
         ],
     ],
 
@@ -33,6 +42,8 @@ return [
             'github.com',
             'pobb.in',
             'www.pathofexile.com',
+            'poe.ninja',
+            'www.poewiki.net',
         ],
     ],
 
