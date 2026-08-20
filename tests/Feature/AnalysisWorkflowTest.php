@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
-use App\Modules\Analysis\Infrastructure\UnavailableDeterministicAnalysisEngine;
+use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
 use App\Modules\Analysis\Jobs\ParseBuildArtifactJob;
 use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use Database\Seeders\PolicyDefaultsSeeder;
@@ -204,16 +204,16 @@ class AnalysisWorkflowTest extends TestCase
         $this->assertDatabaseMissing('manual_trade_recipes', ['analysis_id' => $analysisId]);
     }
 
-    public function test_production_analysis_binding_fails_closed_without_an_approved_ruleset_or_analyzer(): void
+    public function test_production_analysis_binding_is_the_real_poe1_engine_and_fails_closed_without_a_ruleset(): void
     {
         $engine = $this->app->make(DeterministicAnalysisEngine::class);
         self::assertSame(
-            UnavailableDeterministicAnalysisEngine::class,
+            ProductionPoe1DeterministicAnalysisEngine::class,
             $engine::class,
         );
 
         $this->expectException(TerminalWorkflowFailure::class);
-        $this->expectExceptionMessage('No approved immutable ruleset is active');
+        $this->expectExceptionMessage('No approved immutable ruleset exactly matches');
         $engine->resolve(
             new AnalysisRecord(
                 id: DomainFixtures::POE1_ANALYSIS_UUID,
@@ -240,6 +240,7 @@ class AnalysisWorkflowTest extends TestCase
                 parserVersion: '1.0.0',
                 normalizedSnapshot: '{}',
                 normalizedHashSha256: hash('sha256', '{}'),
+                patchVersion: '1.2.3',
             ),
         );
     }
@@ -481,7 +482,7 @@ class AnalysisWorkflowTest extends TestCase
     public function test_reanalysis_creates_an_immutable_version_and_comparison_without_mutating_parent(): void
     {
         $user = User::factory()->create();
-        [$artifactId, $firstAnalysisId] = $this->complete($user, str_repeat('v', 32));
+        [$artifactId, $firstAnalysisId] = $this->completeWithProducts($user, str_repeat('v', 32));
         $firstHash = DB::table('analyses')->where('id', $firstAnalysisId)->value('output_hash_sha256');
 
         $response = $this->actingAs($user)->postJson('/api/analyses/'.$firstAnalysisId.'/reanalyze', [
@@ -506,11 +507,28 @@ class AnalysisWorkflowTest extends TestCase
             'state' => 'completed',
         ]);
 
+        $left = DB::table('analyses')->where('id', $firstAnalysisId)->sole();
+        $right = DB::table('analyses')->where('id', $secondAnalysisId)->sole();
+        $leftOutput = json_decode(Crypt::decryptString($left->output_snapshot_encrypted), true, flags: JSON_THROW_ON_ERROR);
+        $rightOutput = json_decode(Crypt::decryptString($right->output_snapshot_encrypted), true, flags: JSON_THROW_ON_ERROR);
+        $leftOutput['findings'][] = ['code' => 'fixture.resolved', 'severity' => 100];
+        $rightOutput['findings'][] = ['code' => 'fixture.added', 'severity' => 100];
+        foreach ([[$firstAnalysisId, $leftOutput], [$secondAnalysisId, $rightOutput]] as [$id, $output]) {
+            $canonical = CanonicalJson::encode($output);
+            DB::table('analyses')->where('id', $id)->update([
+                'output_snapshot_encrypted' => Crypt::encryptString($canonical),
+                'output_hash_sha256' => hash('sha256', $canonical),
+            ]);
+        }
+
         $this->actingAs($user)->getJson("/api/analyses/{$firstAnalysisId}/compare/{$secondAnalysisId}")
             ->assertOk()
             ->assertJsonPath('comparison.inputChanged', true)
             ->assertJsonPath('comparison.outputChanged', true)
-            ->assertJsonPath('comparison.rulesetChanged', false);
+            ->assertJsonPath('comparison.rulesetChanged', false)
+            ->assertJsonPath('comparison.addedFindings.0', 'fixture.added')
+            ->assertJsonPath('comparison.resolvedFindings.0', 'fixture.resolved')
+            ->assertJsonPath('comparison.unchangedFindings.0', 'fixture.finding');
     }
 
     public function test_deletion_removes_only_the_owners_artifacts_and_analyses_and_keeps_an_anonymous_count(): void
@@ -1022,23 +1040,6 @@ class AnalysisWorkflowTest extends TestCase
         return [$artifactId, $analysisId];
     }
 
-    /** @return array{string, string} */
-    private function complete(User $user, string $idempotencyKey): array
-    {
-        $submission = $this->submit($user, $idempotencyKey);
-        $artifactId = $submission->json('artifact_id');
-        $analysisId = $submission->json('analysis_id');
-        self::assertIsString($artifactId);
-        self::assertIsString($analysisId);
-        $this->app->instance(ArtifactParser::class, new FakeArtifactParser($this->parsed()));
-        $this->app->instance(DeterministicAnalysisEngine::class, new FakeDeterministicAnalysisEngine);
-        $this->app->instance(AnalysisPolicyGate::class, new AllowAnalysisPolicyGate);
-        $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
-        $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
-
-        return [$artifactId, $analysisId];
-    }
-
     /** @return TestResponse<Response> */
     private function submit(User $user, string $idempotencyKey, string $artifact = 'fixture artifact'): TestResponse
     {
@@ -1235,6 +1236,13 @@ final class FakeDeterministicAnalysisEngine implements DeterministicAnalysisEngi
             $recommendations = [$recommendation];
             $recipes = [$recipe];
         }
+
+        $this->lastOutput = CanonicalJson::encode([
+            'analysis_id' => $analysis->id,
+            'parameters_hash' => $analysis->parametersHashSha256,
+            'result' => 'fixture-only',
+            'findings' => $findings,
+        ]);
 
         $this->lastSnapshot = new DeterministicAnalysisSnapshot(
             $context->adapterKey,

@@ -1,6 +1,6 @@
 # PoE1 Production MVP Execution Plan
 
-Status: approved execution plan; no production analyzer is active.
+Status: approved execution plan; the governed PoE1 deterministic finding engine is active for exact operator-activated rulesets.
 
 Last repository verification: 2026-08-20, branch
 `feat/poe1-production-mvp`, baseline commit `688df4b`.
@@ -21,7 +21,7 @@ release blocker until it is disabled.
 | Identity | Fortify provider/actions, auth routes, `User`, middleware, policies, membership migration | Registration, login, verification, password recovery, member ownership, admin/super-admin RBAC, suspension, 2FA controls, and append-only admin audit exist |
 | PoE1 intake | `Pob1Parser`, `Pob1Normalizer`, shared hardened envelope/XML parser, build-intake controllers | Explicitly pasted PoB1 input can be decoded and normalized in a bounded format-only workflow; no URL is fetched and no production game formula is implied |
 | Workflow | `src/Application/Workflow`, PostgreSQL repository, encrypted artifact storage, jobs and outbox | Idempotent submission, parsing, lifecycle persistence, deletion/export, provenance projections, and queue orchestration exist |
-| Analyzer | `AppServiceProvider`, `UnavailableDeterministicAnalysisEngine` | The production port is deliberately bound to an unavailable engine. It always fails closed because no approved immutable ruleset/analyzer exists |
+| Analyzer | `AppServiceProvider`, `ProductionPoe1DeterministicAnalysisEngine` | The production port resolves an exact immutable PoE1 ruleset and runs evidence-backed findings locally; it fails closed when ruleset/snapshot/checksum identity is unavailable |
 | Findings UI | demo workspace and ARPG components | Findings, evidence, upgrades, and recipes are fixture-backed presentation, not production results |
 | Recommendations | domain ports and `CreatePrioritizedUpgrades` | Provider-neutral orchestration and sorting contracts exist; no production PoE1 analyzer/planner implementation is bound |
 | Manual Trade | Trade Planning DTOs/use cases, PoE1 generator, disabled official search provider | A policy-gated, query-free manual recipe compiler exists with fixture vocabulary. No live listing/search integration exists |
@@ -46,9 +46,9 @@ The following facts must be addressed before a PoE1 production release:
    `8bd138b32ea2631455cac5935bfab089f826094f` now has an operator-only importer,
    schema, quarantine, and atomic activation path. It supplies tree topology
    only and does not close the broader production-rule or analyzer gates.
-4. The deterministic engine binding is intentionally unavailable. Therefore
-   no user submission can yield production findings, recommendations, or
-   recipes.
+4. The deterministic finding engine is production-bound for PoE1 and reads only
+   normalized user input plus the active checksum-verified GGG tree snapshot.
+   Production recommendation ranking and recipe vocabulary remain later gates.
 5. PoE1 item-text import is not implemented as an analysis-grade parser.
 6. Findings and upgrade pages are fixture-backed. Manual recipe vocabulary is
    fixture-only and cannot be promoted by UI copy.
@@ -178,9 +178,9 @@ Deliverables:
   pure calculations under `src/` with explicit decimal/rounding rules.
 - Produce immutable findings with input evidence, rule IDs, ruleset identity,
   certainty, limitations, and canonical hashes.
-- Replace the unavailable engine binding only when an exact approved ruleset
-  resolves. No network, clock, randomness, database, locale, or AI participates
-  in calculations.
+- Resolve the exact approved ruleset before execution. The Laravel adapter reads
+  only immutable local snapshots; no network, clock, randomness, locale, or AI
+  participates in the pure calculations.
 
 Exit gate:
 

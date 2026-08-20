@@ -12,6 +12,7 @@ use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\Rulesets\Services\GovernedRulesetLifecycle;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeSchemaViolation;
 use RuntimeException;
@@ -147,17 +148,19 @@ final readonly class GggPassiveTreeImporter
             if ($record->snapshotId === null) {
                 throw new DomainException('A quarantined import cannot be activated.');
             }
+            $rulesetPayload = [...$payload, 'deterministic_analysis' => Poe1AnalysisRuleset::publishedV1()->jsonSerialize()];
+            $rulesetChecksum = hash('sha256', CanonicalJson::encode($rulesetPayload));
             $rulesetId = $this->lifecycle->publish(new RulesetPublication(
                 (string) Str::uuid7(),
                 GameEdition::Poe1,
-                $approved['patch'].'-skilltree.'.substr($revision, 0, 8),
+                $approved['patch'].'-analysis.'.Poe1AnalysisRuleset::publishedV1()->engineVersion.'.skilltree.'.substr($revision, 0, 8),
                 $approved['patch'],
                 null,
                 (string) config('source-governance.ggg_passive_tree.ruleset_parser_version'),
-                $snapshotChecksum,
+                $rulesetChecksum,
                 (string) config('source-governance.ggg_passive_tree.schema_version'),
                 [$record->snapshotId],
-                $payload,
+                $rulesetPayload,
                 $retrievedAt,
             ));
             $this->lifecycle->activate($rulesetId, 'operator');

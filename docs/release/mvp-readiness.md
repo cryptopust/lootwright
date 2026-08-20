@@ -8,17 +8,17 @@ the working tree. This is not a production-ready release.
 Hosting addendum: [ADR 0014](../adr/0014-laravel-cloud-staging.md) now selects
 Laravel Cloud for initial pre-alpha staging. Self-hosted Redis/Horizon packaging
 evidence below is historical and does not make Valkey or Horizon mandatory on
-Cloud. The missing production ruleset/analyzer verdict is unchanged.
+Cloud. The original 2026-08-16 verdict is historical. ADR 0018 and the
+2026-08-20 verification now close only the governed deterministic-finding
+engine gate; production recommendation and Manual Trade recipe accuracy gates
+remain open.
 
 The implementation, security baseline, parsers, policy controls, persistence
-orchestration, fake-provider AI containment, fixture UI, and production package
-are internally well tested. The defining PoE1 MVP acceptance criterion still
-cannot pass in production: there is no approved immutable PoE1 ruleset source,
-ruleset catalog/activation path, or production deterministic analyzer. The
-shipping container binds `DeterministicAnalysisEngine` to
-`UnavailableDeterministicAnalysisEngine`, so real findings, prioritized
-upgrades, and Manual Trade Recipes fail closed. Fixture-backed success tests are
-valuable conformance evidence but are not game-accuracy or production evidence.
+orchestration, AI containment, and production package are internally well
+tested. The shipping container now binds the real PoE1 finding engine and fails
+closed unless an exact governed ruleset is active. Real findings are production
+capable; prioritized upgrades and Manual Trade Recipes remain gated and this
+document's overall MVP verdict therefore remains FAIL.
 
 ## Verified evidence
 

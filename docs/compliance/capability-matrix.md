@@ -1,6 +1,6 @@
 # Capability Matrix
 
-Status: binding deny-by-default baseline, policy version `1.1.0`, reviewed
+Status: binding deny-by-default baseline, policy version `1.2.0`, reviewed
 2026-08-20. A `require_review` result is non-executable and cannot be treated as
 an allow by a UI, administrator, feature flag, AI provider, or fallback path.
 
@@ -32,7 +32,7 @@ or unmet conditions require review but remain non-executable.
 | User-pasted item text | `persistent_store` | `allow` | Additionally requires `user_storage_consent` and `authenticated_user`. |
 | User-pasted item text | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
 | Governed user snapshots | `import: user.pob.snapshot.import`, `user.item_text.snapshot.import` | `allow` | Explicit user submission only; snapshots remain private and are denied as ruleset authority. |
-| Official PoE1 skill tree | `live_fetch: ggg.poe1.skilltree.export.fetch`; `import: ggg.poe1.skilltree.snapshot.import`, `ggg.poe1.skilltree.snapshot.quarantine`, `ruleset.source.activate` | `allow-default-off` | Only GGG repo commit `8bd138b32ea2631455cac5935bfab089f826094f`, root `data.json`, exact raw checksum, operator workflow, PoE1 scope, immutable payload, source switch, and Policy Gate conditions are accepted. Quarantine records bounded rejection metadata without asserting checksum validation. |
+| Official PoE1 skill tree | `live_fetch: ggg.poe1.skilltree.export.fetch`; `import: ggg.poe1.skilltree.snapshot.import`, `ggg.poe1.skilltree.snapshot.quarantine`, `ruleset.source.activate`; `derivative_analysis: ruleset.deterministic_analysis` | `allow-default-off` | Only GGG repo commit `8bd138b32ea2631455cac5935bfab089f826094f`, root `data.json`, exact raw checksum, operator workflow, PoE1 scope, immutable payload, source switch, and Policy Gate conditions are accepted. Runtime analysis is local against the activated checksum; it performs no fetch. Quarantine records bounded rejection metadata without asserting checksum validation. |
 | Official PoE1 Atlas tree | snapshot import and activation | `require_review` / `deny` | The family is recorded as allowed in principle but is outside the current MVP. |
 | Official documented GGG APIs | `live_fetch` | `require_review` | No exact API operation is enabled. A future operation needs available application registration, configured credentials, least-privilege scopes, and current policy evidence. |
 | GGG application registration | `live_fetch: ggg.application.register` | `deny` | On 2026-08-14 the official docs still state that GGG is unable to process new applications. |

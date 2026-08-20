@@ -34,7 +34,7 @@ final readonly class DatabaseAnalysisPolicyGate implements AnalysisPolicyGate
             ));
         }
 
-        foreach (['ruleset.deterministic_analysis', 'trade.manual_recipe.generate'] as $operation) {
+        foreach (['ruleset.deterministic_analysis'] as $operation) {
             $timestamp = RetrievedAt::from(CarbonImmutable::now('UTC')->format('Y-m-d\TH:i:s\Z'));
 
             if ($timestamp->isFailure() || ! $timestamp->value() instanceof RetrievedAt) {

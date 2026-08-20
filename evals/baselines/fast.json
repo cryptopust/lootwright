@@ -4,10 +4,10 @@
   "suite": "fast",
   "source_hash_sha256": "03c00dab924f382ef637654e35d252b7f301cc1ab354acc65d5f8defa55749d4",
   "cases": [
-    {"id":"parser.poe1.valid_code","kind":"parser","passed":true,"status":"success","fingerprint":"040aff61505ae784c6fa7e5a0a716adfdf092c9002e28a41c2b421b6425f114d"},
-    {"id":"parser.poe2.valid_code","kind":"parser","passed":true,"status":"success","fingerprint":"e0da624b07b41a04e0e616b7f4667f910feb4da2f6544a8b76f8b5bd3819afad"},
+    {"id":"parser.poe1.valid_code","kind":"parser","passed":true,"status":"success","fingerprint":"788a1f823ea32cc1db8c8ff66b345d543cd55d6fcfe144026957fd24da5d1bfb"},
+    {"id":"parser.poe2.valid_code","kind":"parser","passed":true,"status":"success","fingerprint":"d3d85322fa8be4464c3f1ea80dac5fae89a90ca408565ac6d9d39f447767d06a"},
     {"id":"parser.edition.ambiguous","kind":"parser","passed":true,"status":"safe_failure","fingerprint":"055d0e2657e2ee79bf77875e97697008c34709600cf10ced724af12c457ecfed"},
-    {"id":"parser.edition.mismatch","kind":"parser","passed":true,"status":"edition_mismatch","fingerprint":"e0da624b07b41a04e0e616b7f4667f910feb4da2f6544a8b76f8b5bd3819afad"},
+    {"id":"parser.edition.mismatch","kind":"parser","passed":true,"status":"edition_mismatch","fingerprint":"d3d85322fa8be4464c3f1ea80dac5fae89a90ca408565ac6d9d39f447767d06a"},
     {"id":"parser.incomplete","kind":"parser","passed":true,"status":"success","fingerprint":"54e977ed7c58a8126c275b51d548577ac05ac311f133d850877ca58bbae2cf82"},
     {"id":"parser.malicious_notes","kind":"parser","passed":true,"status":"success","fingerprint":"51993ee83514328a722a1391d73f47228b492a47962961f7aaf24ca9a2db9f34"},
     {"id":"parser.unsupported_disclosed","kind":"parser","passed":true,"status":"success","fingerprint":"7efabe28c314eb4f86845a406ef4a929993112d8e4a90699de8afed5d19d01c5"},

@@ -11,7 +11,7 @@ use Lootwright\Domain\PolicyProvenance\SourceType;
 
 final class PolicyDefaults
 {
-    public const POLICY_VERSION = '1.1.0';
+    public const POLICY_VERSION = '1.2.0';
 
     public const REVIEWED_AT = '2026-08-20T00:00:00Z';
 
@@ -136,6 +136,7 @@ final class PolicyDefaults
         $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'ggg.poe1.skilltree.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $skillTreeConditions, 'Only the reviewed commit-pinned official PoE1 data.json export may be imported out of band.');
         $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'ggg.poe1.skilltree.snapshot.quarantine', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'], 'A rejected exact-source candidate may record bounded immutable quarantine metadata without claiming checksum validation or storing the raw body.');
         $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::LiveFetch, 'ggg.poe1.skilltree.export.fetch', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['exact_url_allowlist', 'operator_contact_configured', 'operator_workflow', 'pinned_commit', 'poe1_scope'], 'Only the exact reviewed raw GitHub export URL may be fetched during an operator command.');
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::DerivativeAnalysis, 'ruleset.deterministic_analysis', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['checksum_verified', 'exact_ruleset_resolved', 'manual_actions_only'], 'A locally activated immutable GGG passive-tree snapshot may be consulted by deterministic PoE1 rules without request-time source access.');
         $rules[] = self::rule('GGG-POE1-ATLASTREE-001', '1.0.0', Capability::Import, 'ggg.poe1.atlastree.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'], 'The official Atlas-tree family is allowed in principle but remains outside the MVP runtime scope.');
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'poewiki.cargo.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'PoE Wiki Cargo imports remain conditional and disabled.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'poeninja.economy.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'exact_endpoint_allowlist', 'normalized_snapshot_only'], 'A normalized poe.ninja economy snapshot is conditional on the independent source switch and exact Policy Gate decision.');

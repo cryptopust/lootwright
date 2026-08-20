@@ -251,6 +251,7 @@ abstract class AbstractPobNormalizer
                 'id' => $this->editionPrefix().'.pob.skill_group.'.$group,
                 'slot' => $this->bounded($skillNode->getAttribute('slot'), 128),
                 'enabled' => $this->booleanAttribute($skillNode, 'enabled', true, $warnings, '/Skills/Skill/@enabled'),
+                'main_active_gem_index' => $this->integerAttribute($skillNode, 'mainActiveSkill', $warnings, '/Skills/Skill/@mainActiveSkill'),
                 'gems' => $gems,
             ];
         }
@@ -298,7 +299,7 @@ abstract class AbstractPobNormalizer
             $items[$id] = [
                 'id' => $this->editionPrefix().'.pob.item.'.$this->slug($id),
                 'source_id' => $this->bounded($id, 128),
-                'slots' => array_values(array_unique($slots[$id] ?? [])),
+                'slots' => $slots[$id] ?? [],
                 'item_text_untrusted' => $text,
             ];
         }
@@ -401,7 +402,7 @@ abstract class AbstractPobNormalizer
             'Slot' => ['itemId', 'name'],
             'Skills' => [],
             'SkillSet' => [],
-            'Skill' => ['enabled', 'slot'],
+            'Skill' => ['enabled', 'slot', 'mainActiveSkill'],
             'Gem' => ['skillId', 'gemId', 'nameSpec', 'level', 'quality', 'enabled'],
         ];
         $unsupported = [];

@@ -91,6 +91,6 @@ PostgreSQL fresh migration, rollback, and reapply.
   access during a user request.
 - Publication and activation add operational ceremony, but a bad version is
   reversible by pointer activation without rewriting analyzed history.
-- This lifecycle does not provide or activate a production analyzer. The
-  `UnavailableDeterministicAnalysisEngine` binding stays in place until later
-  release gates are met.
+- This lifecycle did not itself activate a production analyzer. ADR 0018 later
+  used the lifecycle to bind the checksum-verified PoE1 finding engine while
+  leaving recommendation and recipe gates separate.

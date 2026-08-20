@@ -12,5 +12,11 @@ final readonly class AnalysisComparison
         public bool $rulesetChanged,
         public ?string $leftOutputHash,
         public ?string $rightOutputHash,
+        /** @var list<string> */
+        public array $addedFindings = [],
+        /** @var list<string> */
+        public array $resolvedFindings = [],
+        /** @var list<string> */
+        public array $unchangedFindings = [],
     ) {}
 }

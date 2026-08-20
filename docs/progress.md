@@ -648,6 +648,19 @@ runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
 
+2026-08-20: production-bound the versioned PoE1 deterministic finding engine.
+It consumes only normalized PoB facts and the exact locally activated immutable
+GGG passive-tree snapshot; both ruleset and snapshot checksums are reverified.
+The initial rule codes cover missing character identity fields, core armour slot
+completeness, PoB-reported elemental resistance versus its reported maximum,
+negative chaos resistance, invalid mana reservation, disabled gems, explicitly
+identified main-skill link count, item-slot conflicts, and unknown passive node
+IDs. No Life/ES/DPS or build-archetype defensive thresholds were introduced.
+Finding persistence, stable replay, missing-data omission, PlayerStat aliases,
+raw-input log exclusion, and reanalysis added/resolved/unchanged diffs have
+dedicated tests. Recommendation ranking and production Trade-recipe vocabulary
+remain separate future gates.
+
 2026-08-20: implemented the default-off operator importer for GGG's official
 PoE1 `grindinggear/skilltree-export` root `data.json`. Upstream `master` was
 inspected rather than assumed and pinned to commit
@@ -678,7 +691,8 @@ conflict quarantine, immutable published rulesets, exact source links, atomic
 activation pointers, and append-only activation history. Canonical user, GGG
 PoE1 skill/Atlas, Wiki, poe.ninja and prohibited RePoE records are seeded.
 Wiki, poe.ninja and OpenAI explanations have independent default-off governance
-switches. The production analyzer remains unavailable. SQLite lifecycle and
+switches. At this dated lifecycle milestone the production analyzer remained
+unavailable; ADR 0018 later superseded that binding state. SQLite lifecycle and
 policy tests pass. A disposable PostgreSQL 18.4 cluster on localhost validated
 fresh migration, exact lifecycle foreign-key types, immutable triggers,
 rollback/reapply, duplicate checksum replay, conflict quarantine, denied source
