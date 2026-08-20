@@ -52,7 +52,7 @@ final class PoeNinjaNormalizer
             if (! is_string($name) || trim($name) === '' || ! is_string($externalId) || trim($externalId) === '' || (! is_int($value) && ! is_float($value))) {
                 throw new PoeNinjaFailure('unexpected_overview_schema', false);
             }
-            $quotes[] = new EconomyQuote(new PriceEvidence('POE-NINJA-ECONOMY-001', new EconomySourceVersion('POE-NINJA-ECONOMY-001', EconomySourceVersion::POE_NINJA), GameEdition::Poe1, $league, $category, trim($externalId), trim($name), number_format((float) $value, 6, '.', ''), 'Chaos Orb', isset($line['divineValue']) ? 'Divine Orb' : null, $fetchedAt, $expiresAt, SourceFreshness::Fresh, $checksum), ['reported_divine_value' => $line['divineValue'] ?? null]);
+            $quotes[] = new EconomyQuote(new PriceEvidence('POENINJA-ECONOMY-001', new EconomySourceVersion('POENINJA-ECONOMY-001', EconomySourceVersion::POE_NINJA), GameEdition::Poe1, $league, $category, trim($externalId), trim($name), number_format((float) $value, 6, '.', ''), 'Chaos Orb', isset($line['divineValue']) ? 'Divine Orb' : null, $fetchedAt, $expiresAt, SourceFreshness::Fresh, $checksum), ['reported_divine_value' => $line['divineValue'] ?? null]);
         }
 
         return $quotes;

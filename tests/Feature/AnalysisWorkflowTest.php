@@ -418,7 +418,7 @@ class AnalysisWorkflowTest extends TestCase
         self::assertIsString($blockedId);
         $decision = new CapabilityDecision(
             Capability::Import,
-            'USER-PASTED-POB',
+            'USER-POB-001',
             PolicyDecision::Deny,
             PolicyDecisionReason::ExplicitDenial,
             PolicyVersion::baseline(),
@@ -578,7 +578,7 @@ class AnalysisWorkflowTest extends TestCase
         $request = CapabilityRequest::create(
             Capability::Import,
             'user_input.pob_code.import',
-            'USER-PASTED-POB',
+            'USER-POB-001',
             '1.0.0',
             $timestamp,
             ['explicit_user_submission'],
@@ -588,7 +588,7 @@ class AnalysisWorkflowTest extends TestCase
         $decision = $this->app->make(ExplainPolicyDecision::class)->handle($request);
         self::assertSame(PolicyDecision::Allow, $decision->decision);
         $this->assertDatabaseHas('policy_decision_audits', [
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'operation' => 'user_input.pob_code.import',
             'decision' => 'allow',
         ]);

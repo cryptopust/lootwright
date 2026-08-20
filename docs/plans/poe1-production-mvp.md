@@ -37,16 +37,21 @@ The following facts must be addressed before a PoE1 production release:
 2. The analysis wizard publicly offers PoE2, and the container registers the
    PoE2 parser/normalizer. These paths must fail closed or become non-public
    without deleting the dormant implementation or isolation tests.
-3. `POE1-RULES-001` has no approved production source. Ruleset import,
-   staging, review, activation, exact resolution, and supersession are absent.
+3. The governed source/snapshot/ruleset lifecycle now exists (ADR 0017), but
+   `POE1-RULES-001` still has no complete approved production fact source.
+   Content-addressed import, quarantine, immutable publication, supersession,
+   atomic activation and exact resolution are implemented; a source-specific
+   approved schema/fixture and production ruleset remain later gates.
 4. The deterministic engine binding is intentionally unavailable. Therefore
    no user submission can yield production findings, recommendations, or
    recipes.
 5. PoE1 item-text import is not implemented as an analysis-grade parser.
 6. Findings and upgrade pages are fixture-backed. Manual recipe vocabulary is
    fixture-only and cannot be promoted by UI copy.
-7. A real PostgreSQL migration/rollback/reapply run has not been demonstrated
-   on this workstation. SQLite success does not close this gate.
+7. Disposable PostgreSQL 18.4 fresh migration, constraint introspection,
+   rollback/reapply and lifecycle behavior passed on this workstation on
+   2026-08-20. Production backup/restore rehearsal remains a later operational
+   gate; SQLite continues to be fast feedback rather than PostgreSQL proof.
 8. Source and permission reviews expire. No dataset or adapter may silently
    become production authority because its code exists.
 9. The scheduled poe.ninja command is registered, but source configuration is
@@ -63,7 +68,7 @@ finding and recommendation:
 | User input | owner/session scope, submission time, input digest, parser version, explicit consent | Private analysis input only; never redistributed |
 | Official GGG export | exact documented export family, game/patch/version, retrieval or user-export evidence, checksum, permission record | Only after an exact reviewed source record; no undocumented Trade resource |
 | PoE Wiki | exact page/API source, retrieved version/time, factual-field allowlist, license/attribution and redistribution decision | Disabled by default; no runtime user-request fetch; production use waits for legal/policy approval |
-| poe.ninja | `POE-NINJA-ECONOMY-001`, endpoint family, source version, league/category, fetched/expiry time, checksum | Optional cached market context only; disabled by default and never deterministic rule authority |
+| poe.ninja | `POENINJA-ECONOMY-001`, endpoint family, source version, league/category, fetched/expiry time, checksum | Optional cached market context only; disabled by default and never deterministic rule authority |
 | Lootwright-original rule | rule ID, ruleset version, source references, reviewer, checksum | May express reviewed deterministic logic without inventing game facts |
 
 RePoE, PyPoE, `dat-schema`, PoEDB, Craft of Exile, scraped pages, and

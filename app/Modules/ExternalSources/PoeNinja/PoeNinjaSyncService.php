@@ -54,7 +54,7 @@ final readonly class PoeNinjaSyncService
 
     private function syncCategory(string $league, EconomyCategory $category, string $operation): int
     {
-        $previous = DB::table('external_source_sync_runs')->where(['source_key' => 'POE-NINJA-ECONOMY-001', 'operation' => $operation, 'league' => $league, 'category' => $category->value, 'status' => 'success'])->latest('completed_at')->first(['etag', 'last_modified']);
+        $previous = DB::table('external_source_sync_runs')->where(['source_key' => 'POENINJA-ECONOMY-001', 'operation' => $operation, 'league' => $league, 'category' => $category->value, 'status' => 'success'])->latest('completed_at')->first(['etag', 'last_modified']);
         $started = CarbonImmutable::now('UTC');
         $response = $this->client->getOverview($league, $category, $previous?->etag, $previous?->last_modified);
         if ($response['status'] === 304) {
@@ -64,7 +64,7 @@ final readonly class PoeNinjaSyncService
         $quotes = $this->normalizer->quotes($response['body'], $league, $category, $started, $expires);
         DB::transaction(function () use ($league, $category, $operation, $response, $started, $expires, $quotes): void {
             $runId = (string) Str::uuid7();
-            DB::table('external_source_sync_runs')->insert(['id' => $runId, 'source_key' => 'POE-NINJA-ECONOMY-001', 'source_version' => 'economy-v1', 'operation' => $operation, 'game_edition' => 'poe1', 'league' => $league, 'category' => $category->value, 'status' => 'success', 'http_status' => $response['status'], 'etag' => $response['headers']['etag'] ?: null, 'last_modified' => $response['headers']['last_modified'] ?: null, 'response_checksum_sha256' => hash('sha256', $response['body']), 'started_at' => $started, 'completed_at' => $started, 'fetched_at' => $started, 'expires_at' => $expires, 'created_at' => $started, 'updated_at' => $started]);
+            DB::table('external_source_sync_runs')->insert(['id' => $runId, 'source_key' => 'POENINJA-ECONOMY-001', 'source_version' => 'economy-v1', 'operation' => $operation, 'game_edition' => 'poe1', 'league' => $league, 'category' => $category->value, 'status' => 'success', 'http_status' => $response['status'], 'etag' => $response['headers']['etag'] ?: null, 'last_modified' => $response['headers']['last_modified'] ?: null, 'response_checksum_sha256' => hash('sha256', $response['body']), 'started_at' => $started, 'completed_at' => $started, 'fetched_at' => $started, 'expires_at' => $expires, 'created_at' => $started, 'updated_at' => $started]);
             foreach ($quotes as $quote) {
                 $evidence = $quote->evidence;
                 DB::table('economy_quotes')->updateOrInsert(['source_key' => $evidence->sourceKey, 'source_version' => $evidence->sourceVersion->value, 'game_edition' => $evidence->gameEdition->value, 'league' => $evidence->league, 'category' => $evidence->category->value, 'external_id' => $evidence->externalId], ['id' => (string) Str::uuid7(), 'source_sync_run_id' => $runId, 'normalized_name' => $evidence->normalizedName, 'primary_currency' => $evidence->primaryCurrency, 'secondary_currency' => $evidence->secondaryCurrency, 'normalized_value' => $evidence->normalizedValue, 'confidence_metadata' => json_encode($quote->confidenceMetadata, JSON_THROW_ON_ERROR), 'fetched_at' => $evidence->fetchedAt, 'expires_at' => $evidence->expiresAt, 'created_at' => $started, 'updated_at' => $started]);

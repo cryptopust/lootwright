@@ -647,6 +647,22 @@ because this workstation has no disposable PostgreSQL service or container
 runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
+
+2026-08-20: added the governed source and ruleset lifecycle described by ADR
+0017. The existing policy registry and external sync-run table now back
+content-addressed normalized snapshots, duplicate-checksum replay, revision
+conflict quarantine, immutable published rulesets, exact source links, atomic
+activation pointers, and append-only activation history. Canonical user, GGG
+PoE1 skill/Atlas, Wiki, poe.ninja and prohibited RePoE records are seeded.
+Wiki, poe.ninja and OpenAI explanations have independent default-off governance
+switches. The production analyzer remains unavailable. SQLite lifecycle and
+policy tests pass. A disposable PostgreSQL 18.4 cluster on localhost validated
+fresh migration, exact lifecycle foreign-key types, immutable triggers,
+rollback/reapply, duplicate checksum replay, conflict quarantine, denied source
+activation, and atomic ruleset activation: PostgreSQL migration tests passed
+3/3 with 47 assertions and lifecycle tests passed 6/6 with 40 assertions (87
+combined). The
+temporary cluster was stopped and deleted after validation.
 2026-08-20: expanded the character catalog and intake wizard to edition-scoped
 PoE1 and PoE2 support. PoE2 baseline 0.5 records twelve classes (eight available,
 four planned), twenty-two regular Ascendancies, and Witch/Lich-only alternate

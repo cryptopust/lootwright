@@ -16,7 +16,7 @@ final readonly class PoeNinjaPolicyGate implements SourcePolicyGate
 
     public function permits(string $operation): bool
     {
-        $request = CapabilityRequest::create(Capability::LiveFetch, $operation, 'POE-NINJA-ECONOMY-001', 'economy-v1', RetrievedAt::from(CarbonImmutable::now('UTC')->format('Y-m-d\\TH:i:s\\Z'))->value(), ['operator_contact_configured', 'https_only', 'exact_endpoint_allowlist']);
+        $request = CapabilityRequest::create(Capability::LiveFetch, $operation, 'POENINJA-ECONOMY-001', 'economy-v1', RetrievedAt::from(CarbonImmutable::now('UTC')->format('Y-m-d\\TH:i:s\\Z'))->value(), ['operator_contact_configured', 'https_only', 'exact_endpoint_allowlist']);
         $decision = $request->isFailure() ? null : $this->policy->authorize($request->value())->value();
 
         return $decision?->decision === PolicyDecision::Allow;

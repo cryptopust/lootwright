@@ -1,7 +1,8 @@
 # External-source synchronization
 
 Run `php artisan lootwright:sources:sync-poe-ninja` after setting
-`POE_NINJA_ENABLED=true`, a non-empty `POE_NINJA_CONTACT`, and seeding reviewed
+both `POE_NINJA_ENABLED=true` and `POENINJA_ECONOMY_ENABLED=true`, a non-empty
+`POE_NINJA_CONTACT`, and seeding reviewed
 policy defaults. Use `--league="<fetched league name>"` only for a league first
 returned by the economy leagues endpoint. The command obtains an atomic cache
 lock, fetches leagues first, normalizes configured categories transactionally,

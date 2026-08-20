@@ -4,8 +4,9 @@ External data is an application concern. `src/Application/ExternalSources`
 contains immutable DTOs and ports only; Laravel HTTP, cache, database and policy
 implementations stay in `app/Modules/ExternalSources`.
 
-The only active-capable adapter is `POE-NINJA-ECONOMY-001`, and it remains off
-until `POE_NINJA_ENABLED=true`, an operator contact is configured, and the
+The only active-capable adapter is `POENINJA-ECONOMY-001`, and it remains off
+until both `POE_NINJA_ENABLED=true` and `POENINJA_ECONOMY_ENABLED=true`, an
+operator contact is configured, and the
 database Policy and Provenance Gate allows the exact operation. It calls only
 the documented PoE1 economy leagues, exchange-overview and stash-item-overview
 endpoints. URL, host, scheme and category construction is configuration-owned;

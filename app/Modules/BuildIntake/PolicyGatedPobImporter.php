@@ -22,7 +22,7 @@ use RuntimeException;
 
 final readonly class PolicyGatedPobImporter
 {
-    private const USER_SOURCE = 'USER-PASTED-POB';
+    private const USER_SOURCE = 'USER-POB-001';
 
     private const USER_VERSION = '1.0.0';
 

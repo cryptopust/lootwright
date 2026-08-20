@@ -8,10 +8,13 @@ copy self-hosted Redis/Horizon assumptions over Cloud-injected resource values.
 
 ## External sources
 
-`POE_NINJA_ENABLED=false` is a source-specific fail-closed switch. If it is
+`POE_NINJA_ENABLED=false` and `POENINJA_ECONOMY_ENABLED=false` are independent
+source and governance switches; both must be true before the adapter can run.
+If they are
 true in production, `POE_NINJA_CONTACT` must be non-empty. The base URL must
 remain `https://poe.ninja`; the refresh default is 1200 seconds and is clamped
 to at least 300 seconds. `POE_WIKI_CARGO_ENABLED=false` and
+`POEWIKI_IMPORT_ENABLED=false` must both be explicitly enabled after review;
 `GGG_OAUTH_ENABLED=false` are disabled candidates. OAuth credentials remain
 blank until an approved registration and least-privilege scope review exists.
 
@@ -78,6 +81,9 @@ blank until an approved registration and least-privilege scope review exists.
 | Variable | Required default | Secret | Notes |
 | --- | --- | --- | --- |
 | `OPENAI_ENABLED` | `false` | No | Deterministic workflow remains complete without AI. |
+| `OPENAI_EXPLANATIONS_ENABLED` | `false` | No | Independently denies provider explanations while preserving deterministic local fallback. |
+| `POENINJA_ECONOMY_ENABLED` | `false` | No | Governance switch; cannot override Policy Gate or `POE_NINJA_ENABLED`. |
+| `POEWIKI_IMPORT_ENABLED` | `false` | No | Governance switch; Wiki remains review-gated and disabled. |
 | `OUTBOUND_NETWORK_ENABLED` | `false` | No | Central egress guard denies before transport. |
 | `OPENAI_API_KEY` | Empty | Yes | Not required for CI, health, deployment, or AI-off operation. |
 | `OPENAI_LIVE_EVALS_ENABLED` | `false` | No | Live eval never runs in normal CI. |

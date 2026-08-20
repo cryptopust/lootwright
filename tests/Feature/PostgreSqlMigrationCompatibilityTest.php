@@ -78,9 +78,44 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
             self::markTestSkipped('A disposable PostgreSQL integration database is required.');
         }
 
+        $connection = DB::connection('pgsql');
         self::assertSame(0, Artisan::call('migrate:fresh', ['--database' => 'pgsql', '--force' => true]));
         self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
         self::assertTrue(Schema::connection('pgsql')->hasColumn('analyses', 'user_id'));
+        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history'] as $table) {
+            self::assertTrue(Schema::connection('pgsql')->hasTable($table));
+        }
+
+        $foreignKeyTypes = $connection->select(<<<'SQL'
+            select
+                child_table.relname as child_table,
+                child_attribute.attname as child_column,
+                pg_catalog.format_type(child_attribute.atttypid, child_attribute.atttypmod) as child_type,
+                parent_table.relname as parent_table,
+                parent_attribute.attname as parent_column,
+                pg_catalog.format_type(parent_attribute.atttypid, parent_attribute.atttypmod) as parent_type
+            from pg_constraint constraint_record
+            join pg_class child_table on child_table.oid = constraint_record.conrelid
+            join pg_class parent_table on parent_table.oid = constraint_record.confrelid
+            join lateral unnest(constraint_record.conkey) with ordinality child_key(attnum, position) on true
+            join lateral unnest(constraint_record.confkey) with ordinality parent_key(attnum, position) on parent_key.position = child_key.position
+            join pg_attribute child_attribute on child_attribute.attrelid = child_table.oid and child_attribute.attnum = child_key.attnum
+            join pg_attribute parent_attribute on parent_attribute.attrelid = parent_table.oid and parent_attribute.attnum = parent_key.attnum
+            where constraint_record.contype = 'f'
+              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history')
+            SQL);
+
+        self::assertNotEmpty($foreignKeyTypes);
+        foreach ($foreignKeyTypes as $foreignKey) {
+            self::assertSame(
+                $foreignKey->parent_type,
+                $foreignKey->child_type,
+                "{$foreignKey->child_table}.{$foreignKey->child_column} must exactly match {$foreignKey->parent_table}.{$foreignKey->parent_column}.",
+            );
+        }
+
+        self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'source_snapshots'::regclass and tgname = 'source_snapshots_immutable' and not tgisinternal"));
+        self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'ruleset_versions'::regclass and tgname = 'ruleset_versions_immutable' and not tgisinternal"));
 
         self::assertSame(0, Artisan::call('migrate:rollback', ['--database' => 'pgsql', '--force' => true]));
         self::assertFalse(Schema::connection('pgsql')->hasTable('users'));

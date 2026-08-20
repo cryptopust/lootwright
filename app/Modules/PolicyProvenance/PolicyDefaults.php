@@ -19,13 +19,15 @@ final class PolicyDefaults
 
     private function __construct() {}
 
-    /** @return list<array<string, string>> */
+    /** @return list<array<string, string|bool>> */
     public static function sources(): array
     {
         return [
             self::source('LOOTWRIGHT-MANUAL-TRADE', 'Lootwright manual Trade recipe schema', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Original local-only recipe generation; no Trade endpoint, listing, price, or browser operation.'),
-            self::source('USER-PASTED-POB', 'User-pasted PoB or PoB2 code', SourceType::UserSupplied, AccessMode::PastedText, 'Text deliberately submitted by a user; no URL fetch.'),
-            self::source('USER-PASTED-ITEM', 'User-pasted item text', SourceType::UserSupplied, AccessMode::PastedText, 'Item text deliberately submitted by a user.'),
+            self::source('USER-POB-001', 'User-submitted PoB code', SourceType::UserSupplied, AccessMode::PastedText, 'Canonical governed source for a PoB code deliberately submitted by its user.', 'allowed', true, 'active'),
+            self::source('USER-ITEM-TEXT-001', 'User-submitted item text', SourceType::UserSupplied, AccessMode::PastedText, 'Canonical governed source for item text deliberately submitted by its user.', 'allowed', true, 'active'),
+            self::source('GGG-POE1-SKILLTREE-001', 'Official PoE1 passive skill tree export', SourceType::OfficialDocumentedApi, AccessMode::RemoteFetch, 'Exact reviewed official PoE1 skill-tree export revisions only; imports run out of band.', 'allowed', true, 'active'),
+            self::source('GGG-POE1-ATLASTREE-001', 'Official PoE1 Atlas passive tree export', SourceType::OfficialDocumentedApi, AccessMode::RemoteFetch, 'Reviewed official Atlas-tree family; intentionally outside the PoE1 MVP.', 'allowed', false, 'outside_mvp'),
             self::source('GGG-DOCUMENTED-API', 'Official documented GGG APIs', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Only exact operations in the official API Reference can ever be reviewed.'),
             self::source('GGG-APPLICATION-REGISTRATION', 'GGG application registration', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Official registration status; no registration attempt is implemented.'),
             self::source('GGG-UNDOCUMENTED-TRADE', 'Undocumented GGG Trade endpoints', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Internal Trade-site endpoints outside the supported API Reference.'),
@@ -35,9 +37,9 @@ final class PolicyDefaults
             self::source('POBBIN-REMOTE', 'Remote pobb.in builds', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Remote fetching is distinct from user-pasted share codes.'),
             self::source('POB-COMMUNITY', 'Path of Building Community', SourceType::OpenSourceProject, AccessMode::RemoteFetch, 'Candidate source-code and format reference; embedded third-party rights remain unreviewed.'),
             self::source('POB2-COMMUNITY', 'Path of Building Community for PoE2', SourceType::OpenSourceProject, AccessMode::RemoteFetch, 'Format-only beta reference; no game data, code, or remote access.'),
-            self::source('REPOE-CANDIDATE', 'RePoE or similar generated datasets', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Candidate generated game data with unresolved underlying rights.'),
-            self::source('POE-NINJA-ECONOMY-001', 'poe.ninja public economy API', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Reviewed, bounded PoE1 economy endpoints only; builds, profiles, pages, and authentication are denied.'),
-            self::source('POE-WIKI-CARGO-001', 'Path of Exile Wiki Cargo API', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Disabled candidate pending CC BY-NC-SA, GGG-data rights, redistribution, attribution, and funding review.'),
+            self::source('REPOE-CANDIDATE', 'RePoE or similar generated datasets', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Candidate generated game data with unresolved underlying rights.', 'prohibited', false, 'prohibited'),
+            self::source('POENINJA-ECONOMY-001', 'poe.ninja public economy API lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled unless policy and configuration both permit an out-of-band import.', 'conditional', false, 'optional'),
+            self::source('POEWIKI-CARGO-001', 'Path of Exile Wiki Cargo lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled pending the recorded rights review.', 'conditional', false, 'candidate'),
             self::source('GGG-PROTECTED-ASSETS', 'GGG protected media and expression', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Artwork, images, logos, music, flavour text, screenshots, and fonts.'),
             self::source('OPENAI-API', 'OpenAI API', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Optional provider remains disabled until an explicit reviewed provider decision.'),
             self::source('LOOTWRIGHT-FUNDING', 'Lootwright funding policy', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Funding and monetized hosting are disabled pending explicit review.'),
@@ -49,8 +51,10 @@ final class PolicyDefaults
     {
         return [
             ['source_id' => 'LOOTWRIGHT-MANUAL-TRADE', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'USER-PASTED-POB', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'USER-PASTED-ITEM', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'USER-POB-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'USER-ITEM-TEXT-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'GGG-POE1-SKILLTREE-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'GGG-POE1-ATLASTREE-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-DOCUMENTED-API', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-APPLICATION-REGISTRATION', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-UNDOCUMENTED-TRADE', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
@@ -61,8 +65,8 @@ final class PolicyDefaults
             ['source_id' => 'POB-COMMUNITY', 'version' => 'bcbca9b60b04abc17935c84ff3589342193bd758', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'POB2-COMMUNITY', 'version' => '5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'REPOE-CANDIDATE', 'version' => 'unreviewed-2026-08-14', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'POE-NINJA-ECONOMY-001', 'version' => 'economy-v1', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'POE-WIKI-CARGO-001', 'version' => 'candidate-2026-08-20', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'POENINJA-ECONOMY-001', 'version' => 'economy-v1', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'POEWIKI-CARGO-001', 'version' => 'candidate-2026-08-20', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-PROTECTED-ASSETS', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'OPENAI-API', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
@@ -74,8 +78,10 @@ final class PolicyDefaults
     {
         return [
             self::evidenceRecord('LOOTWRIGHT-MANUAL-TRADE-EVIDENCE', 'LOOTWRIGHT-MANUAL-TRADE', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/product/manual-trade-workflow.md', PermissionStatus::Allowed, 'Lootwright-original plain-text recipes may be generated locally from approved immutable vocabulary without market access or automation.', false),
-            self::evidenceRecord('USER-PASTED-POB-EVIDENCE', 'USER-PASTED-POB', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/capability-matrix.md', PermissionStatus::Allowed, 'Lootwright policy permits bounded processing of deliberately pasted input.', false),
-            self::evidenceRecord('USER-PASTED-ITEM-EVIDENCE', 'USER-PASTED-ITEM', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/capability-matrix.md', PermissionStatus::Allowed, 'Lootwright policy permits bounded processing of deliberately pasted item text.', false),
+            self::evidenceRecord('USER-POB-001-EVIDENCE', 'USER-POB-001', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Allowed, 'A user may submit their own PoB text to the bounded private import workflow.', false),
+            self::evidenceRecord('USER-ITEM-TEXT-001-EVIDENCE', 'USER-ITEM-TEXT-001', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Allowed, 'A user may submit their own item text to the bounded private import workflow.', false),
+            self::evidenceRecord('GGG-POE1-SKILLTREE-001-EVIDENCE', 'GGG-POE1-SKILLTREE-001', '1.0.0', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Allowed, 'Only an exact documented official PoE1 skill-tree export family may be imported through a reviewed operator workflow.', true, 'This product is not affiliated with or endorsed by Grinding Gear Games.'),
+            self::evidenceRecord('GGG-POE1-ATLASTREE-001-EVIDENCE', 'GGG-POE1-ATLASTREE-001', '1.0.0', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Allowed, 'The documented Atlas-tree source is recorded but outside the current PoE1 MVP.', true, 'This product is not affiliated with or endorsed by Grinding Gear Games.'),
             self::evidenceRecord('GGG-DEVELOPER-DOCS-20260814', 'GGG-DOCUMENTED-API', '2026-08-14', 'https://www.pathofexile.com/developer/docs', PermissionStatus::Allowed, 'Official policy reference is current, but no API operation is approved.', true),
             self::evidenceRecord('GGG-REGISTRATION-20260814', 'GGG-APPLICATION-REGISTRATION', '2026-08-14', 'https://www.pathofexile.com/developer/docs', PermissionStatus::Denied, 'GGG states it is currently unable to process new applications.', true),
             self::evidenceRecord('GGG-API-REFERENCE-20260814', 'GGG-UNDOCUMENTED-TRADE', '2026-08-14', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Denied, 'The supported API Reference does not list the internal Trade endpoints.', true),
@@ -86,8 +92,8 @@ final class PolicyDefaults
             self::evidenceRecord('POB-COMMUNITY-LICENSE-20260814', 'POB-COMMUNITY', 'bcbca9b60b04abc17935c84ff3589342193bd758', 'https://github.com/PathOfBuildingCommunity/PathOfBuilding/blob/bcbca9b60b04abc17935c84ff3589342193bd758/LICENSE.md', PermissionStatus::Allowed, 'MIT evidence permits independently implemented format interoperability only; all broader reuse remains under review.', true, 'Attribute Path of Building Community and link its MIT license.'),
             self::evidenceRecord('POB2-COMMUNITY-LICENSE-20260814', 'POB2-COMMUNITY', '5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6', 'https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/blob/5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6/LICENSE.md', PermissionStatus::Allowed, 'MIT evidence permits independently implemented beta format interoperability only.', true, 'Attribute Path of Building Community and link its MIT license.'),
             self::evidenceRecord('REPOE-RIGHTS-UNKNOWN', 'REPOE-CANDIDATE', 'unreviewed-2026-08-14', 'https://github.com/brather1ng/RePoE', PermissionStatus::Unknown, 'Repository accessibility does not establish rights in generated underlying game data.', true),
-            self::evidenceRecord('POE-NINJA-ECONOMY-DOCS-20260820', 'POE-NINJA-ECONOMY-001', 'economy-v1', 'https://poe.ninja/docs/api', PermissionStatus::Allowed, 'Reviewed public economy documentation permits only exact allowlisted PoE1 economy reads, with a descriptive User-Agent, caching, no SLA assumption, no images, and no raw-payload retention.', true, 'Attribute poe.ninja as the market-context source where displayed.', '2026-08-20T00:00:00Z'),
-            self::evidenceRecord('POE-WIKI-CARGO-DOCS-20260820', 'POE-WIKI-CARGO-001', 'candidate-2026-08-20', 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API', PermissionStatus::Unknown, 'Cargo API documentation is recorded, but licensing and underlying GGG-data rights have not been approved for production activation or funding.', true, 'Review CC BY-NC-SA attribution and share-alike requirements before activation.', '2026-08-20T00:00:00Z'),
+            self::evidenceRecord('POENINJA-ECONOMY-LIFECYCLE-EVIDENCE', 'POENINJA-ECONOMY-001', 'economy-v1', 'https://poe.ninja/docs/api', PermissionStatus::Allowed, 'The canonical lifecycle identity inherits only the reviewed public PoE1 economy boundary and remains configuration-disabled.', true, 'Attribute poe.ninja as the market-context source where displayed.', '2026-08-20T00:00:00Z'),
+            self::evidenceRecord('POEWIKI-CARGO-LIFECYCLE-EVIDENCE', 'POEWIKI-CARGO-001', 'candidate-2026-08-20', 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API', PermissionStatus::Unknown, 'The canonical lifecycle identity remains disabled pending licensing, redistribution, underlying-rights, and funding review.', true, 'Review CC BY-NC-SA attribution and share-alike requirements before activation.', '2026-08-20T00:00:00Z'),
             self::evidenceRecord('GGG-TERMS-ASSETS-20260814', 'GGG-PROTECTED-ASSETS', '2026-08-14', 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy', PermissionStatus::Denied, 'Protected GGG media and expression are outside Lootwright redistribution rights.', true),
             self::evidenceRecord('OPENAI-DATA-CONTROLS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/your-data', PermissionStatus::Allowed, 'Official OpenAI documentation describes API data use and retention controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('OPENAI-RESPONSES-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/reference/resources/responses/methods/create', PermissionStatus::Allowed, 'Official OpenAI API reference documents POST /v1/responses and its stateless request controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
@@ -110,8 +116,8 @@ final class PolicyDefaults
         $rules[] = self::rule('LOOTWRIGHT-MANUAL-TRADE', '1.0.0', Capability::LiveFetch, 'trade.listings.fetch', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Manual recipe generation cannot fetch, rank, cache, monitor, or price live listings.');
 
         foreach ([
-            'USER-PASTED-POB' => 'pob_code',
-            'USER-PASTED-ITEM' => 'item_text',
+            'USER-POB-001' => 'pob_code',
+            'USER-ITEM-TEXT-001' => 'item_text',
         ] as $source => $operation) {
             $rules[] = self::rule($source, '1.0.0', Capability::Import, "user_input.{$operation}.import", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $userConditions, 'Deliberately pasted input may enter the bounded intake workflow.');
             $rules[] = self::rule($source, '1.0.0', Capability::TransientProcess, "user_input.{$operation}.process", PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $userConditions, 'Deliberately pasted input may be processed transiently with hostile-input limits.');
@@ -119,6 +125,28 @@ final class PolicyDefaults
             $rules[] = self::rule($source, '1.0.0', Capability::PublicDisplay, "user_input.{$operation}.public_display", PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'User input is private by default and cannot be published.');
             $rules[] = self::rule($source, '1.0.0', Capability::Redistribution, "user_input.{$operation}.redistribute", PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Public redistribution of user input is denied by default.');
         }
+
+        foreach ([
+            'USER-POB-001' => 'user.pob.snapshot.import',
+            'USER-ITEM-TEXT-001' => 'user.item_text.snapshot.import',
+        ] as $source => $operation) {
+            $rules[] = self::rule($source, '1.0.0', Capability::Import, $operation, PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['explicit_user_submission'], 'A bounded normalized snapshot of deliberately submitted user input may be imported with separate provenance.');
+        }
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '1.0.0', Capability::Import, 'ggg.poe1.skilltree.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'], 'A reviewed official PoE1 skill-tree export may be imported only out of band.');
+        $rules[] = self::rule('GGG-POE1-ATLASTREE-001', '1.0.0', Capability::Import, 'ggg.poe1.atlastree.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'], 'The official Atlas-tree family is allowed in principle but remains outside the MVP runtime scope.');
+        $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'poewiki.cargo.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'PoE Wiki Cargo imports remain conditional and disabled.');
+        $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'poeninja.economy.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'exact_endpoint_allowlist', 'normalized_snapshot_only'], 'A normalized poe.ninja economy snapshot is conditional on the independent source switch and exact Policy Gate decision.');
+        $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'repoe.snapshot.import', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'RePoE is prohibited as a production snapshot source until a new reviewed source decision supersedes this denial.');
+
+        foreach (['USER-POB-001', 'USER-ITEM-TEXT-001'] as $source) {
+            $rules[] = self::rule($source, '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Private user input can never become ruleset authority.');
+        }
+        $activationConditions = ['checksum_verified', 'immutable_snapshot', 'poe1_scope'];
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $activationConditions, 'A verified immutable official PoE1 skill-tree snapshot may support a published ruleset.');
+        $rules[] = self::rule('GGG-POE1-ATLASTREE-001', '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Atlas-tree rules are outside the current MVP activation scope.');
+        $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'ruleset.source.activate', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $activationConditions, 'PoE Wiki Cargo cannot become ruleset authority before the separate rights review.');
+        $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Market context is never deterministic game-rule authority.');
+        $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'RePoE cannot become production ruleset authority under the current decision.');
 
         $rules[] = self::rule('GGG-DOCUMENTED-API', '2026-08-14', Capability::LiveFetch, 'ggg.api.documented_operation', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['application_registration', 'configured_credentials', 'current_policy_evidence', 'least_privilege_scopes'], 'No documented GGG API operation is enabled; each exact method and path requires a reviewed rule.');
         $rules[] = self::rule('GGG-APPLICATION-REGISTRATION', '2026-08-14', Capability::LiveFetch, 'ggg.application.register', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'GGG currently states that it is unable to process new application registrations.');
@@ -155,13 +183,13 @@ final class PolicyDefaults
         $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::MonetizedHosting, 'repoe.dataset.monetized_hosting', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Monetized hosting is denied while underlying data rights are unresolved.');
 
         foreach (['poe_ninja.economy.leagues.fetch', 'poe_ninja.economy.exchange.fetch', 'poe_ninja.economy.stash_item.fetch'] as $operation) {
-            $rules[] = self::rule('POE-NINJA-ECONOMY-001', 'economy-v1', Capability::LiveFetch, $operation, PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'https_only', 'exact_endpoint_allowlist'], 'Only the documented, exact PoE1 economy endpoint family is enabled behind the source switch and Policy Gate.');
+            $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::LiveFetch, $operation, PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'https_only', 'exact_endpoint_allowlist'], 'Only the documented, exact PoE1 economy endpoint family is enabled behind the source switch and Policy Gate.');
         }
-        $rules[] = self::rule('POE-NINJA-ECONOMY-001', 'economy-v1', Capability::DerivativeAnalysis, 'poe_ninja.economy.normalized_quote.read', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['normalized_snapshot_only'], 'Analysis may consume immutable normalized market evidence with source and freshness.');
+        $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::DerivativeAnalysis, 'poe_ninja.economy.normalized_quote.read', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['normalized_snapshot_only'], 'Analysis may consume immutable normalized market evidence with source and freshness.');
         foreach (['poe_ninja.builds.fetch', 'poe_ninja.profiles.fetch', 'poe_ninja.characters.fetch', 'poe_ninja.pob.fetch', 'poe_ninja.authentication.fetch', 'poe_ninja.page.scrape', 'poe_ninja.site.replicate'] as $operation) {
-            $rules[] = self::rule('POE-NINJA-ECONOMY-001', 'economy-v1', Capability::LiveFetch, $operation, PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'This poe.ninja operation is outside the approved public economy API boundary.');
+            $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::LiveFetch, $operation, PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'This poe.ninja operation is outside the approved public economy API boundary.');
         }
-        $rules[] = self::rule('POE-WIKI-CARGO-001', 'candidate-2026-08-20', Capability::LiveFetch, 'poe_wiki.cargo.factual_metadata.fetch', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'The disabled Cargo adapter has no production fetch authority.');
+        $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::LiveFetch, 'poe_wiki.cargo.factual_metadata.fetch', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'The disabled Cargo adapter has no production fetch authority.');
 
         foreach (['asset.art', 'asset.item_image', 'asset.logo', 'asset.music', 'asset.flavour_text', 'asset.screenshot', 'asset.font'] as $operation) {
             $rules[] = self::rule('GGG-PROTECTED-ASSETS', '2026-08-14', Capability::PublicDisplay, $operation, PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'GGG protected art, media, screenshots, and fonts are denied.');
@@ -179,13 +207,16 @@ final class PolicyDefaults
         return $rules;
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, string|bool> */
     private static function source(
         string $id,
         string $name,
         SourceType $type,
         AccessMode $accessMode,
         string $description,
+        string $governanceStatus = 'conditional',
+        bool $enabledByDefault = false,
+        string $mvpScope = 'candidate',
     ): array {
         return [
             'id' => $id,
@@ -193,6 +224,9 @@ final class PolicyDefaults
             'source_type' => $type->value,
             'access_mode' => $accessMode->value,
             'description' => $description,
+            'governance_status' => $governanceStatus,
+            'enabled_by_default' => $enabledByDefault,
+            'mvp_scope' => $mvpScope,
         ];
     }
 

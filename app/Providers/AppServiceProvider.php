@@ -30,6 +30,9 @@ use App\Modules\Funding\PolicyGatedFundingStatusProvider;
 use App\Modules\Identity\LaravelSecretGenerator;
 use App\Modules\Identity\PostgresPrivacySessionRepository;
 use App\Modules\PolicyProvenance\DatabaseCapabilityPolicy;
+use App\Modules\Rulesets\DatabaseSourceGovernancePolicy;
+use App\Modules\Rulesets\PostgresGovernedRulesetRepository;
+use App\Modules\Rulesets\PostgresRulesetResolver;
 use App\Modules\TradePlanning\DatabaseManualTradeRecipePolicy;
 use App\Modules\TradePlanning\EditionManualTradeRecipeGenerator;
 use App\Security\OutboundRequestGuard;
@@ -55,6 +58,8 @@ use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
 use Lootwright\Application\Funding\Ports\FundingStatusProvider;
 use Lootwright\Application\Identity\Ports\PrivacySessionRepository;
 use Lootwright\Application\Identity\Ports\SecretGenerator;
+use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
+use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipeGenerator;
 use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipePolicy;
 use Lootwright\Application\Workflow\Ports\AnalysisDocumentRepository;
@@ -70,6 +75,7 @@ use Lootwright\Application\Workflow\Ports\WorkflowDispatcher;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
+use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
@@ -87,6 +93,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PolicyEvaluator::class);
         $this->app->bind(CapabilityPolicy::class, DatabaseCapabilityPolicy::class);
+        $this->app->bind(SourceGovernancePolicy::class, DatabaseSourceGovernancePolicy::class);
+        $this->app->bind(GovernedRulesetRepository::class, PostgresGovernedRulesetRepository::class);
+        $this->app->bind(RulesetResolver::class, PostgresRulesetResolver::class);
         $this->app->bind(WorkflowRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(AnalysisDocumentRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(BuildLifecycleRepository::class, PostgresWorkflowRepository::class);
@@ -183,7 +192,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if (app()->isProduction() && config('external-sources.poe_ninja.enabled') && trim((string) config('external-sources.poe_ninja.contact')) === '') {
-            throw new \RuntimeException('POE_NINJA_CONTACT is required when POE_NINJA_ENABLED=true in production.');
+            throw new \RuntimeException('POE_NINJA_CONTACT is required when both poe.ninja source switches are enabled in production.');
         }
         $this->configureDefaults();
     }

@@ -135,7 +135,7 @@ class PobImportEndpointTest extends TestCase
     {
         DB::table('policy_kill_switches')->insert([
             'scope' => 'source_capability',
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'capability' => 'import',
             'active' => true,
             'reason' => 'Test import shutdown.',
@@ -174,7 +174,7 @@ class PobImportEndpointTest extends TestCase
         DB::table('policy_kill_switches')->where('source_id', 'POB-COMMUNITY')->delete();
         DB::table('policy_kill_switches')->insert([
             'scope' => 'source_capability',
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'capability' => 'persistent_store',
             'active' => true,
             'reason' => 'Test persistence shutdown.',

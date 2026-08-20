@@ -127,6 +127,9 @@ RULESETS_ENABLED=false
 EXTERNAL_LINKS_ENABLED=false
 OUTBOUND_NETWORK_ENABLED=false
 OPENAI_ENABLED=false
+OPENAI_EXPLANATIONS_ENABLED=false
+POENINJA_ECONOMY_ENABLED=false
+POEWIKI_IMPORT_ENABLED=false
 FUNDING_ENABLED=false
 HORIZON_DASHBOARD_ENABLED=false
 ```
@@ -285,7 +288,8 @@ database backup and maintenance-mode activation.
 
 An optional scheduled task may run `php artisan lootwright:sources:sync-poe-ninja`
 every 30 minutes after the source has reviewed policy evidence, a configured
-operator contact, and `POE_NINJA_ENABLED=true`. It uses an atomic cache lock;
+operator contact, `POE_NINJA_ENABLED=true`, and
+`POENINJA_ECONOMY_ENABLED=true`. It uses an atomic cache lock;
 do not provision a worker, Horizon, or Valkey solely for this task.
 
 - Set the operator's initial monthly target to USD 20 and configure an absolute
