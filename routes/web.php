@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\PolicyEvidenceController;
 use App\Http\Controllers\Admin\PolicyKillSwitchController;
 use App\Http\Controllers\AnalysisDraftController;
 use App\Http\Controllers\AnalysisProvenanceController;
-use App\Http\Controllers\Catalog\Poe1CharacterOptionsController;
+use App\Http\Controllers\Catalog\CharacterOptionsController;
 use App\Http\Controllers\CompareAnalysesController;
 use App\Http\Controllers\CreatePrivacySessionController;
 use App\Http\Controllers\DashboardController;
@@ -29,7 +29,10 @@ use Inertia\Inertia;
 
 Route::inertia('/', 'Landing')->name('home');
 Route::inertia('/analyses/new', 'Analysis/New')->name('analyses.new');
-Route::get('/api/catalog/poe1/character-options', Poe1CharacterOptionsController::class)->middleware('throttle:60,1')->name('catalog.poe1.characters');
+Route::get('/api/catalog/{game}/character-options', CharacterOptionsController::class)
+    ->where('game', 'poe1|poe2')
+    ->middleware('throttle:60,1')
+    ->name('catalog.characters');
 Route::inertia('/analyses/demo/import', 'Analysis/ImportReview')->name('analyses.demo.import');
 Route::get('/analyses/demo/{section}', static fn (string $section) => Inertia::render('Analysis/Workspace', [
     'section' => $section,

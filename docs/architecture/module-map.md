@@ -14,7 +14,7 @@ flowchart TB
     TRADE[Manual Trade Planning]
     RULES[Ruleset Catalog]
     P1[PoE1 adapter]
-    P2[PoE2 adapter - inactive]
+    P2[PoE2 adapter + Early Access catalog]
     INFRA[PostgreSQL / cache / queue / optional AI adapters]
 
     UI --> HTTP --> APP
@@ -22,7 +22,7 @@ flowchart TB
     APP --> INGEST
     APP --> ANALYSIS --> RECO --> TRADE
     INGEST --> P1
-    INGEST -. phase two .-> P2
+    INGEST --> P2
     ANALYSIS --> RULES
     P1 --> RULES
     P2 -. isolated .-> RULES
@@ -46,7 +46,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/Domain/PolicyProvenance` | Sources/versions, permission evidence, exact capability rules, decisions, effective periods, kill switches, and pure evaluation | Shared | external clients, database types, feature-flag overrides |
 | `src/Domain/UsageFunding` | Usage port and disabled funding policy | Shared, Policy and Provenance | payment providers, funding entitlements |
 | `src/GameAdapters/PoE1` | PoE1 parsing and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |
-| `src/GameAdapters/PoE2` | PoE2 parsing and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
+| `src/GameAdapters/PoE2` | PoE2 parsing, Early Access catalog and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
 | `src/Application` | Use cases, commands, queries, workflow states, DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
 | `app/Modules/Rulesets` | Reserved for future import, checksum, review, activation, and repository adapter; not implemented | Application ports, Laravel | mutating published rulesets |

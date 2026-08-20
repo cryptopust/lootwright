@@ -3,8 +3,9 @@
 namespace Lootwright\Domain\PoeCatalog\Character;
 
 use JsonSerializable;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
-final readonly class Poe1CharacterCatalog implements JsonSerializable
+final readonly class Poe1CharacterCatalog implements CharacterCatalog, JsonSerializable
 {
     public const GAME = 'poe1';
 
@@ -34,10 +35,21 @@ final readonly class Poe1CharacterCatalog implements JsonSerializable
         ]);
     }
 
-    public function supports(string $classId, ?string $ascendancyId): bool
+    public function edition(): GameEdition
+    {
+        return GameEdition::Poe1;
+    }
+
+    /** @return list<CharacterClassDefinition> */
+    public function classes(): array
+    {
+        return $this->classes;
+    }
+
+    public function supports(string $classId, ?string $ascendancyId, ?string $alternateAscendancyId = null, ?string $secondaryProgressionId = null): bool
     {
         $class = $this->classById($classId);
-        if ($class === null || ! $class->active) {
+        if ($class === null || $class->availability !== Availability::Available || $alternateAscendancyId !== null || $secondaryProgressionId !== null) {
             return false;
         }
 
@@ -46,7 +58,7 @@ final readonly class Poe1CharacterCatalog implements JsonSerializable
         }
 
         foreach ($class->ascendancies as $ascendancy) {
-            if ($ascendancy->id === $ascendancyId && $ascendancy->active && $ascendancy->kind === ProgressionKind::Ascendancy) {
+            if ($ascendancy->id === $ascendancyId && $ascendancy->availability === Availability::Available && $ascendancy->type === ProgressionKind::Regular) {
                 return true;
             }
         }
@@ -71,9 +83,15 @@ final readonly class Poe1CharacterCatalog implements JsonSerializable
         return [
             'game' => self::GAME,
             'patch' => self::PATCH,
+            'version' => self::PATCH,
+            'early_access' => false,
             'data_version' => self::DATA_VERSION,
             'verified_at' => self::VERIFIED_AT,
             'source' => self::SOURCE_URL,
+            'sources' => [
+                ['name' => 'Path of Exile Wiki', 'url' => self::SOURCE_URL],
+                ['name' => 'Path of Exile Wiki patch notes', 'url' => self::PATCH_SOURCE_URL],
+            ],
             'patch_source' => self::PATCH_SOURCE_URL,
             'classes' => $this->classes,
         ];
@@ -82,8 +100,8 @@ final readonly class Poe1CharacterCatalog implements JsonSerializable
     /** @param list<array{0: string, 1: string}> $ascendancies */
     private static function class(string $id, string $name, int $order, array $ascendancies): CharacterClassDefinition
     {
-        return new CharacterClassDefinition($id, $name, $order, true, array_map(
-            static fn (array $ascendancy, int $index): AscendancyDefinition => new AscendancyDefinition($ascendancy[0], $ascendancy[1], ($index + 1) * 10, true),
+        return new CharacterClassDefinition($id, $name, $order, Availability::Available, array_map(
+            static fn (array $ascendancy, int $index): AscendancyDefinition => new AscendancyDefinition($ascendancy[0], $ascendancy[1], ($index + 1) * 10, Availability::Available),
             $ascendancies,
             array_keys($ascendancies),
         ));

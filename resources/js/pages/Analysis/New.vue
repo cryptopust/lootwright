@@ -12,11 +12,14 @@ import {
 import AppShell from '@/components/app/AppShell.vue';
 
 type Flow = 'plan' | 'analyse' | 'upgrade';
-type Ascendancy = { id: string; name: string };
-type CharacterClass = { id: string; name: string; ascendancies: Ascendancy[] };
+type GameEdition = 'poe1' | 'poe2';
+type Ascendancy = { id: string; name: string; type?: 'regular' | 'alternate' | 'secondary'; availability?: string; requires_base_ascendancy?: string | null };
+type CharacterClass = { id: string; name: string; availability?: string; ascendancies: Ascendancy[] };
 type Catalog = {
-    game: 'poe1';
+    game: GameEdition;
     patch: string;
+    version?: string;
+    early_access?: boolean;
     verified_at: string;
     source: string;
     classes: CharacterClass[];
@@ -26,6 +29,7 @@ const page = usePage<{
     auth: { user: { email_verified_at: string | null } | null };
 }>();
 const catalog = ref<Catalog | null>(null);
+const catalogLoading = ref(false);
 const currentStep = ref(1);
 const heading = ref<HTMLHeadingElement>();
 const errors = ref<Record<string, string>>({});
@@ -47,9 +51,11 @@ const steps = [
 ];
 const form = reactive({
     flow: 'plan' as Flow,
-    game: 'poe1',
+    game: 'poe1' as GameEdition,
     character_class: '',
     ascendancy: '',
+    alternate_ascendancy: '',
+    secondary_progression: '',
     character_level: 1,
     league: 'standard',
     mode: 'trade',
@@ -79,9 +85,49 @@ const form = reactive({
 const selectedClass = computed(() =>
     catalog.value?.classes.find((item) => item.id === form.character_class),
 );
+const regularAscendancies = computed(() => selectedClass.value?.ascendancies.filter((item) => (item.type ?? 'regular') === 'regular' && (item.availability ?? 'available') === 'available') ?? []);
+const alternateAscendancies = computed(() => selectedClass.value?.ascendancies.filter((item) => item.type === 'alternate' && (item.availability ?? 'available') === 'available' && item.requires_base_ascendancy === form.ascendancy) ?? []);
 const isAuthenticated = computed(() => page.props.auth.user !== null);
 const isVerified = computed(
     () => page.props.auth.user?.email_verified_at !== null,
+);
+
+async function loadCatalog(game: GameEdition): Promise<void> {
+    catalogLoading.value = true;
+
+    try {
+        const response = await fetch(`/api/catalog/${game}/character-options`);
+        catalog.value = response.ok ? await response.json() : null;
+    } finally {
+        catalogLoading.value = false;
+    }
+}
+
+watch(
+    () => form.game,
+    async (game, previous) => {
+        if (game !== previous) {
+            form.character_class = '';
+            form.ascendancy = '';
+            form.alternate_ascendancy = '';
+            form.secondary_progression = '';
+            form.league = 'standard';
+            form.main_skill = '';
+            form.secondary_skills = [];
+            secondarySkillText.value = '';
+            form.archetype = '';
+            form.item_text = '';
+            form.equipment_slot = '';
+            form.preserved_items = [];
+            preservedItemText.value = '';
+            form.replaceable_slots = [];
+            replaceableSlotText.value = '';
+            form.pob = '';
+            importConflict.value = 'Oyun değişti; sınıf, Ascendancy, league, skill, item ve import alanları güvenlik için temizlendi.';
+        }
+
+        await loadCatalog(game);
+    },
 );
 
 watch(
@@ -95,7 +141,19 @@ watch(
             form.ascendancy = '';
         }
 
+        if (!alternateAscendancies.value.some((item) => item.id === form.alternate_ascendancy)) {
+            form.alternate_ascendancy = '';
+        }
+
         dirty.value = true;
+    },
+);
+watch(
+    () => form.ascendancy,
+    () => {
+        if (!alternateAscendancies.value.some((item) => item.id === form.alternate_ascendancy)) {
+            form.alternate_ascendancy = '';
+        }
     },
 );
 watch(
@@ -110,8 +168,8 @@ function validate(step: number): boolean {
     const next: Record<string, string> = {};
 
     if (step === 2) {
-        if (!form.character_class) {
-            next.character_class = 'Sınıf seçmelisin.';
+        if (!form.character_class || selectedClass.value?.availability === 'planned') {
+            next.character_class = 'Oynanabilir bir sınıf seçmelisin.';
         }
 
         if (form.character_level < 1 || form.character_level > 100) {
@@ -120,7 +178,7 @@ function validate(step: number): boolean {
 
         if (
             form.ascendancy &&
-            !selectedClass.value?.ascendancies.some(
+            !regularAscendancies.value.some(
                 (item) => item.id === form.ascendancy,
             )
         ) {
@@ -190,12 +248,16 @@ async function importPob(): Promise<void> {
             Accept: 'application/json',
             'Idempotency-Key': crypto.randomUUID().replaceAll('-', ''),
         },
-        body: JSON.stringify({ input: form.pob, persist: false }),
+        body: JSON.stringify({ input: form.pob, persist: false, expected_game: form.game }),
     });
     const body = await response.json();
 
     if (!response.ok) {
-        errors.value.pob = 'PoB güvenli biçimde okunamadı.';
+        if (body.status === 'edition_mismatch') {
+            importConflict.value = `PoB ${body.detected_game} olarak algılandı; seçili ${body.expected_game} analiziyle birleştirilmedi.`;
+        } else {
+            errors.value.pob = 'PoB güvenli biçimde okunamadı.';
+        }
 
         return;
     }
@@ -203,6 +265,14 @@ async function importPob(): Promise<void> {
     const imported = body.import?.canonical_build;
 
     if (!imported) {
+        return;
+    }
+
+    const detectedGame = imported.edition ?? body.import?.detected_game;
+
+    if (detectedGame && detectedGame !== form.game) {
+        importConflict.value = `PoB ${detectedGame} olarak algılandı; seçili ${form.game} analiziyle birleştirilmedi.`;
+
         return;
     }
 
@@ -276,6 +346,7 @@ async function saveDraft(): Promise<void> {
                 )?.content ?? '',
         },
         body: JSON.stringify({
+            game: form.game,
             flow: form.flow,
             current_step: currentStep.value,
             safe_fields: safeDraft(),
@@ -342,8 +413,7 @@ function beforeUnload(event: BeforeUnloadEvent): void {
     }
 }
 onMounted(async () => {
-    const response = await fetch('/api/catalog/poe1/character-options');
-    catalog.value = await response.json();
+    await loadCatalog(form.game);
 
     if (isAuthenticated.value) {
         const draftResponse = await fetch('/api/analysis-draft', {
@@ -352,6 +422,13 @@ onMounted(async () => {
         const body = await draftResponse.json();
 
         if (draftResponse.ok && body.draft?.safe_fields) {
+            const draftGame = body.draft.game_edition;
+
+            if (draftGame === 'poe1' || draftGame === 'poe2') {
+                form.game = draftGame;
+                await loadCatalog(draftGame);
+            }
+
             const fields =
                 typeof body.draft.safe_fields === 'string'
                     ? JSON.parse(body.draft.safe_fields)
@@ -378,19 +455,18 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
 </script>
 
 <template>
-    <Head title="Yeni PoE 1 analizi" />
+    <Head title="Yeni PoE analizi" />
     <AppShell current="new" :contained="false">
         <header class="page-heading wizard-heading">
             <div>
                 <p class="kicker">
-                    PoE 1 · Patch {{ catalog?.patch ?? '3.28' }}
+                    {{ form.game === 'poe1' ? 'PoE 1' : 'PoE 2' }} · Sürüm {{ catalog?.version ?? catalog?.patch }}
                 </p>
                 <h1 ref="heading" tabindex="-1">
                     Karakter planı ve analiz sihirbazı
                 </h1>
                 <p>
-                    Sınıf, hedef ve bütçe kararlarını doğrulanmış katalogla
-                    kaydet. PoE 2 yakında.
+                    Sınıf, hedef ve bütçe kararlarını oyun-sürümlü doğrulanmış katalogla kaydet.
                 </p>
             </div>
             <button
@@ -442,6 +518,12 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
         <form v-else class="wizard-panel" @submit.prevent="submit">
             <fieldset v-if="currentStep === 1">
                 <legend>Ne yapmak istiyorsun?</legend>
+                <div class="choice-list" aria-label="Oyun seçimi">
+                    <label v-for="game in [{ id: 'poe1', label: 'Path of Exile 1' }, { id: 'poe2', label: 'Path of Exile 2 · Early Access' }]" :key="game.id">
+                        <input v-model="form.game" type="radio" name="game" :value="game.id" />
+                        <span><strong>{{ game.label }}</strong><small>Oyun katalogları ve importlar birbirinden izole edilir.</small></span>
+                    </label>
+                </div>
                 <div class="choice-list">
                     <label
                         v-for="option in [
@@ -463,14 +545,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
                             :value="option.id"
                         /><span
                             ><strong>{{ option.label }}</strong
-                            ><small>Path of Exile 1, PC</small></span
+                            ><small>{{ form.game === 'poe1' ? 'Path of Exile 1' : 'Path of Exile 2' }}, PC</small></span
                         ></label
                     >
                 </div>
-                <div class="disabled-edition">
-                    <strong>Path of Exile 2</strong
-                    ><span>Yakında, bu akışta seçilemez.</span>
-                </div>
+                <p v-if="catalog?.early_access" class="form-warning">PoE 2 Early Access kataloğu sürüm kontrollüdür; planned sınıflar seçilemez.</p>
             </fieldset>
             <fieldset v-else-if="currentStep === 2">
                 <legend>Karakter</legend>
@@ -486,8 +565,9 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
                                 v-for="item in catalog?.classes"
                                 :key="item.id"
                                 :value="item.id"
+                                :disabled="item.availability === 'planned'"
                             >
-                                {{ item.name }}
+                                {{ item.name }}{{ item.availability === 'planned' ? ' · Early Access sürümünde henüz oynanabilir değil' : '' }}
                             </option>
                         </select></label
                     ><label class="field"
@@ -498,12 +578,18 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
                         >
                             <option value="">Henüz karar vermedim</option>
                             <option
-                                v-for="item in selectedClass?.ascendancies"
+                                v-for="item in regularAscendancies"
                                 :key="item.id"
                                 :value="item.id"
                             >
                                 {{ item.name }}
                             </option>
+                        </select></label
+                    ><label v-if="alternateAscendancies.length" class="field"
+                        ><span>Alternatif Ascendancy</span
+                        ><select v-model="form.alternate_ascendancy">
+                            <option value="">Seçme</option>
+                            <option v-for="item in alternateAscendancies" :key="item.id" :value="item.id">{{ item.name }}</option>
                         </select></label
                     ><label class="field"
                         ><span>Karakter seviyesi</span
@@ -801,13 +887,13 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
                     </div>
                     <div>
                         <dt>Oyun</dt>
-                        <dd>Path of Exile 1</dd>
+                        <dd>{{ form.game === 'poe1' ? 'Path of Exile 1' : 'Path of Exile 2 · Early Access' }}</dd>
                     </div>
                     <div>
                         <dt>Karakter</dt>
                         <dd>
                             {{ selectedClass?.name }} ·
-                            {{ form.ascendancy || 'Kararsız' }} · Lv
+                            {{ form.ascendancy || 'Kararsız' }}{{ form.alternate_ascendancy ? ` · ${form.alternate_ascendancy}` : '' }} · Lv
                             {{ form.character_level }}
                         </dd>
                     </div>

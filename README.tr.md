@@ -14,7 +14,7 @@ Lootwright, görünür kaynak ve tazelik bilgisiyle piyasa bağlamı için önbe
 alınmış poe.ninja ekonomi verisini kullanabilir. Canlı Trade ilanlarını çekemez;
 bunun yerine manuel resmi Trade filtre tarifleri üretir. Fiyatlar tahmindir.
 
-PoE1 sihirbazı, Fortify tabanlı üyelik, kullanıcıya ait analiz alanı ve sunucu
+PoE1/PoE2 oyun-sürümlü kataloğu ve sihirbazı, Fortify tabanlı üyelik, kullanıcıya ait analiz alanı ve sunucu
 tarafından yetkilendirilen üye/admin panelleri kullanılabilir. İlk doğrulanmış
 super-admin için `php artisan lootwright:admin:promote user@example.com --force`
 komutunu çalıştırın.
@@ -64,18 +64,17 @@ tarihsel uygulama kaydı için [ilerleme belgesine](docs/progress.md) bakın.
 - Kuyruklu ham artifact aktarımından önce kalıcı nesne depolaması eklemek;
   ardından staging yedekleme/geri yükleme, gizlilik iletişimi ve hesap deneyimini
   tamamlamak.
-- PoE2 analizini ancak PoE1 sürüm kapıları geçildikten ve ayrı bir etkinleştirme
-  ADR'si kabul edildikten sonra değerlendirmek.
+- PoE2 deterministik kurallarını bağımsız olarak onaylamadan ruleset tabanlı
+  bulguları etkinleştirmemek; katalog desteğini cross-game fallback izni saymamak.
 - Yalnızca güvenlik, politika, provenance, silme ve operasyon engelleri
   çözüldükten sonra yayımlamak.
 
 ## Oyun kapsamı
 
-İlk hedef Path of Exile 1 analizidir. Sınırlandırılmış biçim okuyucusu vardır;
-üretim kuralları ve yetkili analiz sonucu yoktur.
-
-Path of Exile 2 için yalnızca ayrı bir beta biçim okuyucu vardır. Kuralları,
-bulguları, önerileri ve tarifleri etkin değildir; oyunlar arası fallback yasaktır.
+Path of Exile 1 ve Path of Exile 2 sürüm kontrollü karakter kataloğunda ve analiz
+giriş sihirbazında seçilebilir. PoE2 Early Access planned sınıfları seçilemez.
+Her iki oyunda da onaylı üretim ruleset'i bulunmayan operasyonlar kapalı kalır;
+oyunlar arası fallback yasaktır.
 
 ## Tasarım ilkeleri
 

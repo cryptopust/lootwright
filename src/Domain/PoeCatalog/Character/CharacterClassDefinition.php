@@ -11,7 +11,7 @@ final readonly class CharacterClassDefinition implements JsonSerializable
         public string $id,
         public string $name,
         public int $order,
-        public bool $active,
+        public Availability $availability,
         public array $ascendancies,
     ) {}
 
@@ -22,7 +22,8 @@ final readonly class CharacterClassDefinition implements JsonSerializable
             'id' => $this->id,
             'name' => $this->name,
             'order' => $this->order,
-            'active' => $this->active,
+            'availability' => $this->availability->value,
+            'active' => $this->availability === Availability::Available,
             'ascendancies' => $this->ascendancies,
         ];
     }

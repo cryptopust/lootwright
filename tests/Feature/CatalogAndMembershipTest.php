@@ -23,6 +23,16 @@ final class CatalogAndMembershipTest extends TestCase
         $this->withHeader('If-None-Match', $etag)->get('/api/catalog/poe1/character-options')->assertStatus(304);
     }
 
+    public function test_poe2_catalog_is_game_scoped_and_has_a_distinct_etag(): void
+    {
+        $poe1 = $this->getJson('/api/catalog/poe1/character-options')->assertOk();
+        $poe2 = $this->getJson('/api/catalog/poe2/character-options')
+            ->assertOk()->assertJsonPath('game', 'poe2')->assertJsonPath('early_access', true)->assertJsonCount(12, 'classes');
+        self::assertNotSame($poe1->headers->get('ETag'), $poe2->headers->get('ETag'));
+        $this->withHeader('If-None-Match', $poe2->headers->get('ETag'))->get('/api/catalog/poe2/character-options')->assertStatus(304);
+        $this->getJson('/api/catalog/poe3/character-options')->assertNotFound();
+    }
+
     public function test_member_cannot_access_admin_and_suspended_session_is_terminated(): void
     {
         $member = User::factory()->create();

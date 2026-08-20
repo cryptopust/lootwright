@@ -43,7 +43,7 @@ funding permission. No approval may be inferred from that absence.
 | ID | Candidate | Intended use | Missing approval evidence | Status |
 | --- | --- | --- | --- | --- |
 | `POE1-RULES-001` | No ruleset source selected | Canonical PoE1 stats, calculations, patch/league rules | Exact documented GGG export or permitted third-party source, license/commercial terms, version, checksum, transformation and redistribution analysis | `disabled-candidate` |
-| `POE2-RULES-001` | No ruleset source selected | Canonical PoE2 rules in phase two | Same evidence as PoE1 plus phase-two activation ADR | `disabled-candidate` |
+| `POE2-RULES-001` | No ruleset source selected | Canonical PoE2 rules for Early Access analysis | Same evidence as PoE1 plus separate PoE2 activation review and ADR | `disabled-candidate` |
 | `GGG-API-MVP` | Documented resources under the API Reference | Potential future account or game metadata | Concrete product need, exact documented operation, application registration, scopes, retention, rate limits, approval | `disabled`; not needed for MVP |
 | `GGG-TRADE-UNDOCUMENTED` | `/api/trade/search`, `/api/trade/fetch`, `/api/trade/data/*` | None | These are outside the allowed architecture | `permanently-prohibited` under current constitution |
 | `GGG-PUBLIC-STASH` | Documented PoE1 Public Stashes resource | None for Lootwright | Live market indexing is a product non-goal even though the resource is documented | `disabled-out-of-scope` |

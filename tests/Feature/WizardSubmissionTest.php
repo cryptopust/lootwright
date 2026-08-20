@@ -12,6 +12,23 @@ final class WizardSubmissionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_poe2_relationships_planned_classes_and_cross_game_payloads_are_validated(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $headers = ['Idempotency-Key' => str_repeat('p', 32)];
+        $valid = [...$this->payload(), 'game' => 'poe2', 'character_class' => 'witch', 'ascendancy' => 'lich', 'alternate_ascendancy' => 'abyssal-lich'];
+        $response = $this->actingAs($user)->postJson('/api/analyses/wizard', $valid, $headers)->assertAccepted();
+        $this->assertDatabaseHas('analyses', ['id' => $response->json('analysis_id'), 'game_edition' => 'poe2', 'user_id' => $user->id]);
+
+        foreach ([
+            [...$valid, 'character_class' => 'marauder', 'ascendancy' => null, 'alternate_ascendancy' => null],
+            [...$valid, 'ascendancy' => 'infernalist'],
+            [...$valid, 'character_class' => 'ranger', 'ascendancy' => 'warden', 'alternate_ascendancy' => null],
+        ] as $index => $invalid) {
+            $this->actingAs($user)->postJson('/api/analyses/wizard', $invalid, ['Idempotency-Key' => str_repeat((string) ($index + 1), 32)])->assertUnprocessable()->assertJsonValidationErrors('ascendancy');
+        }
+    }
+
     public function test_guest_and_unverified_user_cannot_submit_persistent_analysis(): void
     {
         $payload = $this->payload();
@@ -53,6 +70,14 @@ final class WizardSubmissionTest extends TestCase
         $this->actingAs($owner)->putJson('/api/analysis-draft', ['flow' => 'plan', 'current_step' => 3, 'safe_fields' => ['character_class' => 'ranger', 'pob' => 'raw-secret-pob']])->assertJsonValidationErrors('safe_fields.pob');
         $this->actingAs($owner)->putJson('/api/analysis-draft', ['flow' => 'plan', 'current_step' => 3, 'safe_fields' => ['character_class' => 'ranger']])->assertAccepted();
         $this->actingAs($other)->getJson('/api/analysis-draft')->assertJsonPath('draft', null);
+    }
+
+    public function test_draft_persists_game_identity_without_raw_artifacts(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->putJson('/api/analysis-draft', ['game' => 'poe2', 'flow' => 'plan', 'current_step' => 2, 'safe_fields' => ['game' => 'poe2', 'character_class' => 'witch']])->assertAccepted();
+        $this->assertDatabaseHas('analysis_drafts', ['user_id' => $owner->id, 'game_edition' => 'poe2']);
+        self::assertStringNotContainsString('pob', (string) DB::table('analysis_drafts')->where('user_id', $owner->id)->value('safe_fields'));
     }
 
     /** @return array<string, mixed> */

@@ -12,7 +12,7 @@ defineProps<{
     analyses: Record<string, number>;
     failedJobs: number;
     killSwitches: number;
-    catalog: { patch: string; data_version: string };
+    catalogs: Array<{ game: string; version: string; data_version: string }>;
     source: null | {
         source_key: string;
         status: string;
@@ -72,7 +72,7 @@ defineProps<{
                     <div>
                         <dt>Katalog</dt>
                         <dd>
-                            {{ catalog.patch }} · {{ catalog.data_version }}
+                            <span v-for="catalog in catalogs" :key="catalog.game">{{ catalog.game }} {{ catalog.version }} · {{ catalog.data_version }}<br /></span>
                         </dd>
                     </div>
                     <div>

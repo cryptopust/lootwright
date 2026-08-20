@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lootwright\Domain\PoeCatalog\Character\Poe1CharacterCatalog;
+use Lootwright\Domain\PoeCatalog\Character\Poe2CharacterCatalog;
 
 final class AdminPageController extends Controller
 {
@@ -17,7 +18,7 @@ final class AdminPageController extends Controller
 
     public function catalog(): Response
     {
-        return Inertia::render('Admin/Catalog', ['catalog' => Poe1CharacterCatalog::current()]);
+        return Inertia::render('Admin/Catalog', ['catalogs' => [Poe1CharacterCatalog::current(), Poe2CharacterCatalog::current()]]);
     }
 
     public function system(): Response

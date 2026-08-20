@@ -13,7 +13,7 @@ Lootwright can use cached poe.ninja economy data for visible market context. It
 cannot fetch live Trade listings; it generates manual official Trade filter
 recipes instead. Prices are estimates with visible source and freshness.
 
-The PoE1 wizard, Fortify-backed membership, owner-scoped analysis workspace and
+The dual-game PoE1/PoE2 catalog and wizard, Fortify-backed membership, owner-scoped analysis workspace and
 server-authorized member/admin panels are available. Create the first verified
 super-admin with `php artisan lootwright:admin:promote user@example.com --force`.
 
@@ -59,18 +59,17 @@ and [delivery progress](docs/progress.md) for the historical implementation log.
   fixture data.
 - Add durable object storage before enabling queued raw-artifact handoff, then
   complete staging backup/restore, privacy contacts, and public account UX.
-- Consider full PoE2 analysis only after the PoE1 release gates pass and a
-  separate activation ADR is accepted.
+- Approve PoE2 deterministic rulesets independently before enabling ruleset-backed
+  findings; catalog and intake support do not authorize cross-game fallback.
 - Publish only after security, policy, provenance, deletion, and operations
   blockers are resolved.
 
 ## Game scope
 
-Path of Exile 1 is the first intended analysis target. PoE1 has a bounded format
-reader, but no production ruleset or authoritative analysis result.
-
-Path of Exile 2 has only a separate beta format reader. Its rulesets, findings,
-recommendations, and recipes are inactive; cross-edition fallback is forbidden.
+Path of Exile 1 and Path of Exile 2 can both be selected in the versioned
+character catalog and analysis intake wizard. PoE2 Early Access planned classes
+remain unselectable. Neither game currently has an approved production ruleset;
+unsupported operations fail closed and cross-edition fallback is forbidden.
 
 ## Design principles
 

@@ -26,15 +26,17 @@ const catalog = {
         {
             id: 'ranger',
             name: 'Ranger',
+            availability: 'available',
             ascendancies: [
-                { id: 'deadeye', name: 'Deadeye' },
-                { id: 'warden', name: 'Warden' },
+                { id: 'deadeye', name: 'Deadeye', type: 'regular' },
+                { id: 'warden', name: 'Warden', type: 'regular' },
             ],
         },
         {
             id: 'witch',
             name: 'Witch',
-            ascendancies: [{ id: 'elementalist', name: 'Elementalist' }],
+            availability: 'available',
+            ascendancies: [{ id: 'elementalist', name: 'Elementalist', type: 'regular' }],
         },
     ],
 };
@@ -82,6 +84,22 @@ describe('New analysis wizard', () => {
 
         expect((selects[1].element as HTMLSelectElement).value).toBe('');
         expect((selects[1].element as HTMLSelectElement).disabled).toBe(false);
+    });
+
+    it('switches games, fetches the isolated catalog and clears game-specific values', async () => {
+        const wrapper = mountWizard();
+        await flushPromises();
+        await wrapper.get('.wizard-actions .is-primary').trigger('click');
+        await wrapper.findAll('select')[0].setValue('ranger');
+        await wrapper.findAll('select')[1].setValue('warden');
+        await wrapper.get('.wizard-actions .is-secondary').trigger('click');
+        await wrapper.get('input[value="poe2"]').setValue(true);
+        await flushPromises();
+        await wrapper.get('.wizard-actions .is-primary').trigger('click');
+
+        expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('');
+        expect((wrapper.findAll('select')[1].element as HTMLSelectElement).value).toBe('');
+        expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/catalog/poe2/character-options');
     });
 
     it('applies conditional validation for PoB and budget fields', async () => {

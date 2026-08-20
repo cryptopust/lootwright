@@ -647,3 +647,15 @@ because this workstation has no disposable PostgreSQL service or container
 runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
+2026-08-20: expanded the character catalog and intake wizard to edition-scoped
+PoE1 and PoE2 support. PoE2 baseline 0.5 records twelve classes (eight available,
+four planned), twenty-two regular Ascendancies, and Witch/Lich-only alternate
+Abyssal Lich. Planned classes and cross-game payloads fail backend validation;
+ruleset-backed PoE2 findings remain approval-gated.
+Local verification passed 641 of 643 PHP tests (the two opt-in disposable
+PostgreSQL tests were skipped), 17 frontend tests, Composer validation/audit,
+Pint, PHPStan, npm clean install/audit/lint/typecheck/test/build, route listing,
+documentation validation, and diff whitespace checks. Source documentation
+URLs returned HTTP 200. No PostgreSQL client, container runtime, or service was
+available and port 5432 refused connections, so real PostgreSQL fresh/rollback/
+reapply remains an explicit deployment gate; SQLite is not claimed as proof.

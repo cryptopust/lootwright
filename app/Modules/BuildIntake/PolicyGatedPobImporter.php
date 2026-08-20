@@ -40,6 +40,7 @@ final readonly class PolicyGatedPobImporter
         ?string $idempotencyKey = null,
         ?string $actorId = null,
         ?ImportLimits $limits = null,
+        ?GameEdition $expectedEdition = null,
     ): PobImportExecution {
         if (! (bool) config('security.emergency.imports')) {
             throw new PobImportDisabled('Build imports are disabled by the emergency switch.');
@@ -74,6 +75,10 @@ final readonly class PolicyGatedPobImporter
 
             if (! $import instanceof PobImportResult) {
                 throw new RuntimeException('The importer returned an invalid normalized result.');
+            }
+
+            if ($expectedEdition !== null && $import->canonicalBuild->edition !== $expectedEdition) {
+                throw new PobImportEditionMismatch($expectedEdition, $import->canonicalBuild->edition);
             }
 
             $stored = null;

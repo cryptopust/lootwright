@@ -10,8 +10,9 @@ final readonly class AscendancyDefinition implements JsonSerializable
         public string $id,
         public string $name,
         public int $order,
-        public bool $active,
-        public ProgressionKind $kind = ProgressionKind::Ascendancy,
+        public Availability $availability,
+        public ProgressionKind $type = ProgressionKind::Regular,
+        public ?string $requiresBaseAscendancy = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -21,8 +22,11 @@ final readonly class AscendancyDefinition implements JsonSerializable
             'id' => $this->id,
             'name' => $this->name,
             'order' => $this->order,
-            'active' => $this->active,
-            'kind' => $this->kind->value,
+            'availability' => $this->availability->value,
+            'active' => $this->availability === Availability::Available,
+            'type' => $this->type->value,
+            'kind' => $this->type->value,
+            'requires_base_ascendancy' => $this->requiresBaseAscendancy,
         ];
     }
 }

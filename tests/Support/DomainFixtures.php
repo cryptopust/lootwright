@@ -144,7 +144,7 @@ final class DomainFixtures
     public static function catalog(GameEdition $edition): BuildCatalog
     {
         $characterClass = self::value(
-            CharacterClassId::from($edition, $edition === GameEdition::Poe1 ? 'witch' : 'fixture.class'),
+            CharacterClassId::from($edition, 'witch'),
             CharacterClassId::class,
         );
 

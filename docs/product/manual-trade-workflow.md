@@ -9,7 +9,9 @@ Status: the compiler, closed DTO schema, canonical serialization, plain-text
 renderer, Policy Gate operations, and fixture-only conformance tests are
 implemented. Production recipes remain fail-closed until an approved immutable
 PoE1 ruleset publishes the exact filter vocabulary and the deterministic
-analyzer/prioritizer produces slot plans. PoE2 generation remains inactive.
+analyzer/prioritizer produces slot plans. PoE2 catalog/intake is active, while
+PoE2 manual-recipe generation remains fail-closed until its deterministic
+vocabulary and policy evidence are approved.
 
 ## Workflow
 

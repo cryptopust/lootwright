@@ -15,6 +15,8 @@ final class AnalysisDraftController extends Controller
     private const SAFE_FIELD_ALLOWLIST = [
         'character_class',
         'ascendancy',
+        'alternate_ascendancy',
+        'secondary_progression',
         'character_level',
         'league',
         'mode',
@@ -46,15 +48,17 @@ final class AnalysisDraftController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $draft = DB::table('analysis_drafts')->where('user_id', $request->user()->id)->where('expires_at', '>', now())->latest()->first(['id', 'flow', 'safe_fields', 'current_step', 'expires_at']);
+        $draft = DB::table('analysis_drafts')->where('user_id', $request->user()->id)->where('expires_at', '>', now())->latest()->first(['id', 'game_edition', 'flow', 'safe_fields', 'current_step', 'expires_at']);
 
         return response()->json(['draft' => $draft], headers: ['Cache-Control' => 'no-store, private']);
     }
 
     public function store(Request $request): JsonResponse
     {
+        $request->merge(['game' => $request->input('game', 'poe1')]);
         $data = $request->validate([
             'flow' => ['required', Rule::in(['plan', 'analyse', 'upgrade'])], 'current_step' => ['required', 'integer', 'between:1,7'],
+            'game' => ['required', Rule::in(['poe1', 'poe2'])],
             'safe_fields' => ['required', 'array', 'max:30'],
         ]);
 
@@ -74,7 +78,7 @@ final class AnalysisDraftController extends Controller
         $expiresAt = now()->addDays(7);
         DB::table('analysis_drafts')->updateOrInsert(
             ['user_id' => $request->user()->id],
-            ['id' => $id, 'flow' => $data['flow'], 'safe_fields' => json_encode($safeFields, JSON_THROW_ON_ERROR), 'current_step' => $data['current_step'], 'expires_at' => $expiresAt, 'updated_at' => now(), ...($existingId === null ? ['created_at' => now()] : [])],
+            ['id' => $id, 'game_edition' => $data['game'], 'flow' => $data['flow'], 'safe_fields' => json_encode($safeFields, JSON_THROW_ON_ERROR), 'current_step' => $data['current_step'], 'expires_at' => $expiresAt, 'updated_at' => now(), ...($existingId === null ? ['created_at' => now()] : [])],
         );
 
         return response()->json(['draft_id' => $id, 'expires_at' => $expiresAt->toIso8601String()], 202, ['Cache-Control' => 'no-store']);

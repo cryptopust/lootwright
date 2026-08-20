@@ -19,19 +19,16 @@ final readonly class PolicyGatedArtifactParser implements ArtifactParser
     public function parse(string $artifactType, string $contents, GameEdition $expectedEdition): ParsedArtifact
     {
         if ($artifactType === 'wizard_plan' || $artifactType === 'item_text') {
-            if ($expectedEdition !== GameEdition::Poe1) {
-                throw new TerminalWorkflowFailure('poe2_analysis_inactive', 'Only PoE1 planning is active.');
-            }
             $normalized = CanonicalJson::encode([
-                'edition' => 'poe1',
+                'edition' => $expectedEdition->value,
                 'input_kind' => $artifactType,
                 'input_checksum_sha256' => hash('sha256', $contents),
                 'input_bytes' => strlen($contents),
             ]);
 
-            return new ParsedArtifact(GameEdition::Poe1, 'lootwright-wizard', '1.0.0', $normalized, hash('sha256', $normalized), '3.28.0', null, [[
+            return new ParsedArtifact($expectedEdition, 'lootwright-wizard-'.$expectedEdition->value, '1.1.0', $normalized, hash('sha256', $normalized), $expectedEdition === GameEdition::Poe1 ? '3.28.0' : '0.5.0', null, [[
                 'code' => 'production_ruleset_required',
-                'question' => 'An approved PoE1 ruleset is required before deterministic findings can run.',
+                'question' => 'An approved '.$expectedEdition->value.' ruleset is required before deterministic findings can run.',
             ]]);
         }
 
@@ -67,8 +64,8 @@ final readonly class PolicyGatedArtifactParser implements ArtifactParser
 
         if ($expectedEdition === GameEdition::Poe2) {
             $clarifications[] = [
-                'code' => 'poe2_analysis_inactive',
-                'question' => 'PoE2 analysis is not active; submit a PoE1 build for the current MVP.',
+                'code' => 'poe2_ruleset_required',
+                'question' => 'This PoE2 format was imported, but deterministic findings require an approved PoE2 ruleset.',
             ];
         }
 

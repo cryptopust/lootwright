@@ -5,7 +5,8 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
-use Lootwright\Domain\PoeCatalog\Character\Poe1CharacterCatalog;
+use Lootwright\Domain\PoeCatalog\Character\CharacterCatalogRegistry;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
 final class SubmitWizardAnalysisRequest extends FormRequest
 {
@@ -27,9 +28,11 @@ final class SubmitWizardAnalysisRequest extends FormRequest
         return [
             'idempotency_key' => ['required', 'string', 'between:32,128', 'regex:/^[A-Za-z0-9._:-]+$/D'],
             'flow' => ['required', Rule::in(['plan', 'analyse', 'upgrade'])],
-            'game' => ['required', Rule::in(['poe1'])],
+            'game' => ['required', Rule::enum(GameEdition::class)],
             'character_class' => ['required', 'string', 'max:128'],
             'ascendancy' => ['nullable', 'string', 'max:128'],
+            'alternate_ascendancy' => ['nullable', 'string', 'max:128'],
+            'secondary_progression' => ['nullable', 'string', 'max:128'],
             'character_level' => ['required', 'integer', 'between:1,100'],
             'league' => ['nullable', Rule::in(['standard'])],
             'mode' => ['required', Rule::in(['trade', 'ssf'])],
@@ -56,8 +59,14 @@ final class SubmitWizardAnalysisRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if (! Poe1CharacterCatalog::current()->supports($this->string('character_class')->toString(), $this->filled('ascendancy') ? $this->string('ascendancy')->toString() : null)) {
-                $validator->errors()->add('ascendancy', 'Seçilen Ascendancy bu sınıfa ait değil.');
+            $edition = GameEdition::tryFrom($this->string('game')->toString());
+            if ($edition === null || ! CharacterCatalogRegistry::for($edition)->supports(
+                $this->string('character_class')->toString(),
+                $this->filled('ascendancy') ? $this->string('ascendancy')->toString() : null,
+                $this->filled('alternate_ascendancy') ? $this->string('alternate_ascendancy')->toString() : null,
+                $this->filled('secondary_progression') ? $this->string('secondary_progression')->toString() : null,
+            )) {
+                $validator->errors()->add('ascendancy', 'Seçilen sınıf ve progression bu oyunun oynanabilir kataloğuyla uyuşmuyor.');
             }
             if ($this->input('flow') === 'analyse' && ! $this->filled('pob')) {
                 $validator->errors()->add('pob', 'Var olan build analizi için PoB kodu gereklidir.');

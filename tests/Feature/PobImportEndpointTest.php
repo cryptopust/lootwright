@@ -19,6 +19,18 @@ class PobImportEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_expected_game_rejects_a_cross_game_import_without_guessing(): void
+    {
+        $this->postJson('/api/build-imports/pob', [
+            'input' => $this->fixture('poe1-minimal.xml'),
+            'persist' => false,
+            'expected_game' => 'poe2',
+        ])->assertConflict()
+            ->assertJsonPath('status', 'edition_mismatch')
+            ->assertJsonPath('expected_game', 'poe2')
+            ->assertJsonPath('detected_game', 'poe1');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

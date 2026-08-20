@@ -1,4 +1,4 @@
-# ADR 0016: Membership, RBAC, audit and the PoE1 character catalog
+# ADR 0016: Membership, RBAC, audit and the dual-game character catalog
 
 Status: accepted, 2026-08-20.
 
@@ -14,12 +14,22 @@ before entering the session-based admin panel. The existing token-protected
 `policy.admin` operations path remains separate and never exposes its token to
 Inertia.
 
-The PoE1 class catalog is immutable, version-controlled domain data for patch
-3.28. It was verified on 2026-08-20 against the community-maintained Path of
-Exile Wiki Ascendancy and 3.28 version pages. Seven base classes and twenty
-normal Ascendancies are exposed. Normal Ascendancy and secondary progression
-are distinct types; no unverified Bloodline data appears in the user flow.
-Runtime code and migrations never fetch the Wiki.
+The character catalog is immutable, version-controlled, and game-scoped. PoE1
+patch 3.28 exposes seven classes and twenty regular Ascendancies. PoE2 Early
+Access version 0.5 exposes twelve planned classes, eight available classes,
+twenty-two regular available Ascendancies, and the Witch/Lich-only alternate
+Abyssal Lich. Planned classes are visible as unavailable metadata but cannot be
+submitted. Normal, alternate, and secondary progression are distinct types.
+Sources and verification timestamps are part of each catalog response; runtime
+code and migrations never fetch a wiki.
+
+Existing `analyses.game_edition` remains the canonical persisted game identity.
+Drafts receive the same portable string column in a forward migration. Drafts
+created before dual-game intake can be identified safely as `poe1`, because the
+only selectable wizard edition at that time was PoE1. Catalog data remains in
+version-controlled immutable PHP definitions rather than database rows, so
+`game + slug` identity is enforced by edition-scoped identifiers without a
+second mutable source of truth.
 
 Analysis ownership uses a nullable bigint `user_id` matching `users.id` while
 the existing hashed privacy owner remains intact for deletion and workflow

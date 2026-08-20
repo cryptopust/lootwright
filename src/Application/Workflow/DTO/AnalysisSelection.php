@@ -20,6 +20,8 @@ final readonly class AnalysisSelection implements JsonSerializable
         public ?string $ascendancy = null,
         public ?int $characterLevel = null,
         public ?string $flow = null,
+        public ?string $alternateAscendancy = null,
+        public ?string $secondaryProgression = null,
     ) {
         if (($rulesetId === null) !== ($rulesetVersion === null)
             || ($rulesetId === null) !== ($rulesetChecksumSha256 === null)
@@ -32,6 +34,8 @@ final readonly class AnalysisSelection implements JsonSerializable
             || ($ascendancy !== null && preg_match('/^[a-z][a-z0-9._-]{1,127}$/D', $ascendancy) !== 1)
             || ($characterLevel !== null && ($characterLevel < 1 || $characterLevel > 100))
             || ($flow !== null && ! in_array($flow, ['plan', 'analyse', 'upgrade'], true))
+            || ($alternateAscendancy !== null && preg_match('/^[a-z][a-z0-9._-]{1,127}$/D', $alternateAscendancy) !== 1)
+            || ($secondaryProgression !== null && preg_match('/^[a-z][a-z0-9._-]{1,127}$/D', $secondaryProgression) !== 1)
         ) {
             throw new InvalidArgumentException('Analysis selection requires canonical, complete edition-scoped values.');
         }
@@ -52,6 +56,8 @@ final readonly class AnalysisSelection implements JsonSerializable
             'ascendancy' => $this->ascendancy,
             'character_level' => $this->characterLevel,
             'flow' => $this->flow,
+            'alternate_ascendancy' => $this->alternateAscendancy,
+            'secondary_progression' => $this->secondaryProgression,
         ];
     }
 }
