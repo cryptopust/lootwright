@@ -52,6 +52,7 @@ final class CheckProductionConfiguration extends Command
             $this->equals('OPENAI_EXPLANATIONS_ENABLED', (bool) config('source-governance.openai_explanations_enabled'), false),
             $this->equals('POENINJA_ECONOMY_ENABLED', (bool) config('source-governance.poeninja_economy_enabled'), false),
             $this->equals('POEWIKI_IMPORT_ENABLED', (bool) config('source-governance.poewiki_import_enabled'), false),
+            $this->equals('GGG_PASSIVE_TREE_IMPORT_ENABLED', (bool) config('source-governance.ggg_passive_tree.enabled'), false),
             $this->equals('OUTBOUND_NETWORK_ENABLED', (bool) config('security.outbound.enabled'), false),
             $this->equals('HORIZON_DASHBOARD_ENABLED', (bool) config('horizon.dashboard_enabled'), false),
             $this->equals('FUNDING_ENABLED', (bool) config('funding.requested_enabled'), false),

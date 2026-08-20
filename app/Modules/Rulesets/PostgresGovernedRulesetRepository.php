@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Lootwright\Application\Rulesets\DTO\RulesetActivation;
 use Lootwright\Application\Rulesets\DTO\RulesetPublication;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
+use Lootwright\Application\Rulesets\DTO\SourceSnapshotQuarantine;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotRecord;
 use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
@@ -40,6 +41,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                 'game_edition' => $snapshot->edition->value,
                 'operation' => $snapshot->operation,
                 'status' => 'started',
+                'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
                 'started_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -48,7 +50,13 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
             $existing = DB::table('source_snapshots')
                 ->where('source_code', $snapshot->sourceCode)
                 ->where('game_edition', $snapshot->edition->value)
-                ->where('checksum_sha256', $snapshot->checksumSha256)
+                ->where(function ($query) use ($snapshot): void {
+                    $query->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256)
+                        ->orWhere(function ($legacy) use ($snapshot): void {
+                            $legacy->whereNull('upstream_checksum_sha256')
+                                ->where('checksum_sha256', $snapshot->checksumSha256);
+                        });
+                })
                 ->first(['id']);
 
             if ($existing !== null) {
@@ -76,7 +84,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                         'game_edition' => $snapshot->edition->value,
                         'existing_snapshot_id' => $existingSnapshotId,
                         'upstream_revision' => $snapshot->upstreamRevision,
-                        'candidate_checksum_sha256' => $snapshot->checksumSha256,
+                        'candidate_checksum_sha256' => $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256,
                         'reason_code' => 'revision_checksum_conflict',
                         'status' => 'quarantined',
                         'detected_at' => $now,
@@ -100,6 +108,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                 'upstream_revision' => $snapshot->upstreamRevision,
                 'retrieved_at' => $snapshot->retrievedAt,
                 'checksum_sha256' => $snapshot->checksumSha256,
+                'upstream_checksum_sha256' => $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256,
                 'content_type' => $snapshot->contentType,
                 'license_identifier' => $snapshot->licenseIdentifier,
                 'status' => 'valid',
@@ -113,13 +122,122 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
         }, 3);
     }
 
-    public function publish(RulesetPublication $ruleset): void
+    public function quarantineSnapshot(SourceSnapshotQuarantine $snapshot): SourceSnapshotRecord
+    {
+        return DB::transaction(function (Connection $_connection) use ($snapshot): SourceSnapshotRecord {
+            $now = CarbonImmutable::now('UTC');
+            $runId = (string) Str::uuid7();
+            $versionId = $this->sourceVersionId($snapshot->sourceCode, $snapshot->sourceVersion);
+
+            DB::table('external_source_sync_runs')->insert([
+                'id' => $runId,
+                'policy_source_version_id' => $versionId,
+                'source_key' => $snapshot->sourceCode,
+                'source_version' => $snapshot->sourceVersion,
+                'game_edition' => $snapshot->edition->value,
+                'operation' => $snapshot->operation,
+                'status' => 'quarantined',
+                'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'failure_code' => $snapshot->reasonCode,
+                'started_at' => $now,
+                'completed_at' => $now,
+                'fetched_at' => $snapshot->retrievedAt,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $existing = DB::table('source_snapshots')
+                ->where('source_code', $snapshot->sourceCode)
+                ->where('game_edition', $snapshot->edition->value)
+                ->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256)
+                ->first(['id']);
+            if ($existing !== null) {
+                $snapshotId = $this->property($existing, 'id');
+                DB::table('external_source_sync_runs')->where('id', $runId)->update(['source_snapshot_id' => $snapshotId]);
+
+                return new SourceSnapshotRecord($runId, $snapshotId, 'quarantined', true);
+            }
+
+            $snapshotId = (string) Str::uuid7();
+            $conflictId = (string) Str::uuid7();
+            $quarantinePayload = [
+                'quarantine' => [
+                    'reason_code' => $snapshot->reasonCode,
+                    'upstream_content_sha256' => $snapshot->sourceChecksumSha256,
+                ],
+            ];
+            DB::table('source_snapshots')->insert([
+                'id' => $snapshotId,
+                'first_import_run_id' => $runId,
+                'source_version_id' => $versionId,
+                'source_code' => $snapshot->sourceCode,
+                'game_edition' => $snapshot->edition->value,
+                'source_url' => $snapshot->sourceUrl,
+                'upstream_revision' => $snapshot->upstreamRevision,
+                'retrieved_at' => $snapshot->retrievedAt,
+                'checksum_sha256' => hash('sha256', CanonicalJson::encode($quarantinePayload)),
+                'upstream_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'content_type' => 'application/json',
+                'license_identifier' => 'LicenseRef-GGG-Terms-of-Use',
+                'status' => 'rejected',
+                'schema_version' => 'quarantine-1.0.0',
+                'normalized_payload' => CanonicalJson::encode($quarantinePayload),
+                'created_at' => $now,
+            ]);
+            DB::table('external_source_sync_runs')->where('id', $runId)->update(['source_snapshot_id' => $snapshotId]);
+            DB::table('source_conflicts')->insert([
+                'id' => $conflictId,
+                'import_run_id' => $runId,
+                'source_version_id' => $versionId,
+                'source_code' => $snapshot->sourceCode,
+                'game_edition' => $snapshot->edition->value,
+                'existing_snapshot_id' => $snapshotId,
+                'upstream_revision' => $snapshot->upstreamRevision,
+                'candidate_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'reason_code' => $snapshot->reasonCode,
+                'status' => 'quarantined',
+                'detected_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            return new SourceSnapshotRecord($runId, $snapshotId, 'quarantined', false, $conflictId);
+        }, 3);
+    }
+
+    public function publish(RulesetPublication $ruleset): string
     {
         if (! hash_equals($ruleset->checksumSha256, hash('sha256', CanonicalJson::encode($ruleset->canonicalPayload)))) {
             throw new DomainException('The ruleset checksum does not match its canonical payload.');
         }
 
-        DB::transaction(function (Connection $_connection) use ($ruleset): void {
+        return DB::transaction(function (Connection $_connection) use ($ruleset): string {
+            $existing = DB::table('ruleset_versions')
+                ->where('game_edition', $ruleset->edition->value)
+                ->where('checksum_sha256', $ruleset->checksumSha256)
+                ->lockForUpdate()
+                ->first(['id', 'patch', 'league', 'parser_version', 'schema_version']);
+            if ($existing !== null) {
+                $existingData = get_object_vars($existing);
+                $existingSnapshotIds = DB::table('ruleset_source_snapshots')
+                    ->where('ruleset_version_id', $this->string($existingData, 'id'))
+                    ->pluck('source_snapshot_id')
+                    ->map(static fn (mixed $id): string => (string) $id)
+                    ->all();
+                $requestedSnapshotIds = $ruleset->sourceSnapshotIds;
+                sort($existingSnapshotIds, SORT_STRING);
+                sort($requestedSnapshotIds, SORT_STRING);
+                if ($this->string($existingData, 'patch') !== $ruleset->patch
+                    || $this->nullableString($existingData, 'league') !== $ruleset->league
+                    || $this->string($existingData, 'parser_version') !== $ruleset->parserVersion
+                    || $this->string($existingData, 'schema_version') !== $ruleset->schemaVersion
+                    || $existingSnapshotIds !== $requestedSnapshotIds
+                ) {
+                    throw new DomainException('Existing ruleset content has incompatible publication metadata.');
+                }
+
+                return $this->string($existingData, 'id');
+            }
+
             $snapshots = DB::table('source_snapshots')
                 ->join('policy_data_sources', 'policy_data_sources.id', '=', 'source_snapshots.source_code')
                 ->whereIn('source_snapshots.id', $ruleset->sourceSnapshotIds)
@@ -173,6 +291,8 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                     'created_at' => $ruleset->publishedAt,
                 ]);
             }
+
+            return $ruleset->id;
         }, 3);
     }
 

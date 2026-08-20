@@ -11,9 +11,9 @@ use Lootwright\Domain\PolicyProvenance\SourceType;
 
 final class PolicyDefaults
 {
-    public const POLICY_VERSION = '1.0.0';
+    public const POLICY_VERSION = '1.1.0';
 
-    public const REVIEWED_AT = '2026-08-14T13:16:00Z';
+    public const REVIEWED_AT = '2026-08-20T00:00:00Z';
 
     public const REVIEW_EXPIRES_AT = '2026-11-12T00:00:00Z';
 
@@ -26,7 +26,7 @@ final class PolicyDefaults
             self::source('LOOTWRIGHT-MANUAL-TRADE', 'Lootwright manual Trade recipe schema', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Original local-only recipe generation; no Trade endpoint, listing, price, or browser operation.'),
             self::source('USER-POB-001', 'User-submitted PoB code', SourceType::UserSupplied, AccessMode::PastedText, 'Canonical governed source for a PoB code deliberately submitted by its user.', 'allowed', true, 'active'),
             self::source('USER-ITEM-TEXT-001', 'User-submitted item text', SourceType::UserSupplied, AccessMode::PastedText, 'Canonical governed source for item text deliberately submitted by its user.', 'allowed', true, 'active'),
-            self::source('GGG-POE1-SKILLTREE-001', 'Official PoE1 passive skill tree export', SourceType::OfficialDocumentedApi, AccessMode::RemoteFetch, 'Exact reviewed official PoE1 skill-tree export revisions only; imports run out of band.', 'allowed', true, 'active'),
+            self::source('GGG-POE1-SKILLTREE-001', 'Official PoE1 passive skill tree export', SourceType::OfficialDocumentedApi, AccessMode::RemoteFetch, 'Exact reviewed commit-pinned grindinggear/skilltree-export data.json revisions only; imports run out of band.', 'allowed', false, 'active'),
             self::source('GGG-POE1-ATLASTREE-001', 'Official PoE1 Atlas passive tree export', SourceType::OfficialDocumentedApi, AccessMode::RemoteFetch, 'Reviewed official Atlas-tree family; intentionally outside the PoE1 MVP.', 'allowed', false, 'outside_mvp'),
             self::source('GGG-DOCUMENTED-API', 'Official documented GGG APIs', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Only exact operations in the official API Reference can ever be reviewed.'),
             self::source('GGG-APPLICATION-REGISTRATION', 'GGG application registration', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Official registration status; no registration attempt is implemented.'),
@@ -53,7 +53,7 @@ final class PolicyDefaults
             ['source_id' => 'LOOTWRIGHT-MANUAL-TRADE', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'USER-POB-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'USER-ITEM-TEXT-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
-            ['source_id' => 'GGG-POE1-SKILLTREE-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'GGG-POE1-SKILLTREE-001', 'version' => '8bd138b32ea2631455cac5935bfab089f826094f', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-POE1-ATLASTREE-001', 'version' => '1.0.0', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-DOCUMENTED-API', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-APPLICATION-REGISTRATION', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
@@ -80,7 +80,7 @@ final class PolicyDefaults
             self::evidenceRecord('LOOTWRIGHT-MANUAL-TRADE-EVIDENCE', 'LOOTWRIGHT-MANUAL-TRADE', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/product/manual-trade-workflow.md', PermissionStatus::Allowed, 'Lootwright-original plain-text recipes may be generated locally from approved immutable vocabulary without market access or automation.', false),
             self::evidenceRecord('USER-POB-001-EVIDENCE', 'USER-POB-001', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Allowed, 'A user may submit their own PoB text to the bounded private import workflow.', false),
             self::evidenceRecord('USER-ITEM-TEXT-001-EVIDENCE', 'USER-ITEM-TEXT-001', '1.0.0', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Allowed, 'A user may submit their own item text to the bounded private import workflow.', false),
-            self::evidenceRecord('GGG-POE1-SKILLTREE-001-EVIDENCE', 'GGG-POE1-SKILLTREE-001', '1.0.0', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Allowed, 'Only an exact documented official PoE1 skill-tree export family may be imported through a reviewed operator workflow.', true, 'This product is not affiliated with or endorsed by Grinding Gear Games.'),
+            self::evidenceRecord('GGG-POE1-SKILLTREE-001-EVIDENCE', 'GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', 'https://github.com/grindinggear/skilltree-export/tree/8bd138b32ea2631455cac5935bfab089f826094f', PermissionStatus::Allowed, 'Only commit 8bd138b32ea2631455cac5935bfab089f826094f and its root data.json may be imported; raw Git blob checksum 7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122 is mandatory.', true, 'Source: Grinding Gear Games skilltree-export. This product is not affiliated with or endorsed by Grinding Gear Games.', '2026-08-20T00:00:00Z'),
             self::evidenceRecord('GGG-POE1-ATLASTREE-001-EVIDENCE', 'GGG-POE1-ATLASTREE-001', '1.0.0', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Allowed, 'The documented Atlas-tree source is recorded but outside the current PoE1 MVP.', true, 'This product is not affiliated with or endorsed by Grinding Gear Games.'),
             self::evidenceRecord('GGG-DEVELOPER-DOCS-20260814', 'GGG-DOCUMENTED-API', '2026-08-14', 'https://www.pathofexile.com/developer/docs', PermissionStatus::Allowed, 'Official policy reference is current, but no API operation is approved.', true),
             self::evidenceRecord('GGG-REGISTRATION-20260814', 'GGG-APPLICATION-REGISTRATION', '2026-08-14', 'https://www.pathofexile.com/developer/docs', PermissionStatus::Denied, 'GGG states it is currently unable to process new applications.', true),
@@ -132,7 +132,10 @@ final class PolicyDefaults
         ] as $source => $operation) {
             $rules[] = self::rule($source, '1.0.0', Capability::Import, $operation, PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['explicit_user_submission'], 'A bounded normalized snapshot of deliberately submitted user input may be imported with separate provenance.');
         }
-        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '1.0.0', Capability::Import, 'ggg.poe1.skilltree.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'], 'A reviewed official PoE1 skill-tree export may be imported only out of band.');
+        $skillTreeConditions = ['checksum_verified', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'];
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'ggg.poe1.skilltree.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $skillTreeConditions, 'Only the reviewed commit-pinned official PoE1 data.json export may be imported out of band.');
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'ggg.poe1.skilltree.snapshot.quarantine', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'], 'A rejected exact-source candidate may record bounded immutable quarantine metadata without claiming checksum validation or storing the raw body.');
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::LiveFetch, 'ggg.poe1.skilltree.export.fetch', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['exact_url_allowlist', 'operator_contact_configured', 'operator_workflow', 'pinned_commit', 'poe1_scope'], 'Only the exact reviewed raw GitHub export URL may be fetched during an operator command.');
         $rules[] = self::rule('GGG-POE1-ATLASTREE-001', '1.0.0', Capability::Import, 'ggg.poe1.atlastree.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'], 'The official Atlas-tree family is allowed in principle but remains outside the MVP runtime scope.');
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'poewiki.cargo.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'PoE Wiki Cargo imports remain conditional and disabled.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'poeninja.economy.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'exact_endpoint_allowlist', 'normalized_snapshot_only'], 'A normalized poe.ninja economy snapshot is conditional on the independent source switch and exact Policy Gate decision.');
@@ -142,7 +145,7 @@ final class PolicyDefaults
             $rules[] = self::rule($source, '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Private user input can never become ruleset authority.');
         }
         $activationConditions = ['checksum_verified', 'immutable_snapshot', 'poe1_scope'];
-        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $activationConditions, 'A verified immutable official PoE1 skill-tree snapshot may support a published ruleset.');
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'ruleset.source.activate', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, [...$activationConditions, 'official_repository', 'operator_workflow', 'pinned_commit'], 'A verified immutable commit-pinned official PoE1 skill-tree snapshot may support a published ruleset.');
         $rules[] = self::rule('GGG-POE1-ATLASTREE-001', '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Atlas-tree rules are outside the current MVP activation scope.');
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'ruleset.source.activate', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $activationConditions, 'PoE Wiki Cargo cannot become ruleset authority before the separate rights review.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Market context is never deterministic game-rule authority.');

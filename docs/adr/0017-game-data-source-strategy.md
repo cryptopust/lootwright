@@ -26,7 +26,9 @@ source or public behavior.
 - Reuse `external_source_sync_runs` for every operator/import attempt. A successful
   normalized import creates one content-addressed `source_snapshots` row.
   The unique `(source_code, game_edition, checksum_sha256)` identity makes a
-  repeated checksum an idempotent replay, not a second snapshot.
+  repeated checksum an idempotent replay, not a second snapshot. A separate
+  `upstream_checksum_sha256` preserves raw-source identity when normalization
+  produces a different canonical checksum.
 - Store bounded canonical normalized JSON only. Do not preserve an unbounded
   raw response. Every snapshot includes source/version, game, exact URL,
   upstream revision, retrieval time, SHA-256, content type, license identifier,
@@ -57,6 +59,14 @@ source or public behavior.
   ruleset authority. Atlas data is allowed in principle but outside MVP.
   poe.ninja is market context, never ruleset authority. Wiki is review-gated.
   RePoE is prohibited and disabled under the current decision.
+- The first concrete official adapter is the operator-only PoE1 passive-tree
+  importer. It accepts only the reviewed root `data.json` at commit
+  `8bd138b32ea2631455cac5935bfab089f826094f`, verifies raw checksum
+  `7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122`,
+  and defaults off behind `GGG_PASSIVE_TREE_IMPORT_ENABLED`. URL mode is an
+  exact commit-pinned raw GitHub allowlist; arbitrary branches and URLs remain
+  denied. A schema failure stores only immutable rejection metadata and a
+  quarantine record, never the raw body.
 
 ## PostgreSQL and portability
 

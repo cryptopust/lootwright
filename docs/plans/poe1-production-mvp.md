@@ -42,6 +42,10 @@ The following facts must be addressed before a PoE1 production release:
    Content-addressed import, quarantine, immutable publication, supersession,
    atomic activation and exact resolution are implemented; a source-specific
    approved schema/fixture and production ruleset remain later gates.
+   The reviewed official passive-tree slice at commit
+   `8bd138b32ea2631455cac5935bfab089f826094f` now has an operator-only importer,
+   schema, quarantine, and atomic activation path. It supplies tree topology
+   only and does not close the broader production-rule or analyzer gates.
 4. The deterministic engine binding is intentionally unavailable. Therefore
    no user submission can yield production findings, recommendations, or
    recipes.

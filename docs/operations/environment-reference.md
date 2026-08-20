@@ -17,6 +17,9 @@ to at least 300 seconds. `POE_WIKI_CARGO_ENABLED=false` and
 `POEWIKI_IMPORT_ENABLED=false` must both be explicitly enabled after review;
 `GGG_OAUTH_ENABLED=false` are disabled candidates. OAuth credentials remain
 blank until an approved registration and least-privilege scope review exists.
+`GGG_PASSIVE_TREE_IMPORT_ENABLED=false` is the independent operator-import
+switch. URL mode additionally requires a real `GGG_PASSIVE_TREE_CONTACT` and
+the temporary outbound switch; see the [import runbook](poe1-passive-tree-import.md).
 
 ## Application and HTTP boundary
 
@@ -84,6 +87,8 @@ blank until an approved registration and least-privilege scope review exists.
 | `OPENAI_EXPLANATIONS_ENABLED` | `false` | No | Independently denies provider explanations while preserving deterministic local fallback. |
 | `POENINJA_ECONOMY_ENABLED` | `false` | No | Governance switch; cannot override Policy Gate or `POE_NINJA_ENABLED`. |
 | `POEWIKI_IMPORT_ENABLED` | `false` | No | Governance switch; Wiki remains review-gated and disabled. |
+| `GGG_PASSIVE_TREE_IMPORT_ENABLED` | `false` | No | Operator-only official export importer; enable only for a reviewed import window. |
+| `GGG_PASSIVE_TREE_CONTACT` | Empty | Operator contact | Required for URL mode; never fabricate it. |
 | `OUTBOUND_NETWORK_ENABLED` | `false` | No | Central egress guard denies before transport. |
 | `OPENAI_API_KEY` | Empty | Yes | Not required for CI, health, deployment, or AI-off operation. |
 | `OPENAI_LIVE_EVALS_ENABLED` | `false` | No | Live eval never runs in normal CI. |

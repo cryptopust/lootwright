@@ -1,0 +1,20 @@
+{
+  "tree": "Default",
+  "classes": [
+    {"name": "Scion", "ascendancies": [{"id": "Ascendant", "name": "Ascendant"}]},
+    {"name": "Marauder", "ascendancies": [{"id": "Juggernaut", "name": "Juggernaut"}]},
+    {"name": "Ranger", "ascendancies": [{"id": "Deadeye", "name": "Deadeye"}, {"id": "Raider", "name": "Warden"}, {"id": "Pathfinder", "name": "Pathfinder"}]},
+    {"name": "Witch", "ascendancies": [{"id": "Elementalist", "name": "Elementalist"}]},
+    {"name": "Duelist", "ascendancies": [{"id": "Slayer", "name": "Slayer"}]},
+    {"name": "Templar", "ascendancies": [{"id": "Inquisitor", "name": "Inquisitor"}]},
+    {"name": "Shadow", "ascendancies": [{"id": "Assassin", "name": "Assassin"}]}
+  ],
+  "nodes": {
+    "root": {"group": 0, "orbit": 0, "orbitIndex": 0, "out": ["61525"], "in": []},
+    "61525": {"skill": 61525, "name": "TEMPLAR", "icon": "Art/2DArt/SkillIcons/passives/axedmgspeed.png", "stats": [], "classStartIndex": 5, "group": 329, "orbit": 0, "orbitIndex": 0, "out": ["58556"], "in": ["root"]},
+    "58556": {"skill": 58556, "name": "Divine Shield", "icon": "Art/2DArt/SkillIcons/passives/EnergisedFortress.png", "isKeystone": true, "stats": ["Cannot Recover Energy Shield to above Armour\n3% of Physical Damage prevented from Hits Recently is Regenerated as Energy Shield per second"], "group": 105, "orbit": 0, "orbitIndex": 0, "out": ["44298"], "in": ["61525"]},
+    "44298": {"skill": 44298, "name": "Elemental Mastery", "icon": "Art/2DArt/SkillIcons/passives/MasteryElementalDamage.png", "isMastery": true, "masteryEffects": [{"effect": 48385, "stats": ["Exposure you inflict applies at least -18% to the affected Resistance"]}], "stats": [], "group": 86, "orbit": 0, "orbitIndex": 0, "out": ["53086"], "in": ["58556"]},
+    "53086": {"skill": 53086, "name": "Projectile Damage, Mark Cast Speed", "icon": "Art/2DArt/SkillIcons/passives/DeadEye/ProjectileDamageAttackSpeed.png", "ascendancyName": "Deadeye", "stats": ["10% increased Projectile Damage", "Mark Skills have 25% increased Cast Speed"], "group": 797, "orbit": 3, "orbitIndex": 11, "out": ["28609"], "in": ["44298"]},
+    "28609": {"skill": 28609, "name": "Conjoined Spire", "icon": "Art/2DArt/SkillIcons/passives/AbyssRevampStygianSpires.png", "isNotable": true, "ascendancyName": "Abyssal", "isBloodline": true, "stats": ["15% less Damage taken while you have a Totem"], "group": 1, "orbit": 0, "orbitIndex": 0, "out": [], "in": ["53086"]}
+  }
+}

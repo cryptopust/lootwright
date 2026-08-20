@@ -76,6 +76,7 @@ use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
+use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
@@ -96,6 +97,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SourceGovernancePolicy::class, DatabaseSourceGovernancePolicy::class);
         $this->app->bind(GovernedRulesetRepository::class, PostgresGovernedRulesetRepository::class);
         $this->app->bind(RulesetResolver::class, PostgresRulesetResolver::class);
+        $this->app->singleton(PassiveTreeNormalizer::class);
         $this->app->bind(WorkflowRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(AnalysisDocumentRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(BuildLifecycleRepository::class, PostgresWorkflowRepository::class);
@@ -193,6 +195,9 @@ class AppServiceProvider extends ServiceProvider
     {
         if (app()->isProduction() && config('external-sources.poe_ninja.enabled') && trim((string) config('external-sources.poe_ninja.contact')) === '') {
             throw new \RuntimeException('POE_NINJA_CONTACT is required when both poe.ninja source switches are enabled in production.');
+        }
+        if (app()->isProduction() && config('source-governance.ggg_passive_tree.enabled') && trim((string) config('source-governance.ggg_passive_tree.contact')) === '') {
+            throw new \RuntimeException('GGG_PASSIVE_TREE_CONTACT is required when the GGG passive-tree importer is enabled in production.');
         }
         $this->configureDefaults();
     }

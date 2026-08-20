@@ -648,6 +648,29 @@ runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
 
+2026-08-20: implemented the default-off operator importer for GGG's official
+PoE1 `grindinggear/skilltree-export` root `data.json`. Upstream `master` was
+inspected rather than assumed and pinned to commit
+`8bd138b32ea2631455cac5935bfab089f826094f` (`3.29.1`), raw SHA-256
+`7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122`.
+The exact real file normalized 7 classes and 3,390 nodes into 1,575,398 bytes
+with canonical snapshot SHA-256
+`83abe75e2ce26b30005537452ad72079361cc7c56be1d0b9dfa632bcd08265e7`.
+The command supports bounded absolute-file and exact commit-pinned raw-URL
+input, dry-run, immutable snapshot import, quarantine without raw retention,
+idempotent replay, immutable ruleset publication, and atomic activation. It
+does not run in web requests or download image assets.
+Final validation passed Composer metadata/audit, Pint, PHPStan, repository
+guardrails, 681 of 683 ordinary PHP tests with 8,693 assertions (the two
+opt-in PostgreSQL tests skipped in that ordinary SQLite run), clean npm install
+and audit, ESLint, Vue TypeScript, 21 Vitest tests, the Vite production build,
+76-file documentation validation, route inspection, and diff whitespace
+checks. A disposable local PostgreSQL 18.4 cluster separately passed all 15
+selected migration/lifecycle/import tests with 142 assertions, including
+`migrate:fresh`, rollback, reapply, foreign-key type inspection, immutable
+triggers, and atomic activation. The cluster and downloaded upstream files
+were then removed.
+
 2026-08-20: added the governed source and ruleset lifecycle described by ADR
 0017. The existing policy registry and external sync-run table now back
 content-addressed normalized snapshots, duplicate-checksum replay, revision

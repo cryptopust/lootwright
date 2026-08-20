@@ -31,6 +31,12 @@ return [
             'poe_ninja.economy.stash_item.fetch' => [
                 'scheme' => 'https', 'host' => 'poe.ninja', 'port' => 443, 'path' => '/poe1/api/economy/stash/current/item/overview', 'allow_query' => true,
             ],
+            'ggg.poe1.skilltree.export.fetch' => [
+                'scheme' => 'https',
+                'host' => 'raw.githubusercontent.com',
+                'port' => 443,
+                'path_pattern' => '#\A/grindinggear/skilltree-export/[0-9a-f]{40}/data\.json\z#D',
+            ],
         ],
     ],
 

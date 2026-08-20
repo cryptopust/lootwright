@@ -24,10 +24,13 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const SKILL_TREE_REVISION = '8bd138b32ea2631455cac5935bfab089f826094f';
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        Config::set('source-governance.ggg_passive_tree.enabled', true);
     }
 
     public function test_required_source_definitions_are_seeded_with_fail_closed_statuses(): void
@@ -35,7 +38,7 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
         foreach ([
             'USER-POB-001' => ['allowed', true, 'active'],
             'USER-ITEM-TEXT-001' => ['allowed', true, 'active'],
-            'GGG-POE1-SKILLTREE-001' => ['allowed', true, 'active'],
+            'GGG-POE1-SKILLTREE-001' => ['allowed', false, 'active'],
             'GGG-POE1-ATLASTREE-001' => ['allowed', false, 'outside_mvp'],
             'POEWIKI-CARGO-001' => ['conditional', false, 'candidate'],
             'POENINJA-ECONOMY-001' => ['conditional', false, 'optional'],
@@ -55,7 +58,7 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
         $lifecycle = $this->app->make(GovernedRulesetLifecycle::class);
         $payload = ['nodes' => [['id' => 'poe1:skill:one']]];
         $snapshot = $this->snapshot($payload, 'rev-1');
-        $conditions = ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'];
+        $conditions = ['checksum_verified', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'];
 
         $first = $lifecycle->import($snapshot, $conditions);
         $replay = $lifecycle->import($snapshot, $conditions);
@@ -196,10 +199,10 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
     {
         return new SourceSnapshotImport(
             'GGG-POE1-SKILLTREE-001',
-            '1.0.0',
+            self::SKILL_TREE_REVISION,
             GameEdition::Poe1,
             'ggg.poe1.skilltree.snapshot.import',
-            'https://www.pathofexile.com/developer/docs/reference',
+            'https://raw.githubusercontent.com/grindinggear/skilltree-export/'.self::SKILL_TREE_REVISION.'/data.json',
             $revision,
             new DateTimeImmutable('2026-08-20T08:00:00Z'),
             hash('sha256', CanonicalJson::encode($payload)),
@@ -217,7 +220,7 @@ final class GovernedSourceRulesetLifecycleTest extends TestCase
     private function publishRuleset(string $version, array $payload, string $revision = 'rev-1', ?string $supersedes = null): array
     {
         $lifecycle = $this->app->make(GovernedRulesetLifecycle::class);
-        $conditions = ['documented_export', 'operator_workflow', 'checksum_verified', 'poe1_scope'];
+        $conditions = ['checksum_verified', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'];
         $snapshot = $lifecycle->import($this->snapshot($payload, $revision), $conditions);
         self::assertNotNull($snapshot->snapshotId);
         $rulesetId = (string) Str::uuid7();
