@@ -48,6 +48,25 @@ final class OpenAiResponsesProviderTest extends TestCase
         }
     }
 
+    public function test_incomplete_response_fails_closed_without_schema_guessing(): void
+    {
+        $transport = new RecordingOpenAiTransport([
+            new OpenAiHttpResponse(200, [
+                'status' => 'incomplete',
+                'incomplete_details' => ['reason' => 'max_output_tokens'],
+                'output' => [],
+            ], [], 1),
+        ]);
+
+        try {
+            (new OpenAiResponsesProvider($transport, 0, 0, 0))->respond($this->request());
+            self::fail('Expected an incomplete response to fail closed.');
+        } catch (AiProviderFailure $failure) {
+            self::assertSame('incomplete_max_output_tokens', $failure->failureCode);
+            self::assertFalse($failure->transient);
+        }
+    }
+
     private function request(): StructuredAiRequest
     {
         return new StructuredAiRequest(

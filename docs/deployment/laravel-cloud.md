@@ -127,6 +127,7 @@ RULESETS_ENABLED=false
 EXTERNAL_LINKS_ENABLED=false
 OUTBOUND_NETWORK_ENABLED=false
 OPENAI_ENABLED=false
+OPENAI_INTENT_ENABLED=false
 OPENAI_EXPLANATIONS_ENABLED=false
 POENINJA_ECONOMY_ENABLED=false
 POEWIKI_IMPORT_ENABLED=false
@@ -146,7 +147,7 @@ never use a universal trust value merely to satisfy a preflight script.
 
 ### Optional and currently absent
 
-- Leave `OPENAI_API_KEY` absent while `OPENAI_ENABLED=false`. No health, build,
+- Leave `OPENAI_API_KEY` absent while all AI switches are false. No health, build,
   migration, deterministic fallback, or normal test needs it.
 - Do not add `REDIS_*` values until Valkey is attached. Valkey uses Laravel's
   Redis-compatible connection configuration when enabled.

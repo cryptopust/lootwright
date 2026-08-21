@@ -92,6 +92,11 @@ sequenceDiagram
 - A local deterministic intent parser runs first; simple closed-vocabulary requests do not consume provider quota.
 - Intent extraction maps natural language into strict BuildIntent or Clarification schemas and resolves every term against the exact edition/patch vocabulary. Invalid or unsupported values are rejected or confirmed by the user.
 - Explanation receives deterministic outputs, not authority to change them.
+- Global and task environment switches, persistent runtime switches, exact
+  Policy Gate permission, the outbound allowlist, the persistent circuit
+  breaker, user/IP/global budgets, and explicit opt-in must all permit a call.
+- Cooldown permits only one half-open provider probe. Administrators can lower
+  quotas but cannot raise the hard environment budget ceilings.
 - Prompts exclude secrets, PoB input, unnecessary raw imports, complete private notes, and personal data. Provider requests are stateless, tool-free, token-bounded, opt-in, policy-gated, and budget-reserved.
 - Provider outage, denial, timeout, unsafe output, or schema failure preserves the deterministic result and uses template explanations.
 - All provider egress is disabled independently by default and requires an

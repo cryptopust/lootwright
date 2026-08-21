@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Modules\AI\AiRequestContextFactory;
 use App\Modules\AI\DatabaseAiBudget;
+use App\Modules\AI\DatabaseAiCircuitBreaker;
 use App\Modules\AI\DatabaseAiExecutionPolicy;
+use App\Modules\AI\DatabaseAiRuntimePolicy;
 use App\Modules\AI\DatabaseAiTelemetry;
 use App\Modules\AI\DatabaseAiUserDataEraser;
 use App\Modules\AI\LaravelAiResponseCache;
@@ -58,12 +60,17 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Lootwright\Application\AIGateway\DTO\AiGatewayConfiguration;
 use Lootwright\Application\AIGateway\Ports\AiBudget;
+use Lootwright\Application\AIGateway\Ports\AiCircuitBreaker;
 use Lootwright\Application\AIGateway\Ports\AiExecutionPolicy;
 use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\AiResponseCache;
+use Lootwright\Application\AIGateway\Ports\AiRuntimePolicy;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
 use Lootwright\Application\AIGateway\Ports\AnalysisExplanationRepository;
+use Lootwright\Application\AIGateway\Ports\IntentInterpreter;
+use Lootwright\Application\AIGateway\Ports\RecommendationExplainer;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
+use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
 use Lootwright\Application\AIGateway\Services\ProviderNeutralAiGateway;
 use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
 use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
@@ -205,6 +212,11 @@ class AppServiceProvider extends ServiceProvider
             (int) config('ai.retry_max_delay_ms'),
         ));
         $this->app->bind(AiExecutionPolicy::class, DatabaseAiExecutionPolicy::class);
+        $this->app->bind(AiRuntimePolicy::class, DatabaseAiRuntimePolicy::class);
+        $this->app->singleton(AiCircuitBreaker::class, static fn (): AiCircuitBreaker => new DatabaseAiCircuitBreaker(
+            (int) config('ai.circuit_failure_threshold'),
+            (int) config('ai.circuit_cooldown_seconds'),
+        ));
         $this->app->singleton(AiBudget::class, static function (): AiBudget {
             $budgets = config('ai.budgets_micro_usd');
 
@@ -225,7 +237,19 @@ class AppServiceProvider extends ServiceProvider
         ));
         $this->app->bind(AiTelemetry::class, DatabaseAiTelemetry::class);
         $this->app->bind(AnalysisExplanationRepository::class, PostgresAnalysisExplanationRepository::class);
-        $this->app->bind(AiGateway::class, ProviderNeutralAiGateway::class);
+        $this->app->singleton(AiGateway::class, static fn ($app): AiGateway => new ProviderNeutralAiGateway(
+            $app->make(AiGatewayConfiguration::class),
+            $app->make(StructuredAiProvider::class),
+            $app->make(AiExecutionPolicy::class),
+            $app->make(AiBudget::class),
+            $app->make(AiResponseCache::class),
+            $app->make(AiTelemetry::class),
+            new StrictJsonSchemaValidator,
+            $app->make(AiRuntimePolicy::class),
+            $app->make(AiCircuitBreaker::class),
+        ));
+        $this->app->alias(AiGateway::class, IntentInterpreter::class);
+        $this->app->alias(AiGateway::class, RecommendationExplainer::class);
         $this->app->singleton(PobImportCoordinator::class, static fn (): PobImportCoordinator => new PobImportCoordinator(
             new PobEnvelopeDecoder,
             new SafeXmlParser,

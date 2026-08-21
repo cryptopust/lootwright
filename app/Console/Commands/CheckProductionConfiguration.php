@@ -49,6 +49,7 @@ final class CheckProductionConfiguration extends Command
                 $this->equals('EXTERNAL_LINKS_ENABLED', (bool) config('security.emergency.external_links'), false),
             ] : []),
             $this->equals('OPENAI_ENABLED', (bool) config('security.emergency.ai'), false),
+            $this->equals('OPENAI_INTENT_ENABLED', (bool) config('source-governance.openai_intent_enabled'), false),
             $this->equals('OPENAI_EXPLANATIONS_ENABLED', (bool) config('source-governance.openai_explanations_enabled'), false),
             $this->equals('POENINJA_ECONOMY_ENABLED', (bool) config('source-governance.poeninja_economy_enabled'), false),
             $this->equals('POEWIKI_IMPORT_ENABLED', (bool) config('source-governance.poewiki_import_enabled'), false),

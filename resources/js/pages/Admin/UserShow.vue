@@ -17,6 +17,8 @@ const props = defineProps<{
         suspension_reason: string | null;
     };
     analysisCount: number;
+    aiDailyQuotaMicroUsd: number;
+    aiDailyQuotaCeilingMicroUsd: number;
 }>();
 const actor = usePage<{ auth: { user: User } }>().props.auth.user;
 const statusForm = useForm({
@@ -24,6 +26,10 @@ const statusForm = useForm({
     reason: '',
 });
 const roleForm = useForm({ role: props.managedUser.role, reason: '' });
+const quotaForm = useForm({
+    daily_budget_micro_usd: props.aiDailyQuotaMicroUsd,
+    reason: '',
+});
 </script>
 <template>
     <Head title="Üye detayı" /><AppShell
@@ -123,6 +129,63 @@ const roleForm = useForm({ role: props.managedUser.role, reason: '' });
                             required
                         /></label
                     ><button class="button is-secondary">Rolü güncelle</button>
+                </form>
+            </section>
+            <section
+                v-if="actor.role === 'super_admin'"
+                class="settings-section"
+            >
+                <h2>AI günlük quota</h2>
+                <p>Quota, environment ve global bütçe sınırlarını aşamaz.</p>
+                <form
+                    class="stack-form"
+                    @submit.prevent="
+                        quotaForm.put(`/admin/users/${managedUser.id}/ai-quota`)
+                    "
+                >
+                    <label class="field"
+                        ><span>Günlük bütçe (micro USD)</span
+                        ><input
+                            v-model.number="quotaForm.daily_budget_micro_usd"
+                            type="number"
+                            min="1"
+                            :max="aiDailyQuotaCeilingMicroUsd"
+                            required
+                            aria-describedby="ai-user-limit"
+                    /></label>
+                    <p id="ai-user-limit" class="form-note">
+                        Environment üst sınırı:
+                        {{ aiDailyQuotaCeilingMicroUsd }} micro USD.
+                    </p>
+                    <p
+                        v-if="quotaForm.errors.daily_budget_micro_usd"
+                        class="form-error"
+                        role="alert"
+                    >
+                        {{ quotaForm.errors.daily_budget_micro_usd }}
+                    </p>
+                    <label class="field"
+                        ><span>İşlem sebebi</span
+                        ><textarea
+                            v-model="quotaForm.reason"
+                            minlength="3"
+                            maxlength="500"
+                            required
+                        />
+                    </label>
+                    <p
+                        v-if="quotaForm.errors.reason"
+                        class="form-error"
+                        role="alert"
+                    >
+                        {{ quotaForm.errors.reason }}
+                    </p>
+                    <button
+                        class="button is-secondary"
+                        :disabled="quotaForm.processing"
+                    >
+                        Quota güncelle
+                    </button>
                 </form>
             </section>
         </div></AppShell

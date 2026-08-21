@@ -25,6 +25,7 @@ final class PostgresAnalysisExplanationRepository implements AnalysisExplanation
             ->first();
 
         if ($analysis === null
+            || $bundle->edition->value !== $analysis->game_edition
             || array_column($bundle->findings, 'code') !== $this->codes('analysis_findings', $analysisId)
             || array_column($bundle->recommendations, 'code') !== $this->codes('analysis_recommendations', $analysisId)
         ) {

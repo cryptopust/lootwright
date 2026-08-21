@@ -67,6 +67,22 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertStringContainsString('source_snapshot_locator_checksum_check', $sql);
     }
 
+    public function test_ai_runtime_control_migration_compiles_postgresql_constraints(): void
+    {
+        config(['database.default' => 'pgsql']);
+
+        $up = DB::connection('pgsql')->pretend(static function (): void {
+            $migration = require database_path('migrations/2026_08_21_120000_create_ai_runtime_control_tables.php');
+            $migration->up();
+        });
+        $upSql = implode("\n", array_column($up, 'query'));
+
+        self::assertStringContainsString('create table "ai_runtime_controls"', $upSql);
+        self::assertStringContainsString('create table "ai_user_quota_overrides"', $upSql);
+        self::assertStringContainsString('foreign key ("user_id") references "users" ("id") on delete cascade', $upSql);
+        self::assertStringContainsString('foreign key ("updated_by_user_id") references "users" ("id") on delete set null', $upSql);
+    }
+
     /**
      * This is intentionally opt-in: CI supplies a disposable PostgreSQL
      * database. It never runs destructive migrations against a shared remote.
@@ -118,7 +134,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertSame(0, Artisan::call('migrate:fresh', ['--database' => 'pgsql', '--force' => true]));
         self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
         self::assertTrue(Schema::connection('pgsql')->hasColumn('analyses', 'user_id'));
-        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records'] as $table) {
+        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides'] as $table) {
             self::assertTrue(Schema::connection('pgsql')->hasTable($table));
         }
 
@@ -138,7 +154,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
             join pg_attribute child_attribute on child_attribute.attrelid = child_table.oid and child_attribute.attnum = child_key.attnum
             join pg_attribute parent_attribute on parent_attribute.attrelid = parent_table.oid and parent_attribute.attnum = parent_key.attnum
             where constraint_record.contype = 'f'
-              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records')
+              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides')
             SQL);
 
         self::assertNotEmpty($foreignKeyTypes);

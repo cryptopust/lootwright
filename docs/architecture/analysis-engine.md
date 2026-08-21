@@ -151,11 +151,17 @@ result; it never borrows PoE1 rules or identifiers.
 ## AI authority boundary
 
 The explanation request is constructed from existing typed findings and
-recommendations. Its strict schema fixes array length and permits only exact
-existing codes plus plain explanation text. Extra canonical-fact properties are
-rejected. After schema validation, code order and forbidden content are checked
-again; any violation falls back to deterministic text. The before/after domain
-objects remain unchanged.
+recommendations that must share one analysis and one edition. Its strict schema
+fixes array length, edition, and exact existing codes plus plain explanation
+text. Extra canonical-fact properties are rejected. After schema validation,
+code order, numeric claims, canonical-code references, and forbidden content
+are checked again; any violation falls back to deterministic text. The
+before/after domain objects remain unchanged.
+
+Natural-language intent uses the separate `IntentInterpreter` port and a
+closed, exact-edition vocabulary. `RecommendationExplainer` can only explain
+the already-created products. Both are optional; the deterministic parser and
+manual form run without a provider. See [ADR 0024](../adr/0024-optional-ai-runtime-controls.md).
 
 ## Required tests for every engine adapter
 

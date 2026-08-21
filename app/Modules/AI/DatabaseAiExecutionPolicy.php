@@ -16,6 +16,11 @@ final readonly class DatabaseAiExecutionPolicy implements AiExecutionPolicy
 
     public function permits(string $task): bool
     {
+        if ($task === 'intent' || $task === 'clarification') {
+            if (! (bool) config('source-governance.openai_intent_enabled', false)) {
+                return false;
+            }
+        }
         if ($task === 'explanation' && ! (bool) config('source-governance.openai_explanations_enabled', false)) {
             return false;
         }

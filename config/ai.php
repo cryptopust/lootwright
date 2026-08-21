@@ -2,6 +2,8 @@
 
 return [
     'enabled' => (bool) env('OPENAI_ENABLED', false),
+    'intent_enabled' => (bool) env('OPENAI_INTENT_ENABLED', false),
+    'explanation_enabled' => (bool) env('OPENAI_EXPLANATIONS_ENABLED', false),
     'provider' => 'openai',
     'api_key' => env('OPENAI_API_KEY'),
     'intent_model' => env('OPENAI_INTENT_MODEL', 'gpt-5.4-nano'),
@@ -14,6 +16,8 @@ return [
     'timeout_seconds' => (int) env('OPENAI_TIMEOUT_SECONDS', 15),
     'connect_timeout_seconds' => (int) env('OPENAI_CONNECT_TIMEOUT_SECONDS', 5),
     'max_retries' => (int) env('OPENAI_MAX_RETRIES', 2),
+    'circuit_failure_threshold' => max(1, (int) env('OPENAI_CIRCUIT_FAILURE_THRESHOLD', 3)),
+    'circuit_cooldown_seconds' => max(30, (int) env('OPENAI_CIRCUIT_COOLDOWN_SECONDS', 300)),
     'retry_base_delay_ms' => 200,
     'retry_max_delay_ms' => 2000,
     'cache_ttl_seconds' => (int) env('OPENAI_CACHE_TTL_SECONDS', 3600),

@@ -18,7 +18,7 @@ Cost is calculated with integer micro-USD arithmetic and rounded upward. Without
 
 ## Enforced limits
 
-PostgreSQL counters enforce per-user daily, per-IP daily, global daily, and global monthly limits. The monthly limit is a hard local circuit breaker. Reservations and settlement are transactional so concurrent requests cannot all pass against the same remaining allowance. Zero or missing limits fail closed.
+PostgreSQL counters enforce per-user daily, per-IP daily, global daily, and global monthly limits. The monthly limit is a hard local cost breaker. Reservations and settlement are transactional so concurrent requests cannot all pass against the same remaining allowance. Zero or missing limits fail closed. Super-admin overrides can lower the per-user, global-daily, or global-monthly threshold; environment values remain hard ceilings and cannot be raised from the UI.
 
 Deployment must also configure an OpenAI project hard spend limit; the official [spend-limit guide](https://developers.openai.com/api/docs/guides/spend-limits) warns that enforcement is not instantaneous, so the local breaker remains necessary. Spend alerts are monitoring only and do not replace a hard limit.
 

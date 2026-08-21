@@ -814,3 +814,21 @@ environment-gated PostgreSQL tests skipped), PHPStan, Pint, repository
 guardrails, clean npm install/audit, ESLint, Vue typecheck, 22 Vitest tests, the
 production build, 86-file documentation validation, and diff whitespace
 checks. This feature adds no migration and performs no network request.
+
+2026-08-21: completed the optional AI runtime boundary around the existing
+provider-neutral gateway and OpenAI Responses adapter. Narrow intent and
+explanation ports, exact-edition explanation validation, independent global and
+task switches, transactional hard-capped quota overrides, a persistent
+single-probe circuit breaker, aggregate admin usage/cost projections, and
+super-admin-only audited controls now fail closed around the existing Policy
+Gate and outbound allowlist. Provider prompts and raw responses are not stored;
+AI-off retains the manual intent, deterministic analysis, upgrade graph, Manual
+Trade recipe, and local explanation path. Normal tests use fake transports and
+do not make live provider calls. Final local validation passed Composer
+metadata/audit, Pint, PHPStan, repository guardrails, 941 of 943 PHP tests with
+13,105 assertions (the two disposable-PostgreSQL tests were skipped), npm clean
+install/audit, ESLint, Vue typecheck, 22 Vitest tests, the production build,
+87-file documentation validation, route inspection, and diff whitespace checks.
+An isolated SQLite fresh/rollback/reapply cycle passed; no PostgreSQL service,
+client, or container runtime was available and port 5432 was closed, so SQLite
+is not claimed as PostgreSQL evidence. See ADR 0024 for the authority boundary.

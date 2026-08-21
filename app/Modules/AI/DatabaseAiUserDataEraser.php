@@ -18,5 +18,6 @@ final readonly class DatabaseAiUserDataEraser
             ->where('scope_type', 'user_daily')
             ->where('scope_key', $userHash)
             ->delete();
+        DB::table('ai_user_quota_overrides')->where('user_hash', $userHash)->delete();
     }
 }

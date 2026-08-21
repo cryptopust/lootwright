@@ -38,8 +38,17 @@ final class AdminUserController extends Controller
     public function show(User $user): Response
     {
         $this->authorize('view', $user);
+        $quotaCeiling = (int) config('ai.budgets_micro_usd.per_user_daily');
 
-        return Inertia::render('Admin/UserShow', ['managedUser' => $user->only(['id', 'name', 'email', 'role', 'status', 'email_verified_at', 'last_login_at', 'created_at', 'suspended_at', 'suspension_reason']), 'analysisCount' => DB::table('analyses')->where('user_id', $user->id)->count()]);
+        return Inertia::render('Admin/UserShow', [
+            'managedUser' => $user->only(['id', 'name', 'email', 'role', 'status', 'email_verified_at', 'last_login_at', 'created_at', 'suspended_at', 'suspension_reason']),
+            'analysisCount' => DB::table('analyses')->where('user_id', $user->id)->count(),
+            'aiDailyQuotaMicroUsd' => min(
+                (int) (DB::table('ai_user_quota_overrides')->where('user_id', $user->id)->value('daily_budget_micro_usd') ?? $quotaCeiling),
+                $quotaCeiling,
+            ),
+            'aiDailyQuotaCeilingMicroUsd' => $quotaCeiling,
+        ]);
     }
 
     public function status(Request $request, User $user, AdminAuditLogger $audit): RedirectResponse

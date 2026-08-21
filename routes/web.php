@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAiControlController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPageController;
 use App\Http\Controllers\Admin\AdminSourceImportController;
@@ -126,6 +127,12 @@ Route::prefix('admin')->middleware(['auth', 'active', 'verified', 'role:admin,su
     Route::post('/sources/import', AdminSourceImportController::class)
         ->middleware(['password.confirm', 'role:super_admin', 'throttle:source-import-admin'])
         ->name('admin.sources.import');
+    Route::put('/ai/settings', [AdminAiControlController::class, 'settings'])
+        ->middleware(['password.confirm', 'role:super_admin', 'throttle:policy-admin'])
+        ->name('admin.ai.settings');
+    Route::put('/users/{user}/ai-quota', [AdminAiControlController::class, 'userQuota'])
+        ->middleware(['password.confirm', 'role:super_admin', 'throttle:policy-admin'])
+        ->name('admin.users.ai-quota');
 });
 
 Route::prefix('/admin/policy')

@@ -84,6 +84,7 @@ the temporary outbound switch; see the [import runbook](poe1-passive-tree-import
 | Variable | Required default | Secret | Notes |
 | --- | --- | --- | --- |
 | `OPENAI_ENABLED` | `false` | No | Deterministic workflow remains complete without AI. |
+| `OPENAI_INTENT_ENABLED` | `false` | No | Independently denies provider intent extraction; the manual form remains available. |
 | `OPENAI_EXPLANATIONS_ENABLED` | `false` | No | Independently denies provider explanations while preserving deterministic local fallback. |
 | `POENINJA_ECONOMY_ENABLED` | `false` | No | Governance switch; cannot override Policy Gate or `POE_NINJA_ENABLED`. |
 | `POEWIKI_IMPORT_ENABLED` | `false` | No | Governance switch; Wiki remains review-gated and disabled. |
@@ -92,6 +93,8 @@ the temporary outbound switch; see the [import runbook](poe1-passive-tree-import
 | `OUTBOUND_NETWORK_ENABLED` | `false` | No | Central egress guard denies before transport. |
 | `OPENAI_API_KEY` | Empty | Yes | Not required for CI, health, deployment, or AI-off operation. |
 | `OPENAI_LIVE_EVALS_ENABLED` | `false` | No | Live eval never runs in normal CI. |
+| `OPENAI_CIRCUIT_FAILURE_THRESHOLD` | `3` | No | Consecutive provider failures before opening the persistent circuit. |
+| `OPENAI_CIRCUIT_COOLDOWN_SECONDS` | `300` | No | Cooldown before one half-open probe is allowed. |
 | Token/model/timeout/budget variables | Template values | No | Changing model/pricing requires official-document review. |
 | `FUNDING_ENABLED` | `false` | No | Operator request only; code and Policy Gate still deny funding. |
 | Funding decision/evidence/disclosure variables | Empty | No | Cannot be fabricated to enable funding. |

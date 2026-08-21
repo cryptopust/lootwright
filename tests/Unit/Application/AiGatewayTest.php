@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Application;
 
+use InvalidArgumentException;
 use Lootwright\Application\AIGateway\DTO\AiBudgetReservation;
 use Lootwright\Application\AIGateway\DTO\AiCallAudit;
 use Lootwright\Application\AIGateway\DTO\AiGatewayConfiguration;
@@ -16,8 +17,10 @@ use Lootwright\Application\AIGateway\DTO\StructuredAiRequest;
 use Lootwright\Application\AIGateway\DTO\StructuredAiResponse;
 use Lootwright\Application\AIGateway\Exception\AiProviderFailure;
 use Lootwright\Application\AIGateway\Ports\AiBudget;
+use Lootwright\Application\AIGateway\Ports\AiCircuitBreaker;
 use Lootwright\Application\AIGateway\Ports\AiExecutionPolicy;
 use Lootwright\Application\AIGateway\Ports\AiResponseCache;
+use Lootwright\Application\AIGateway\Ports\AiRuntimePolicy;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
@@ -133,6 +136,14 @@ final class AiGatewayTest extends TestCase
         self::assertSame(0, $provider->calls);
     }
 
+    public function test_runtime_switch_and_open_circuit_fall_back_before_provider(): void
+    {
+        $provider = new FakeStructuredProvider([$this->response($this->validIntentJson())]);
+        self::assertSame('disabled', $this->gateway($provider, runtimeAllowed: false)->extractIntent($this->intentRequest('A sturdy character.'))->status);
+        self::assertSame('circuit_open', $this->gateway($provider, circuitAllowed: false)->extractIntent($this->intentRequest('A sturdy character.'))->status);
+        self::assertSame(0, $provider->calls);
+    }
+
     public function test_low_confidence_candidate_uses_strict_clarification_schema(): void
     {
         $low = str_replace('8500', '2000', $this->validIntentJson());
@@ -154,7 +165,11 @@ final class AiGatewayTest extends TestCase
         $request = $this->intentRequest('I want a sturdy character.', cachePermitted: true);
 
         self::assertSame('provider', $gateway->extractIntent($request)->status);
-        self::assertSame('cache', $gateway->extractIntent($request)->status);
+        self::assertSame('cache', $this->gateway(
+            $provider,
+            cache: $cache,
+            circuitAllowed: false,
+        )->extractIntent($request)->status);
         self::assertSame(1, $provider->calls);
     }
 
@@ -165,6 +180,7 @@ final class AiGatewayTest extends TestCase
         $recommendation = DomainFixtures::recommendation($build);
         $before = CanonicalJson::encode([$finding, $recommendation]);
         $json = json_encode([
+            'edition' => 'poe1',
             'language' => 'tr',
             'summary' => 'Deterministik sonuçların özeti.',
             'findings' => [['code' => $finding->code, 'text' => 'Bu bulgu deterministik girdiden gelir.']],
@@ -190,6 +206,7 @@ final class AiGatewayTest extends TestCase
         $finding = DomainFixtures::finding($build);
         $recommendation = DomainFixtures::recommendation($build);
         $invalid = json_encode([
+            'edition' => 'poe1',
             'language' => 'en',
             'summary' => 'Unsafe addition.',
             'findings' => [['code' => $finding->code, 'text' => 'Known.']],
@@ -211,6 +228,119 @@ final class AiGatewayTest extends TestCase
         self::assertSame([$recommendation->code], array_column($bundle->recommendations, 'code'));
     }
 
+    public function test_wrong_edition_or_new_canonical_fact_is_rejected_without_repairing_by_guessing(): void
+    {
+        $build = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+        $finding = DomainFixtures::finding($build);
+        $recommendation = DomainFixtures::recommendation($build);
+        $wrongEdition = json_encode([
+            'edition' => 'poe2', 'language' => 'en', 'summary' => 'Known facts.',
+            'findings' => [['code' => $finding->code, 'text' => 'Known.']],
+            'recommendations' => [['code' => $recommendation->code, 'text' => 'Known.']],
+        ], JSON_THROW_ON_ERROR);
+        $inventedFact = json_encode([
+            'edition' => 'poe1', 'language' => 'en', 'summary' => 'Use invented.modifier with 999 value.',
+            'findings' => [['code' => $finding->code, 'text' => 'Known.']],
+            'recommendations' => [['code' => $recommendation->code, 'text' => 'Known.']],
+        ], JSON_THROW_ON_ERROR);
+        $provider = new FakeStructuredProvider([
+            $this->response($wrongEdition), $this->response($wrongEdition),
+            $this->response($inventedFact),
+        ]);
+        $request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [$finding],
+            [$recommendation],
+            $this->context(),
+        );
+
+        self::assertSame('fallback', $this->gateway($provider)->explain($request)->status);
+        self::assertSame('fallback', $this->gateway($provider)->explain($request)->status);
+    }
+
+    public function test_explanation_request_rejects_cross_edition_products(): void
+    {
+        $poe1 = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+        $poe2 = DomainFixtures::canonicalBuild(GameEdition::Poe2);
+
+        $this->expectException(InvalidArgumentException::class);
+        new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [DomainFixtures::finding($poe1)],
+            [DomainFixtures::recommendation($poe2)],
+            $this->context(),
+        );
+    }
+
+    public function test_provider_output_token_ceiling_falls_back_and_opens_failure_path(): void
+    {
+        $provider = new FakeStructuredProvider([
+            new StructuredAiResponse('fake', 'fake-model', $this->validIntentJson(), false, 10, 0, 301, 1, false),
+        ]);
+        $breaker = new FakeAiCircuitBreaker(true);
+
+        $outcome = $this->gateway($provider, circuitBreaker: $breaker)
+            ->extractIntent($this->intentRequest('A sturdy character.'));
+
+        self::assertSame('fallback', $outcome->status);
+        self::assertSame(1, $provider->calls);
+        self::assertSame(1, $breaker->failures);
+        self::assertSame(0, $breaker->successes);
+    }
+
+    public function test_semantic_authority_violation_is_audited_as_failure(): void
+    {
+        $build = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+        $finding = DomainFixtures::finding($build);
+        $recommendation = DomainFixtures::recommendation($build);
+        $response = json_encode([
+            'edition' => 'poe1',
+            'language' => 'en',
+            'summary' => 'Invented value 999.',
+            'findings' => [['code' => $finding->code, 'text' => 'Known.']],
+            'recommendations' => [['code' => $recommendation->code, 'text' => 'Known.']],
+        ], JSON_THROW_ON_ERROR);
+        $provider = new FakeStructuredProvider([$this->response($response)]);
+        $breaker = new FakeAiCircuitBreaker(true);
+        $telemetry = new RecordingAiTelemetry;
+        $request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [$finding],
+            [$recommendation],
+            $this->context(),
+        );
+
+        $outcome = $this->gateway($provider, circuitBreaker: $breaker, telemetry: $telemetry)->explain($request);
+
+        self::assertSame('fallback', $outcome->status);
+        self::assertSame(1, $breaker->failures);
+        self::assertSame('authority_violation', $telemetry->audits[0]->validationOutcome);
+    }
+
+    public function test_explanation_cannot_introduce_an_unknown_plain_name(): void
+    {
+        $build = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+        $finding = DomainFixtures::finding($build);
+        $recommendation = DomainFixtures::recommendation($build);
+        $response = json_encode([
+            'edition' => 'poe1',
+            'language' => 'en',
+            'summary' => 'Equip Mageblood.',
+            'findings' => [['code' => $finding->code, 'text' => 'Known.']],
+            'recommendations' => [['code' => $recommendation->code, 'text' => 'Known.']],
+        ], JSON_THROW_ON_ERROR);
+        $request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [$finding],
+            [$recommendation],
+            $this->context(),
+        );
+
+        self::assertSame('fallback', $this->gateway(new FakeStructuredProvider([
+            $this->response($response),
+        ]))->explain($request)->status);
+    }
+
     private function gateway(
         FakeStructuredProvider $provider,
         bool $enabled = true,
@@ -218,6 +348,10 @@ final class AiGatewayTest extends TestCase
         bool $budgetAllowed = true,
         ?InMemoryAiCache $cache = null,
         int $maxInputTokens = 2_000,
+        bool $runtimeAllowed = true,
+        bool $circuitAllowed = true,
+        ?FakeAiCircuitBreaker $circuitBreaker = null,
+        ?RecordingAiTelemetry $telemetry = null,
     ): ProviderNeutralAiGateway {
         return new ProviderNeutralAiGateway(
             new AiGatewayConfiguration($enabled, 'fake-model', 'fake-model', $maxInputTokens, 300, 500, 7_000, 'test-v1', 200_000, 20_000, 1_250_000, str_repeat('k', 32)),
@@ -225,7 +359,10 @@ final class AiGatewayTest extends TestCase
             new FakeAiPolicy($policy),
             new FakeAiBudget($budgetAllowed),
             $cache ?? new InMemoryAiCache,
-            new RecordingAiTelemetry,
+            $telemetry ?? new RecordingAiTelemetry,
+            new StrictJsonSchemaValidator,
+            new FakeAiRuntimePolicy($runtimeAllowed),
+            $circuitBreaker ?? new FakeAiCircuitBreaker($circuitAllowed),
         );
     }
 
@@ -330,5 +467,39 @@ final class RecordingAiTelemetry implements AiTelemetry
     public function record(AiCallAudit $audit): void
     {
         $this->audits[] = $audit;
+    }
+}
+
+final readonly class FakeAiRuntimePolicy implements AiRuntimePolicy
+{
+    public function __construct(private bool $allowed) {}
+
+    public function permits(string $task): bool
+    {
+        return $this->allowed;
+    }
+}
+
+final class FakeAiCircuitBreaker implements AiCircuitBreaker
+{
+    public int $successes = 0;
+
+    public int $failures = 0;
+
+    public function __construct(private bool $allowed) {}
+
+    public function permitsRequest(): bool
+    {
+        return $this->allowed;
+    }
+
+    public function recordSuccess(): void
+    {
+        $this->successes++;
+    }
+
+    public function recordFailure(): void
+    {
+        $this->failures++;
     }
 }

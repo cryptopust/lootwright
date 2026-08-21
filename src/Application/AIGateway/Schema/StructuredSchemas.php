@@ -3,6 +3,7 @@
 namespace Lootwright\Application\AIGateway\Schema;
 
 use Lootwright\Application\AIGateway\DTO\IntentVocabulary;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
 final class StructuredSchemas
 {
@@ -51,9 +52,9 @@ final class StructuredSchemas
      * @param  list<string>  $recommendationCodes
      * @return array<string, mixed>
      */
-    public static function explanation(string $language, array $findingCodes, array $recommendationCodes): array
+    public static function explanation(string $language, array $findingCodes, array $recommendationCodes, ?GameEdition $edition = null): array
     {
-        return self::object([
+        $properties = [
             'language' => ['type' => 'string', 'enum' => [$language]],
             'summary' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 600],
             'findings' => [
@@ -74,7 +75,12 @@ final class StructuredSchemas
                     'text' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 500],
                 ]),
             ],
-        ]);
+        ];
+        if ($edition !== null) {
+            $properties = ['edition' => ['type' => 'string', 'enum' => [$edition->value]], ...$properties];
+        }
+
+        return self::object($properties);
     }
 
     /** @param array<string, array<string, mixed>> $properties

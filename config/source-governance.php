@@ -4,6 +4,7 @@ return [
     'poewiki_import_enabled' => (bool) env('POEWIKI_IMPORT_ENABLED', false),
     'poeninja_economy_enabled' => (bool) env('POENINJA_ECONOMY_ENABLED', false),
     'openai_explanations_enabled' => (bool) env('OPENAI_EXPLANATIONS_ENABLED', false),
+    'openai_intent_enabled' => (bool) env('OPENAI_INTENT_ENABLED', false),
     'ggg_passive_tree' => [
         'enabled' => (bool) env('GGG_PASSIVE_TREE_IMPORT_ENABLED', false),
         'contact' => env('GGG_PASSIVE_TREE_CONTACT'),

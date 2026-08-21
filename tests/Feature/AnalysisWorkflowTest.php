@@ -989,6 +989,7 @@ class AnalysisWorkflowTest extends TestCase
             'Readable deterministic fixture summary.',
             [['code' => 'fixture.finding', 'text' => 'This finding comes from deterministic evidence.']],
             [['code' => 'fixture.recommendation', 'text' => 'This explains the existing recommendation only.']],
+            GameEdition::Poe1,
         );
         $this->app->instance(AiGateway::class, new FixtureAiGateway(new AiGatewayOutcome('provider', $bundle)));
         $request = new GatewayExplanationRequest(

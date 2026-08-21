@@ -4,6 +4,7 @@ namespace Lootwright\Application\AIGateway\DTO;
 
 use InvalidArgumentException;
 use JsonSerializable;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
 final readonly class ExplanationBundle implements JsonSerializable
 {
@@ -16,6 +17,7 @@ final readonly class ExplanationBundle implements JsonSerializable
         public string $summary,
         public array $findings,
         public array $recommendations,
+        public GameEdition $edition,
     ) {
         if (! in_array($language, ['en', 'tr'], true) || trim($summary) === '') {
             throw new InvalidArgumentException('Explanation bundles require a supported language and summary.');
@@ -27,6 +29,7 @@ final readonly class ExplanationBundle implements JsonSerializable
     {
         return [
             'language' => $this->language,
+            'edition' => $this->edition->value,
             'summary' => $this->summary,
             'findings' => $this->findings,
             'recommendations' => $this->recommendations,
