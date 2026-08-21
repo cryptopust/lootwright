@@ -51,6 +51,7 @@ final class SafeXmlParser
 
         $stack = [[$document->documentElement, 1]];
         $elements = 0;
+        $textBytes = 0;
 
         while ($stack !== []) {
             [$node, $depth] = array_pop($stack);
@@ -69,12 +70,25 @@ final class SafeXmlParser
                 if ($elements > $limits->xmlElements || $node->attributes->length > $limits->attributesPerElement) {
                     return $this->failure(DomainErrorCode::InputTooLarge, 'The XML build exceeds structural limits.');
                 }
+
+                foreach ($node->attributes as $attribute) {
+                    if (strlen($attribute->nodeName) > $limits->attributeBytes
+                        || strlen($attribute->nodeValue ?? '') > $limits->attributeBytes
+                    ) {
+                        return $this->failure(DomainErrorCode::InputTooLarge, 'The XML build contains an oversized attribute.');
+                    }
+                }
+            } elseif (in_array($node->nodeType, [XML_TEXT_NODE, XML_CDATA_SECTION_NODE, XML_COMMENT_NODE], true)) {
+                $nodeBytes = strlen($node->nodeValue ?? '');
+                $textBytes += $nodeBytes;
+
+                if ($nodeBytes > $limits->textBytes || $textBytes > $limits->xmlTextBytes) {
+                    return $this->failure(DomainErrorCode::InputTooLarge, 'The XML build exceeds the text-content limit.');
+                }
             }
 
             foreach ($node->childNodes as $child) {
-                if ($child instanceof DOMElement) {
-                    $stack[] = [$child, $depth + 1];
-                }
+                $stack[] = [$child, $child instanceof DOMElement ? $depth + 1 : $depth];
             }
         }
 

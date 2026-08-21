@@ -33,4 +33,22 @@ final class Pob1Normalizer extends AbstractPobNormalizer
     {
         return ['bandit', 'pantheonMajorGod', 'pantheonMinorGod'];
     }
+
+    protected function metricAliases(): array
+    {
+        return [
+            'strength' => ['Str', 'Strength'],
+            'dexterity' => ['Dex', 'Dexterity'],
+            'intelligence' => ['Int', 'Intelligence'],
+            'life' => ['Life', 'TotalLife'],
+            'energy_shield' => ['EnergyShield', 'TotalEnergyShield'],
+            'mana' => ['Mana', 'TotalMana'],
+            'armour' => ['Armour', 'TotalArmour'],
+            'evasion' => ['Evasion', 'EvasionRating', 'TotalEvasion'],
+            'fire_resistance' => ['FireResist', 'FireResistance'],
+            'cold_resistance' => ['ColdResist', 'ColdResistance'],
+            'lightning_resistance' => ['LightningResist', 'LightningResistance'],
+            'chaos_resistance' => ['ChaosResist', 'ChaosResistance'],
+        ];
+    }
 }

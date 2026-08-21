@@ -212,7 +212,12 @@ class PobImportTest extends TestCase
         $direct = $this->success($this->importer()->import($xml));
         $encoded = $this->success($this->importer()->import($this->code($xml)));
 
-        self::assertSame(CanonicalJson::encode($direct), CanonicalJson::encode($encoded));
+        self::assertSame(
+            CanonicalJson::encode(array_replace($direct->canonicalBuild->jsonSerialize(), ['source_metadata' => null])),
+            CanonicalJson::encode(array_replace($encoded->canonicalBuild->jsonSerialize(), ['source_metadata' => null])),
+        );
+        self::assertSame('decoded_xml', $direct->canonicalBuild->sourceMetadata?->inputType->value);
+        self::assertSame('pob_share_code', $encoded->canonicalBuild->sourceMetadata?->inputType->value);
     }
 
     private function importer(?Closure $clock = null): PobImportCoordinator

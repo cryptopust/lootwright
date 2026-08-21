@@ -98,6 +98,7 @@ final readonly class PobImportCoordinator
             $root,
             $decoded->checksumSha256,
             $processingNanoseconds,
+            $decoded->inputType,
         ));
     }
 
@@ -108,7 +109,7 @@ final readonly class PobImportCoordinator
 
         foreach ($this->parsers as $parser) {
             if ($parser->rootElement() === $prepared->rootElement) {
-                $result = $parser->parse($prepared->document, $prepared->checksumSha256, $limits);
+                $result = $parser->parse($prepared->document, $prepared->checksumSha256, $prepared->inputType, $limits);
                 $processingNanoseconds = $prepared->processingNanosecondsUsed + $this->elapsed($startedAt);
 
                 if ($processingNanoseconds > $this->processingBudget($limits)) {

@@ -21,6 +21,7 @@ use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
 use App\Modules\Analysis\Infrastructure\PolicyGatedArtifactParser;
 use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
 use App\Modules\Analysis\Persistence\PostgresWorkflowRepository;
+use App\Modules\BuildIntake\PolicyGatedItemTextImporter;
 use App\Modules\ExternalSources\DisabledOfficialTradeSearchProvider;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaEconomyClient;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaNormalizer;
@@ -60,6 +61,7 @@ use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
 use Lootwright\Application\Funding\Ports\FundingStatusProvider;
 use Lootwright\Application\Identity\Ports\PrivacySessionRepository;
 use Lootwright\Application\Identity\Ports\SecretGenerator;
+use Lootwright\Application\PolicyProvenance\DecideCapability;
 use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\TradePlanning\Ports\ManualTradeRecipeGenerator;
@@ -82,14 +84,20 @@ use Lootwright\Domain\Rulesets\Ports\ActiveRulesetResolver;
 use Lootwright\Domain\Rulesets\Ports\RulesetRepository;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine as Poe1CoreAnalysisEngine;
+use Lootwright\GameAdapters\PoE1\BuildImport\Poe1BuildImporter;
+use Lootwright\GameAdapters\PoE1\ItemText\Poe1ItemTextImporter;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
+use Lootwright\GameAdapters\PoE2\BuildImport\Poe2BuildImporter;
+use Lootwright\GameAdapters\PoE2\ItemText\Poe2ItemTextImporter;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Parser;
+use Lootwright\GameAdapters\Shared\BuildImport\BuildImportCoordinator;
 use Lootwright\GameAdapters\Shared\Pob\PobEnvelopeDecoder;
 use Lootwright\GameAdapters\Shared\Pob\PobImportCoordinator;
 use Lootwright\GameAdapters\Shared\Pob\SafeXmlParser;
+use Psr\Log\LoggerInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -195,6 +203,15 @@ class AppServiceProvider extends ServiceProvider
                 new Pob1Parser(new Pob1Normalizer),
                 new Pob2Parser(new Pob2Normalizer),
             ],
+        ));
+        $this->app->singleton(BuildImportCoordinator::class, static fn ($app): BuildImportCoordinator => new BuildImportCoordinator([
+            new Poe1BuildImporter($app->make(PobImportCoordinator::class), new Poe1ItemTextImporter),
+            new Poe2BuildImporter($app->make(PobImportCoordinator::class), new Poe2ItemTextImporter),
+        ]));
+        $this->app->singleton(PolicyGatedItemTextImporter::class, static fn ($app): PolicyGatedItemTextImporter => new PolicyGatedItemTextImporter(
+            $app->make(BuildImportCoordinator::class),
+            $app->make(DecideCapability::class),
+            $app->make(LoggerInterface::class),
         ));
     }
 

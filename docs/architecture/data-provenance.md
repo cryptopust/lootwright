@@ -112,3 +112,16 @@ provider response bodies.
 See the [source register](../compliance/source-register.md), [source strategy
 ADR](../adr/0017-game-data-source-strategy.md), and [external-source
 architecture](external-data-sources.md).
+## Build-import provenance
+
+Every normalized build snapshot records the source identity, input kind,
+detected or explicitly scoped game edition, edition evidence, SHA-256 checksum,
+and parser version. PoB XML proves its edition through the exact root element;
+an expected UI selection cannot override contradictory XML. Standalone item
+text cannot prove an edition, so its metadata says that the edition is an
+explicit validated scope rather than source evidence.
+
+`USER-POB-001`, `USER-ITEM-TEXT-001`, `POB1-FORMAT-001`, and
+`POB2-FORMAT-001` remain distinct provenance identities. Unknown XML fields and
+observed item modifier text are diagnostic user input, never canonical game
+facts or ruleset authority. Policy checks occur before hostile-input parsing.

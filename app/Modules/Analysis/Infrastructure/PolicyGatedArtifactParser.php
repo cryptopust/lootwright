@@ -4,6 +4,7 @@ namespace App\Modules\Analysis\Infrastructure;
 
 use App\Modules\BuildIntake\PobImportRejected;
 use App\Modules\BuildIntake\PobPolicyDenied;
+use App\Modules\BuildIntake\PolicyGatedItemTextImporter;
 use App\Modules\BuildIntake\PolicyGatedPobImporter;
 use Lootwright\Application\Workflow\DTO\ParsedArtifact;
 use Lootwright\Application\Workflow\Exception\PolicyBlocked;
@@ -14,11 +15,14 @@ use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 
 final readonly class PolicyGatedArtifactParser implements ArtifactParser
 {
-    public function __construct(private PolicyGatedPobImporter $pobImporter) {}
+    public function __construct(
+        private PolicyGatedPobImporter $pobImporter,
+        private PolicyGatedItemTextImporter $itemTextImporter,
+    ) {}
 
     public function parse(string $artifactType, string $contents, GameEdition $expectedEdition): ParsedArtifact
     {
-        if ($artifactType === 'wizard_plan' || $artifactType === 'item_text') {
+        if ($artifactType === 'wizard_plan') {
             $normalized = CanonicalJson::encode([
                 'edition' => $expectedEdition->value,
                 'input_kind' => $artifactType,
@@ -30,6 +34,32 @@ final readonly class PolicyGatedArtifactParser implements ArtifactParser
                 'code' => 'production_ruleset_required',
                 'question' => 'An approved '.$expectedEdition->value.' ruleset is required before deterministic findings can run.',
             ]]);
+        }
+
+        if ($artifactType === 'item_text') {
+            try {
+                $result = $this->itemTextImporter->handle($contents, $expectedEdition);
+            } catch (PobPolicyDenied $exception) {
+                throw new PolicyBlocked($exception->decision);
+            } catch (PobImportRejected $exception) {
+                throw new TerminalWorkflowFailure($exception->domainError->code->value, 'The submitted item artifact is invalid.');
+            }
+
+            $normalized = CanonicalJson::encode($result);
+
+            return new ParsedArtifact(
+                $expectedEdition,
+                'item-text-'.$expectedEdition->value,
+                $result->parserVersion,
+                $normalized,
+                hash('sha256', $normalized),
+                null,
+                null,
+                [[
+                    'code' => 'exact_patch_required',
+                    'question' => 'Which exact game patch should this item use?',
+                ]],
+            );
         }
 
         if ($artifactType !== 'pob') {

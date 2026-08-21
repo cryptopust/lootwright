@@ -2,6 +2,7 @@
 
 namespace Lootwright\GameAdapters\Shared\Pob;
 
+use Lootwright\Domain\BuildIntake\Import\BuildInputType;
 use Lootwright\Domain\BuildIntake\Import\ImportLimits;
 use Lootwright\Domain\Shared\Error\DomainError;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
@@ -37,7 +38,7 @@ final class PobEnvelopeDecoder
         }
 
         if (str_starts_with(ltrim($trimmed), '<')) {
-            return $this->xml($trimmed, $limits);
+            return $this->xml($trimmed, $limits, BuildInputType::DecodedXml);
         }
 
         $code = preg_replace('/\s+/', '', $trimmed);
@@ -86,10 +87,10 @@ final class PobEnvelopeDecoder
             return $this->failure(DomainErrorCode::DecompressionLimit, 'The build exceeds the permitted decompression ratio.');
         }
 
-        return $this->xml($xml, $limits);
+        return $this->xml($xml, $limits, BuildInputType::PobShareCode);
     }
 
-    private function xml(string $xml, ImportLimits $limits): DomainResult
+    private function xml(string $xml, ImportLimits $limits, BuildInputType $inputType): DomainResult
     {
         $xml = trim($xml);
 
@@ -100,6 +101,7 @@ final class PobEnvelopeDecoder
         return DomainResult::success(new DecodedPobInput(
             $xml,
             hash('sha256', $xml),
+            $inputType,
         ));
     }
 
