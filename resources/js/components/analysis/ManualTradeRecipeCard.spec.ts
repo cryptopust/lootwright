@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { demoRecipes } from '@/data/demo-analysis';
+import type { TradeRecipeView } from '@/types/analysis-ui';
 
 import ManualTradeRecipeCard from './ManualTradeRecipeCard.vue';
 
@@ -53,6 +54,67 @@ describe('ManualTradeRecipeCard', () => {
                 .get('a[href="https://www.pathofexile.com/trade"]')
                 .attributes('href'),
         ).toBe('https://www.pathofexile.com/trade');
+        expect(wrapper.html()).not.toContain('/api/trade/');
+    });
+
+    it('copies the currently selected production recipe and discloses unsupported filters', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        });
+        const recipe: TradeRecipeView = {
+            game_edition: 'poe1',
+            slot: 'helmet',
+            item_class: 'Armour > Helmets',
+            base_constraints: {},
+            rarity: null,
+            influence_or_edition_equivalent: null,
+            corruption_constraints: null,
+            required_modifiers: [
+                {
+                    canonical_modifier_id: 'defence.maximum_life',
+                    label: '+# to maximum Life',
+                    minimum: '90',
+                },
+            ],
+            optional_modifiers: [],
+            excluded_modifiers: [],
+            minimum_values: { 'defence.maximum_life': '90' },
+            weights: {},
+            dependencies: [
+                { slot: 'ring', reason: 'Review resistance before replacing.' },
+            ],
+            broad_recipe: 'BROAD MANUAL FILTER',
+            strict_recipe: 'STRICT MANUAL FILTER',
+            explanation: 'Deterministic fixture explanation.',
+            provenance: {
+                source_id: 'LOOTWRIGHT-001',
+                source_version: 'fixture-1',
+                checksum_sha256: 'a'.repeat(64),
+            },
+            unsupported_filters: [
+                {
+                    modifier_id: 'unknown.modifier',
+                    reason: 'No exact approved mapping exists.',
+                },
+            ],
+            ruleset: {
+                edition: 'poe1',
+                id: 'fixture.ruleset',
+                version: '1.0.0',
+                checksum_sha256: 'b'.repeat(64),
+            },
+        };
+        const wrapper = mount(ManualTradeRecipeCard, { props: { recipe } });
+        const buttons = wrapper.findAll('.segmented-control button');
+
+        await buttons[1].trigger('click');
+        await wrapper.get('button.button.is-secondary').trigger('click');
+
+        expect(writeText).toHaveBeenCalledWith('BROAD MANUAL FILTER');
+        expect(wrapper.text()).toContain('unknown.modifier');
+        expect(wrapper.text()).toContain('ring: Review resistance before replacing.');
         expect(wrapper.html()).not.toContain('/api/trade/');
     });
 

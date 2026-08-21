@@ -5,12 +5,17 @@ import ConfidenceMeter from '@/components/app/ConfidenceMeter.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
 import TerminalBlock from '@/components/arpg/TerminalBlock.vue';
 import { useLocale } from '@/composables/useLocale';
-import { demoRecipeText } from '@/data/demo-analysis';
-import type { DemoRecipe } from '@/types/analysis-ui';
+import type {
+    DemoRecipe,
+    DemoRecipeVariant,
+    TradeRecipeView,
+} from '@/types/analysis-ui';
+
+type Recipe = DemoRecipe | TradeRecipeView;
 
 const props = withDefaults(
     defineProps<{
-        recipe: DemoRecipe;
+        recipe: Recipe;
         externalLinkEnabled?: boolean;
     }>(),
     { externalLinkEnabled: true },
@@ -18,13 +23,105 @@ const props = withDefaults(
 const variant = ref<'strict' | 'broad'>('strict');
 const copyStatus = ref<'idle' | 'copied' | 'failed'>('idle');
 const { tx } = useLocale();
-const filters = computed(() => props.recipe[variant.value]);
+const isProductionRecipe = computed(
+    () => 'strict_recipe' in props.recipe,
+);
+const filters = computed<DemoRecipeVariant>(() => {
+    if (!isProductionRecipe.value) {
+        return (props.recipe as DemoRecipe)[variant.value];
+    }
+
+    const recipe = props.recipe as TradeRecipeView;
+    const map = (items: TradeRecipeView['required_modifiers']) =>
+        items.map((filter) => ({
+            label: filter.label,
+            minimum: filter.minimum,
+            weight: filter.weight,
+            reason: { tr: recipe.explanation, en: recipe.explanation },
+            findingCode: filter.canonical_modifier_id,
+        }));
+
+    return {
+        required: map(recipe.required_modifiers),
+        optional: map(recipe.optional_modifiers),
+        excluded: map(recipe.excluded_modifiers),
+    };
+});
+const edition = computed(() =>
+    isProductionRecipe.value
+        ? (props.recipe as TradeRecipeView).game_edition
+        : 'poe1',
+);
+const itemContext = computed(() =>
+    isProductionRecipe.value
+        ? ((props.recipe as TradeRecipeView).item_class ?? 'Item class bilinmiyor')
+        : `${(props.recipe as DemoRecipe).category} · ${(props.recipe as DemoRecipe).baseFamily}`,
+);
+const budgetContext = computed(() =>
+    isProductionRecipe.value
+        ? 'Market price bilinmiyor'
+        : (props.recipe as DemoRecipe).budget,
+);
+const confidence = computed(() =>
+    isProductionRecipe.value ? null : (props.recipe as DemoRecipe).confidence,
+);
+const dependencies = computed(() =>
+    props.recipe.dependencies.map((dependency) =>
+        typeof dependency === 'string'
+            ? dependency
+            : `${dependency.slot}: ${dependency.reason}`,
+    ),
+);
+const rulesetVersion = computed(() =>
+    isProductionRecipe.value
+        ? (props.recipe as TradeRecipeView).ruleset.version
+        : '1.4.2-fixture',
+);
+const source = computed(() =>
+    isProductionRecipe.value
+        ? `${(props.recipe as TradeRecipeView).provenance.source_id} / ${(props.recipe as TradeRecipeView).provenance.source_version}`
+        : 'LOOTWRIGHT-001 / fixture-1',
+);
+const unsupportedFilters = computed(() =>
+    isProductionRecipe.value
+        ? (props.recipe as TradeRecipeView).unsupported_filters
+        : [],
+);
+const renderedText = computed(() => {
+    if (isProductionRecipe.value) {
+        const recipe = props.recipe as TradeRecipeView;
+
+        return variant.value === 'strict'
+            ? recipe.strict_recipe
+            : recipe.broad_recipe;
+    }
+
+    const lines = ['Lootwright manual Trade recipe', `Slot: ${props.recipe.slot}`];
+
+    for (const [heading, values] of Object.entries({
+        Required: filters.value.required,
+        Optional: filters.value.optional,
+        Excluded: filters.value.excluded,
+    })) {
+        lines.push('', `${heading}:`);
+        lines.push(
+            ...(values.length === 0
+                ? ['- none']
+                : values.map(
+                      (filter) =>
+                          `- ${filter.label}${filter.minimum ? ` · min ${filter.minimum}` : ''}${filter.maximum ? ` · max ${filter.maximum}` : ''}${filter.weight ? ` · weight ${filter.weight}` : ''}`,
+                  )),
+        );
+    }
+
+    return lines.join('\n');
+});
 
 async function copyRecipe(): Promise<void> {
     copyStatus.value = 'idle';
 
     try {
-        await navigator.clipboard.writeText(demoRecipeText);
+        await navigator.clipboard.writeText(renderedText.value);
         copyStatus.value = 'copied';
     } catch {
         copyStatus.value = 'failed';
@@ -45,18 +142,18 @@ async function copyRecipe(): Promise<void> {
                     }}
                 </p>
                 <h2>{{ recipe.slot }}</h2>
-                <p>{{ recipe.category }} · {{ recipe.baseFamily }}</p>
+                <p>{{ itemContext }}</p>
             </div>
             <div class="recipe-context">
-                <EditionBadge edition="poe1" compact />
-                <span>PC</span>
-                <span>Fixture League</span>
+                <EditionBadge :edition="edition" compact />
+                <span v-if="!isProductionRecipe">PC</span>
+                <span v-if="!isProductionRecipe">Fixture League</span>
             </div>
         </header>
 
         <div class="recipe-budget">
             <span>{{ tx({ tr: 'Bütçe bağlamı', en: 'Budget context' }) }}</span>
-            <strong>{{ recipe.budget }}</strong>
+            <strong>{{ budgetContext }}</strong>
         </div>
 
         <div class="recipe-toolbar">
@@ -110,7 +207,7 @@ async function copyRecipe(): Promise<void> {
         </p>
 
         <TerminalBlock
-            :content="demoRecipeText"
+            :content="renderedText"
             :label="
                 tx({
                     tr: 'Satır numaralı manuel filtre tarifi',
@@ -211,25 +308,40 @@ async function copyRecipe(): Promise<void> {
                 </h3>
                 <ul>
                     <li
-                        v-for="dependency in recipe.dependencies"
+                        v-for="dependency in dependencies"
                         :key="dependency"
                     >
                         {{ dependency }}
                     </li>
                 </ul>
             </div>
-            <ConfidenceMeter :value="recipe.confidence" />
+            <ConfidenceMeter v-if="confidence !== null" :value="confidence" />
             <dl>
                 <div>
                     <dt>Ruleset</dt>
-                    <dd>1.4.2-fixture</dd>
+                    <dd>{{ rulesetVersion }}</dd>
                 </div>
                 <div>
                     <dt>Source</dt>
-                    <dd>LOOTWRIGHT-001 / fixture-1</dd>
+                    <dd>{{ source }}</dd>
                 </div>
             </dl>
         </div>
+
+        <section v-if="unsupportedFilters.length > 0" class="manual-action-boundary">
+            <div>
+                <strong>{{ tx({ tr: 'Desteklenmeyen filtreler', en: 'Unsupported filters' }) }}</strong>
+                <ul>
+                    <li
+                        v-for="filter in unsupportedFilters"
+                        :key="filter.modifier_id ?? filter.candidate"
+                    >
+                        <code>{{ filter.modifier_id ?? filter.candidate }}</code>
+                        — {{ filter.reason }}
+                    </li>
+                </ul>
+            </div>
+        </section>
 
         <div class="manual-action-boundary">
             <div>

@@ -43,6 +43,16 @@ items, skills, and passive choices by excluding violating nodes into the
 graph's explicit impossible list. Dependency ordering is topological and
 cycles fail closed.
 
+Manual Trade planning is the next deterministic stage. `TradeRecipeBuilder`
+accepts only the selected `UpgradeCandidate`, its exact edition-scoped
+`BuildSnapshot`, an approved compatible `GameRuleset`, and a separately
+edition-scoped `TradeVocabulary`. `ModifierMatcher` verifies every filter
+against both that vocabulary and the canonical modifier registry for the exact
+ruleset. `ConstraintCompiler` emits human-readable broad and strict text only;
+`RecipeValidator` rejects API paths and request-like output. Unknown mappings
+remain typed `unsupported_filters`. PoE2 vocabulary is disabled and cannot
+borrow PoE1 identifiers.
+
 Laravel infrastructure resolves encrypted persisted inputs and immutable local
 rulesets, then calls a pure game adapter. Pure rules never import Laravel,
 database, network, cache, queue, filesystem, wall-clock, randomness, locale, or
@@ -119,9 +129,11 @@ result; it never borrows PoE1 rules or identifiers.
 
 ## Current limitations
 
-- Production execution produces findings but returns empty recommendation and
-  manual-recipe lists. Existing planner/recipe demonstrations use test or demo
-  vocabulary and are not production advice.
+- Production execution produces findings but does not yet persist the new
+  upgrade graph or recipe products. The planner and manual recipe engine are
+  production-domain implementations, but approved production modifier data and
+  ruleset-owned Trade vocabulary are still required before they can emit
+  actionable filters. Demo screens remain explicitly fixture-backed.
 - There is no PoE2 deterministic engine, PoE2 ruleset, or PoE2 passive-tree
   source adapter. PoE2 input cannot fall back to PoE1.
 - Canonical contracts exist for skills, support gems, item bases, uniques,

@@ -33,4 +33,12 @@ final readonly class RulesetReference implements JsonSerializable
             'checksum_sha256' => $this->checksumSha256,
         ];
     }
+
+    public function equals(self $other): bool
+    {
+        return $this->edition === $other->edition
+            && $this->id === $other->id
+            && $this->version === $other->version
+            && $this->checksumSha256 === $other->checksumSha256;
+    }
 }

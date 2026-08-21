@@ -14,6 +14,7 @@ final readonly class UpgradeCandidate implements JsonSerializable
      * @param  list<string>  $dependentSlots
      * @param  list<string>  $affectedFindings
      * @param  list<string>  $expectedEffects
+     * @param  list<array<string,mixed>>  $tradeRequirements
      */
     public function __construct(
         public string $id,
@@ -32,6 +33,8 @@ final readonly class UpgradeCandidate implements JsonSerializable
         public bool $impossible = false,
         public ?string $impossibleReason = null,
         public ?MarketPriceEvidence $priceEvidence = null,
+        public array $tradeRequirements = [],
+        public ?string $targetSlot = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9._:-]{1,127}$/D', $id) !== 1 || trim($title) === '') {
             throw new InvalidArgumentException('An upgrade candidate requires a canonical ID and title.');
@@ -41,6 +44,18 @@ final readonly class UpgradeCandidate implements JsonSerializable
         }
         if ($priceEvidence !== null && $marketDataRequirement !== MarketDataRequirement::Required) {
             throw new InvalidArgumentException('Price evidence is only valid for a market-dependent candidate.');
+        }
+        foreach ($tradeRequirements as $requirement) {
+            if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,190}$/D', (string) ($requirement['modifier_id'] ?? '')) !== 1
+                || ! in_array($requirement['mode'] ?? null, ['required', 'optional', 'excluded'], true)
+                || (isset($requirement['minimum']) && preg_match('/^-?(?:0|[1-9]\d{0,14})(?:\.\d{1,4})?$/D', (string) $requirement['minimum']) !== 1)
+                || (isset($requirement['weight']) && (! is_int($requirement['weight']) || $requirement['weight'] < 1 || $requirement['weight'] > 100))
+            ) {
+                throw new InvalidArgumentException('Trade requirements must use bounded canonical modifier constraints.');
+            }
+        }
+        if ($targetSlot !== null && preg_match('/^[a-z][a-z0-9._-]{1,127}$/D', $targetSlot) !== 1) {
+            throw new InvalidArgumentException('A Trade target slot must be a canonical slot identifier.');
         }
     }
 
@@ -63,6 +78,8 @@ final readonly class UpgradeCandidate implements JsonSerializable
             $impossible,
             $reason,
             $this->priceEvidence,
+            $this->tradeRequirements,
+            $this->targetSlot,
         );
     }
 
@@ -86,6 +103,8 @@ final readonly class UpgradeCandidate implements JsonSerializable
             'impossible' => $this->impossible,
             'impossible_reason' => $this->impossibleReason,
             'price_evidence' => $this->priceEvidence,
+            'trade_requirements' => $this->tradeRequirements,
+            'target_slot' => $this->targetSlot,
         ];
     }
 }

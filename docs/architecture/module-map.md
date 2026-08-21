@@ -42,7 +42,7 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | `src/Domain/Rulesets` | Immutable ruleset identity and exact-resolution port | Shared, Policy and Provenance | mutable publication state, Laravel |
 | `src/Domain/Analysis` | Deterministic metrics and findings | Shared, Build Intake, Rulesets | HTTP, Eloquent, queues, AI |
 | `src/Domain/Recommendations` | Deterministic ranking and explanations-as-data | Shared, Build Intake, Analysis | provider prose, market state |
-| `src/Domain/TradePlanning` | Abstract manual filter recipe | Shared, Recommendations | Trade IDs, URLs, browser/API clients |
+| `src/Domain/TradePlanning` | Immutable manual recipe, vocabulary contract, descriptive compiler and validation | Shared, Recommendations | Trade request payloads, generated search URLs, browser/API clients |
 | `src/Domain/PolicyProvenance` | Sources/versions, permission evidence, exact capability rules, decisions, effective periods, kill switches, and pure evaluation | Shared | external clients, database types, feature-flag overrides |
 | `src/Domain/UsageFunding` | Usage port and disabled funding policy | Shared, Policy and Provenance | payment providers, funding entitlements |
 | `src/GameAdapters/PoE1` | PoE1 parsing and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |

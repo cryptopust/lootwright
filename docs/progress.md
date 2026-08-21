@@ -797,3 +797,20 @@ ordering rejects cycles, conflicts are deterministic, and PoE2 planning has no
 fallback to PoE1. Added tests cover Mageblood/skill preservation, verified and
 unknown budgets, conflicts, cycles, cross-slot dependencies, and edition
 isolation.
+
+2026-08-21: added the deterministic manual Trade Recipe Engine. Structured
+upgrade requirements now pass through an edition-scoped vocabulary, the exact
+canonical modifier registry, and a compatible approved ruleset before becoming
+immutable broad/strict human-readable filters. Unknown mappings remain
+`unsupported_filters`; positive vocabulary conflicts fail closed; dependent
+slots are disclosed without asserting unproven stat loss. The engine emits no
+Trade request payload, search URL, listing, price, seller action, or POESESSID.
+PoE1 vocabulary is an explicit adapter; PoE2 remains a disabled fail-closed
+contract. The recipe card copies only the selected manual text and shows
+unsupported filters. New engine and UI tests pass; production actionable
+recipes still require approved canonical modifier and Trade vocabulary imports.
+Validation passed 923 of 925 PHP tests with 12,921 assertions (the two
+environment-gated PostgreSQL tests skipped), PHPStan, Pint, repository
+guardrails, clean npm install/audit, ESLint, Vue typecheck, 22 Vitest tests, the
+production build, 86-file documentation validation, and diff whitespace
+checks. This feature adds no migration and performs no network request.
