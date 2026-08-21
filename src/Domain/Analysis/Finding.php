@@ -11,7 +11,9 @@ use Lootwright\Domain\Shared\Error\DomainResult;
 use Lootwright\Domain\Shared\Evidence\ExplanationTrace;
 use Lootwright\Domain\Shared\Evidence\RuleReference;
 use Lootwright\Domain\Shared\Evidence\TraceStep;
+use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Identity\AnalysisId;
+use Lootwright\Domain\Shared\Version\RulesetVersion;
 
 final readonly class Finding implements JsonSerializable
 {
@@ -21,8 +23,13 @@ final readonly class Finding implements JsonSerializable
      * @param  list<string>  $affectedGems
      * @param  list<string>  $affectedNodes
      * @param  array<string, mixed>  $sourceProvenance
+     * @param  list<string>  $unsupportedData
+     * @param  list<string>  $dependencies
      */
     private function __construct(
+        public string $findingId,
+        public GameEdition $gameEdition,
+        public RulesetVersion $rulesetVersion,
         public AnalysisId $analysisId,
         public string $code,
         public FindingSeverity $severity,
@@ -40,6 +47,17 @@ final readonly class Finding implements JsonSerializable
         public array $affectedNodes,
         public array $sourceProvenance,
         public int $confidenceBasisPoints,
+        /** @var list<string> */
+        public array $unsupportedData,
+        /** @var list<string> */
+        public array $dependencies,
+        /** @var array{slots:list<string>,gems:list<string>,nodes:list<string>} */
+        public array $affectedEntity,
+        /** @var list<string> */
+        public array $evidence,
+        public string $ruleId,
+        public int $confidence,
+        public ExplanationTrace $explanationTrace,
     ) {}
 
     /**
@@ -48,6 +66,8 @@ final readonly class Finding implements JsonSerializable
      * @param  list<string>  $affectedGems
      * @param  list<string>  $affectedNodes
      * @param  array<string, mixed>  $sourceProvenance
+     * @param  list<string>  $unsupportedData
+     * @param  list<string>  $dependencies
      */
     public static function create(
         CanonicalBuild $build,
@@ -68,6 +88,8 @@ final readonly class Finding implements JsonSerializable
         array $affectedNodes = [],
         array $sourceProvenance = [],
         int $confidenceBasisPoints = 10_000,
+        array $unsupportedData = [],
+        array $dependencies = [],
     ): DomainResult {
         $edition = $build->snapshot->scope->edition;
         $code = trim($code);
@@ -134,6 +156,9 @@ final readonly class Finding implements JsonSerializable
         }
 
         return DomainResult::success(new self(
+            self::findingId($rule, $code, $affectedSlots, $affectedGems, $affectedNodes),
+            $edition,
+            $rule->rulesetVersion,
             $analysisId,
             $code,
             $severity,
@@ -151,6 +176,13 @@ final readonly class Finding implements JsonSerializable
             self::canonicalIdentifiers($affectedNodes),
             $sourceProvenance,
             $confidenceBasisPoints,
+            self::canonicalIdentifiers($unsupportedData),
+            self::canonicalIdentifiers($dependencies === [] ? $validatedEvidence : $dependencies),
+            self::affectedEntity($affectedSlots, $affectedGems, $affectedNodes),
+            $validatedEvidence,
+            $rule->ruleKey,
+            $confidenceBasisPoints,
+            $trace,
         ));
     }
 
@@ -164,6 +196,8 @@ final readonly class Finding implements JsonSerializable
      * @param  list<string>  $affectedGems
      * @param  list<string>  $affectedNodes
      * @param  array<string, mixed>  $sourceProvenance
+     * @param  list<string>  $unsupportedData
+     * @param  list<string>  $dependencies
      */
     public static function deterministic(
         AnalysisId $analysisId,
@@ -181,6 +215,8 @@ final readonly class Finding implements JsonSerializable
         array $inputEvidence,
         array $sourceProvenance,
         int $confidenceBasisPoints = 10_000,
+        array $unsupportedData = [],
+        array $dependencies = [],
     ): DomainResult {
         $rule = RuleReference::create($ruleset->edition, $ruleset->id, $ruleset->version, $code);
         if ($rule->isFailure()) {
@@ -201,6 +237,9 @@ final readonly class Finding implements JsonSerializable
         }
 
         return DomainResult::success(new self(
+            self::findingId($rule->value(), $code, $affectedSlots, $affectedGems, $affectedNodes),
+            $ruleset->edition,
+            $ruleset->version,
             $analysisId,
             $code,
             $severity,
@@ -218,7 +257,47 @@ final readonly class Finding implements JsonSerializable
             self::canonicalIdentifiers($affectedNodes),
             $sourceProvenance,
             $confidenceBasisPoints,
+            self::canonicalIdentifiers($unsupportedData),
+            self::canonicalIdentifiers($dependencies === [] ? $inputEvidence : $dependencies),
+            self::affectedEntity($affectedSlots, $affectedGems, $affectedNodes),
+            $inputEvidence,
+            $rule->value()->ruleKey,
+            $confidenceBasisPoints,
+            $trace->value(),
         ));
+    }
+
+    /**
+     * @param  list<string>  $slots
+     * @param  list<string>  $gems
+     * @param  list<string>  $nodes
+     */
+    private static function findingId(RuleReference $rule, string $code, array $slots, array $gems, array $nodes): string
+    {
+        $entities = [...self::canonicalIdentifiers($slots), ...self::canonicalIdentifiers($gems), ...self::canonicalIdentifiers($nodes)];
+
+        return 'finding.'.substr(hash('sha256', implode("\0", [
+            $rule->edition->value,
+            $rule->rulesetId->value,
+            $rule->rulesetVersion->value,
+            $code,
+            ...$entities,
+        ])), 0, 32);
+    }
+
+    /**
+     * @param  list<string>  $slots
+     * @param  list<string>  $gems
+     * @param  list<string>  $nodes
+     * @return array{slots:list<string>,gems:list<string>,nodes:list<string>}
+     */
+    private static function affectedEntity(array $slots, array $gems, array $nodes): array
+    {
+        return [
+            'slots' => self::canonicalIdentifiers($slots),
+            'gems' => self::canonicalIdentifiers($gems),
+            'nodes' => self::canonicalIdentifiers($nodes),
+        ];
     }
 
     /** @param array<array-key, mixed> $values

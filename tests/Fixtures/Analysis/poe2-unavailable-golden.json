@@ -1,0 +1,10 @@
+{
+    "game_edition": "poe2",
+    "status": "unavailable",
+    "engine_version": "0.0.0",
+    "finding_count": 0,
+    "unsupported_data": [
+        "poe2_ruleset_unavailable",
+        "poe2_rules_not_approved"
+    ]
+}

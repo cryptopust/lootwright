@@ -2,6 +2,7 @@
 
 namespace Lootwright\GameAdapters\PoE1\Analysis;
 
+use Lootwright\Domain\Analysis\AnalysisContext;
 use Lootwright\Domain\Analysis\Finding;
 use Lootwright\Domain\Analysis\FindingCategory;
 use Lootwright\Domain\Analysis\FindingSeverity;
@@ -61,6 +62,38 @@ final readonly class Poe1DeterministicAnalysisEngine
         usort($findings, static fn (Finding $left, Finding $right): int => ($order[$left->code] ?? 999) <=> ($order[$right->code] ?? 999));
 
         return $findings;
+    }
+
+    /**
+     * Registry-facing evaluation hook. The underlying PoE1 implementation
+     * remains the single source of rule semantics; registries only expose an
+     * edition-scoped, versioned catalogue of those rules.
+     *
+     * @param  array<int|string, true>  $knownPassiveNodeIds
+     * @return list<Finding>
+     */
+    public function evaluateRule(
+        string $ruleId,
+        AnalysisContext $context,
+        Poe1AnalysisRuleset $analysisRules,
+        array $knownPassiveNodeIds,
+    ): array {
+        if (! $context->build instanceof CanonicalImportedBuild) {
+            return [];
+        }
+
+        $all = [];
+        match (true) {
+            str_starts_with($ruleId, 'data.') => $this->missingCharacterData($context->build, $context->analysisId, $context->ruleset->identity, $context->sourceProvenance, $all),
+            str_starts_with($ruleId, 'equipment.') => $this->equipment($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
+            str_starts_with($ruleId, 'defence.') => $this->resistances($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
+            str_starts_with($ruleId, 'resources.') => $this->mana($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
+            str_starts_with($ruleId, 'skills.') => $this->skills($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
+            str_starts_with($ruleId, 'passive_tree.') => $this->passives($context->build, $context->analysisId, $context->ruleset->identity, $knownPassiveNodeIds, $context->sourceProvenance, $all),
+            default => throw new RuntimeException('The PoE1 registry requested an unknown rule.'),
+        };
+
+        return array_values(array_filter($all, static fn (Finding $finding): bool => $finding->code === $ruleId));
     }
 
     /**

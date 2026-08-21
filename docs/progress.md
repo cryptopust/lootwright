@@ -773,3 +773,15 @@ Playwright behavior and responsive visual tests, 72-file documentation
 validation, route inspection, and diff whitespace checks passed. A disposable
 PostgreSQL service remains unavailable locally; SQLite is not claimed as
 PostgreSQL evidence.
+
+2026-08-21: added the framework-independent deterministic analysis contract.
+`AnalysisEngine`, `AnalysisResult`, `AnalysisContext`, `AnalysisRule`,
+`RuleRegistry`, and `RecommendationCandidate` are immutable, edition-scoped
+domain types. PoE1 exposes a versioned rule registry over the existing reviewed
+rules; the PoE2 registry and engine fail closed until an approved PoE2 ruleset
+and data sources are available. Findings carry stable IDs, ruleset/edition
+identity, evidence, provenance, unsupported-data disclosure, dependencies, and
+an explanation trace in the canonical result projection. Golden, determinism,
+cross-edition, unsupported-data, registry, and bounded benchmark tests were
+added. Existing persistence JSON remains compatible with the prior finding
+projection. PostgreSQL availability remains an external deployment gate.

@@ -10,14 +10,22 @@ use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\DeterministicAnalysisEngine;
 use Lootwright\Domain\BuildIntake\Import\CanonicalImportedBuild;
+use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
+use Lootwright\Domain\Rulesets\DatasetClassification;
+use Lootwright\Domain\Rulesets\GameRuleset;
+use Lootwright\Domain\Rulesets\GameVersion;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
+use Lootwright\Domain\Rulesets\ProvenanceStatus;
+use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Rulesets\RulesetIdentity;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Identity\AnalysisId;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use Lootwright\Domain\Shared\Value\Locale;
 use Lootwright\Domain\Shared\Version\LeagueId;
 use Lootwright\Domain\Shared\Version\ParserVersion;
 use Lootwright\Domain\Shared\Version\PatchVersion;
+use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine as CoreEngine;
 use RuntimeException;
@@ -72,7 +80,21 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
                 'ruleset' => ['id' => $identity->id->value, 'version' => $identity->version->value, 'checksum_sha256' => $identity->checksumSha256],
                 'passive_tree_snapshot' => $snapshotProvenance,
             ];
-            $findings = $this->engine->analyze($build, $analysisId->value(), $identity, $analysisRules, $knownNodes, $provenance);
+            $gameRuleset = new GameRuleset(
+                $identity,
+                new GameVersion(GameEdition::Poe1, $identity->patch),
+                DatasetClassification::ApprovedImport,
+                ProvenanceStatus::Approved,
+                RulesetCompatibilityStatus::Compatible,
+            );
+            $locale = Locale::from('en-US');
+            if ($locale->isFailure()) {
+                throw new RuntimeException('The deterministic fallback locale is invalid.');
+            }
+            $intent = BuildIntent::unspecified(GameEdition::Poe1, $locale->value());
+            $result = (new Poe1AnalysisEngine($this->engine, $analysisRules, $knownNodes, sourceProvenance: $provenance))
+                ->analyzeFor($analysisId->value(), $build, $intent, $gameRuleset);
+            $findings = $result->findings;
             $input = CanonicalJson::encode([
                 'analysis_parameters_hash_sha256' => $analysis->parametersHashSha256,
                 'build' => $this->safeBuildProjection($build),
@@ -80,8 +102,9 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
                 'ruleset' => $provenance['ruleset'],
             ]);
             $output = CanonicalJson::encode([
-                'engine_version' => CoreEngine::ENGINE_VERSION,
-                'findings' => $findings,
+                'analysis_result' => $result,
+                'engine_version' => $result->engineVersion,
+                'findings' => $result->findings,
                 'recommendations' => [],
                 'manual_trade_recipes' => [],
             ]);

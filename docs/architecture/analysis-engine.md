@@ -19,6 +19,20 @@ The framework-independent contracts live under `src/`:
   priority, alternatives, and evidence trace.
 - `DeterministicAnalysisEngine` is the application workflow port used by jobs.
 
+The framework-independent core also exposes the canonical analysis contracts:
+
+- `AnalysisEngine` accepts an edition-scoped normalized build, `BuildIntent`,
+  and `GameRuleset`, and returns an immutable `AnalysisResult`.
+- `RuleRegistry` and `AnalysisRule` make the rule catalogue explicit and
+  versioned. `Poe1RuleRegistry` delegates to the reviewed PoE1 rules; the PoE2
+  registry is intentionally empty until an approved PoE2 ruleset exists.
+- `Finding` carries stable finding identity, edition/ruleset aliases,
+  unsupported data, dependencies, evidence, provenance, and explanation trace.
+  The legacy persistence projection remains byte-compatible; the richer
+  contract is emitted by `AnalysisResult`.
+- `RecommendationCandidate` is a deterministic candidate DTO only. It does
+  not create Trade IDs, prices, or links.
+
 Laravel infrastructure resolves encrypted persisted inputs and immutable local
 rulesets, then calls a pure game adapter. Pure rules never import Laravel,
 database, network, cache, queue, filesystem, wall-clock, randomness, locale, or
@@ -86,6 +100,12 @@ The infrastructure verifies the published ruleset canonical checksum, requires
 the reviewed deterministic-analysis manifest, verifies the linked official
 passive-tree snapshot checksum, and supplies only the normalized node set and
 provenance to the pure engine.
+
+`Poe1AnalysisEngine` is the provider-neutral orchestration facade used by the
+core contract. It rejects cross-edition inputs, refuses non-approved rulesets,
+and discloses unsupported or unknown properties instead of converting them
+into facts. `Poe2AnalysisEngine` fails closed with an explicit unavailable
+result; it never borrows PoE1 rules or identifiers.
 
 ## Current limitations
 
