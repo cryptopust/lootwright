@@ -2,115 +2,260 @@
 
 [Türkçe](README.tr.md)
 
-Lootwright is an open-source, pre-alpha foundation for traceable,
-deterministic Path of Exile build analysis and human-readable manual item-search
-planning. The project is a Laravel 13 modular monolith with an infrastructure-
-independent PHP domain core and an Inertia/Vue interface.
+Lootwright is an open-source Path of Exile intelligence platform for **Path of
+Exile 1** and **Path of Exile 2**. Its direction is capability-based,
+policy-aware, data-driven, source-agnostic, edition-isolated,
+deterministic-first, and AI-assisted.
+
+The intended product connects a player-supplied build, goals, budget, content
+target, and locked equipment to traceable findings, an ordered upgrade graph,
+and edition-appropriate Trade and market context. Every conclusion should make
+its edition, ruleset, evidence, provenance, uncertainty, and dependencies
+inspectable.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-Lootwright can use cached poe.ninja economy data for visible market context. It
-cannot fetch live Trade listings; it generates manual official Trade filter
-recipes instead. Prices are estimates with visible source and freshness.
+Lootwright is currently a **pre-production project**, not a completed public
+service. The repository contains substantial working foundations and a narrow
+PoE1 deterministic engine, but the complete product experience described below
+is not yet available. PoE1 is the active release track. PoE2 has isolated domain
+and adapter foundations and will ship independently when its data, rules, and
+end-to-end behavior are verified.
 
-The dual-game PoE1/PoE2 catalog and wizard, Fortify-backed membership, owner-scoped analysis workspace and
-server-authorized member/admin panels are available. Create the first verified
-super-admin with `php artisan lootwright:admin:promote user@example.com --force`.
+## Capability status
 
-Lootwright is not a public service or a completed end-user MVP. It does not yet
-have an approved production game ruleset or an authoritative production
-analysis engine, so it cannot currently provide real build findings, upgrade
-recommendations, or production Manual Trade Recipes.
+The labels in this README have precise meanings:
 
-## What works today
+- **AVAILABLE** — implemented and exercised in the repository. Deployment may
+  still require operator configuration.
+- **EXPERIMENTAL** — implemented in a limited, fixture-backed, or pre-release
+  form and not a production-readiness claim.
+- **CONDITIONAL** — implemented or designed behind source, policy, provenance,
+  configuration, or operational gates.
+- **PLANNED** — product direction with no claim that an end-to-end capability
+  currently works.
 
-- Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind CSS, and shadcn-vue
-  application foundations.
-- A framework-independent domain and application layer under `src/`, protected
-  by automated dependency-boundary tests.
-- Edition-scoped value objects, DTOs, ports, provenance records, workflow
-  states, persistence mappings, deletion, and portable export contracts.
-- Separate PoE1 and PoE2 namespaces with negative tests preventing identifier
-  and ruleset crossover.
-- Bounded, local, format-only PoB1 import and a separately labelled beta PoB2
-  format reader. This is structural interoperability, not full upstream-format
-  parity or production game analysis.
-- A deny-by-default Policy and Provenance Gate, hardened parser boundaries,
-  security headers, rate limits, redacted logging, and emergency switches.
-- A provider-neutral optional-AI gateway and a default-off OpenAI Responses
-  adapter. Production provider execution remains policy-blocked; normal tests
-  use fakes and deterministic fallback.
-- Deterministic recommendation and Manual Trade Recipe contracts exercised with
-  original fixture vocabulary. These test harnesses are not production game
-  advice and never query live listings or prices.
-- Responsive Turkish/English fixture screens, health/readiness endpoints,
-  reproducible evaluations, and CI/production-packaging foundations.
+| Area | Status | Current repository evidence |
+| --- | --- | --- |
+| Laravel application, authentication, member ownership, admin RBAC, audit log | **AVAILABLE** | Fortify-backed auth, verified member routes, owner policies, admin/super-admin controls, 2FA and recent-password gates are implemented and feature-tested. Production mail and staging operations still require configuration. |
+| Source Registry, Policy and Provenance Gate, immutable snapshots, staging, import reports, versioned rulesets | **AVAILABLE** | PostgreSQL-oriented persistence and deny-by-default capability decisions exist, with idempotency, quarantine, approval, activation history, and isolation tests. |
+| Safe PoB1 parsing and normalization | **AVAILABLE** | User-supplied PoB1 XML/share-code input has bounded decoding, decompression and XML parsing, edition detection, typed unsupported fields, and no remote-resource resolution. It is not full Path of Building calculation parity. |
+| PoE1 character catalog and analysis intake | **AVAILABLE** | The public catalog and wizard currently expose PoE1. Class/Ascendancy relationships are validated server-side. |
+| PoE1 deterministic findings | **CONDITIONAL** | A real, narrow engine is production-bound and uses an exact approved immutable ruleset and passive-tree snapshot. It fails closed when that data is absent or incompatible. Its rule coverage is intentionally incomplete. |
+| Upgrade graph and manual Trade recipe engine | **EXPERIMENTAL** | Edition-scoped deterministic contracts, ordering, constraints, dependency handling, and human-readable recipe generation are tested. Production output still needs approved canonical modifier and Trade vocabulary data and full workflow/UI binding. |
+| PoE2 format and domain adapters | **EXPERIMENTAL** | Separate PoB2-shaped parsing, catalog/domain contracts, rule registry, item-text and Trade vocabulary boundaries exist with cross-edition tests. There is no approved PoE2 production ruleset or analyzer, and PoE2 is not a public release surface today. |
+| GGG PoE1 passive-tree import | **CONDITIONAL** | An operator-only, commit-pinned, allowlisted importer stages and validates the official export before atomic activation. It is disabled by default and never runs in a player request. |
+| poe.ninja economy observations | **CONDITIONAL** | A documented-economy adapter, bounded client, normalization, caching, freshness, and policy tests exist. It is disabled by default and is not canonical game truth. |
+| PoE Wiki ingestion | **CONDITIONAL** | A disabled adapter boundary exists. Activation requires a reviewed capability, terms/attribution decision, exact schema, and current provenance evidence. |
+| Remote build links such as `pobb.in` or future PoB2-compatible providers | **PLANNED** | Locally supplied content remains the supported intake path. Remote retrieval requires a separately approved, allowlisted adapter; arbitrary user-controlled URL fetching is not implemented. |
+| Optional AI intent/explanations | **CONDITIONAL** | A provider-neutral gateway and default-off OpenAI Responses adapter implement schemas, quotas, budgets, caching, timeout/retry limits, a circuit breaker, and deterministic fallback. Normal CI uses fakes. |
+| Live Trade/market intelligence and price-aware planning | **PLANNED / CONDITIONAL** | Capability levels are defined below. No current production flow promises live listings or exact prices. |
 
-See [MVP readiness](docs/release/mvp-readiness.md) for the strict release verdict
-and [delivery progress](docs/progress.md) for the historical implementation log.
+For the strict release verdict, see [MVP readiness](docs/release/mvp-readiness.md).
+For implementation history and limitations, see [progress](docs/progress.md) and
+the [current-state audit](docs/audits/current-state.md).
 
-## What is planned
+## Target player experience
 
-- Approve and publish an immutable PoE1 ruleset with exact source permission,
-  version, checksum, parser compatibility, and provenance.
-- Implement and independently verify a narrow authoritative PoE1 deterministic
-  analysis and upgrade-prioritization slice.
-- Bind production analysis pages to owner-scoped application results instead of
-  fixture data.
-- Add durable object storage before enabling queued raw-artifact handoff, then
-  complete staging backup/restore, privacy contacts, and public account UX.
-- Approve PoE2 deterministic rulesets independently before enabling ruleset-backed
-  findings; catalog and intake support do not authorize cross-game fallback.
-- Publish only after security, policy, provenance, deletion, and operations
-  blockers are resolved.
+Lootwright is being built so that a player can eventually:
 
-## Game scope
+1. choose PoE1 or PoE2;
+2. import or provide a build through a supported input adapter;
+3. describe goals naturally and select a content target;
+4. specify a budget and lock equipment or mechanics that must be preserved;
+5. receive deterministic, versioned build findings;
+6. identify weaknesses and understand the evidence behind them;
+7. receive prioritized upgrades with prerequisites, conflicts, and cross-slot
+   dependencies;
+8. generate an available Trade recipe or search representation;
+9. inspect timestamped market observations when an approved provider supports
+   them; and
+10. compare alternatives and understand why each recommendation exists.
 
-Path of Exile 1 and Path of Exile 2 can both be selected in the versioned
-character catalog and analysis intake wizard. PoE2 Early Access planned classes
-remain unselectable. Neither game currently has an approved production ruleset;
-unsupported operations fail closed and cross-edition fallback is forbidden.
+This is the product direction, not a claim that every step is currently
+available.
 
-## Design principles
+## Dual-edition architecture
 
-- Deterministic calculations before generative wording.
-- Exact evidence and ruleset identity before confidence claims.
-- AI is optional and cannot invent game facts, modifiers, filters, prices,
-  sources, URLs, or recommendations.
-- Unknown or unsupported facts produce typed uncertainty or refusal.
-- No scraping, undocumented Trade endpoints, live market indexing, browser or
-  game-client access, automation, overlays, or session-cookie collection.
-- The core workflow must remain usable when every AI provider is disabled,
-  unavailable, or out of budget.
+PoE1 and PoE2 share contracts, not unverified facts. Every build snapshot,
+canonical entity, imported dataset, ruleset, finding, recommendation, recipe,
+and market observation carries a game edition.
 
-## Architecture
+- Shared contracts define inputs, outputs, provenance, uncertainty, and
+  lifecycle behavior.
+- PoE1 and PoE2 use separate importers, canonical identifiers, adapters,
+  rulesets, analysis rules, content goals, and Trade vocabularies.
+- Cross-edition identifiers and fallback are rejected by domain, persistence,
+  and architecture tests.
+- Each edition has independent data approval, compatibility, release-readiness,
+  and kill-switch decisions.
+- PoE1 and PoE2 can ship independently. Current public release scope is PoE1;
+  that is a readiness decision, not a single-edition product architecture.
 
-- `src/Domain`: immutable, framework-independent domain contracts.
-- `src/Application`: transport-neutral use cases, DTOs, and ports.
-- `src/GameAdapters/PoE1` and `src/GameAdapters/PoE2`: isolated format and
-  edition adapters.
-- `app/Modules`: Laravel HTTP, PostgreSQL, queue, storage, policy, identity, and
-  optional provider infrastructure.
-- `resources/js`: Inertia/Vue presentation; never authoritative calculation.
+## How the system fits together
 
-PostgreSQL is the system of record. Laravel cache and queue abstractions isolate
-the application from the runtime. Local Docker and self-hosted deployments may
-use Redis and Horizon. The first staging target is Laravel Cloud Starter in
-Frankfurt, using Serverless PostgreSQL and a generated `*.laravel.cloud` domain.
-Valkey and Cloud queue resources are added only when an enabled feature needs
-them; Horizon is not required on Laravel Cloud.
+```mermaid
+flowchart TB
+    Player[Player] --> Input[Build / Goal / Budget]
+    Input --> Intake[Input & Intent Layer]
+    Intake --> Snapshot[Canonical Build Snapshot]
 
-See the [module map](docs/architecture/module-map.md), [system context](docs/architecture/system-context.md), and [Laravel Cloud ADR](docs/adr/0014-laravel-cloud-staging.md).
+    Registry[Source Registry] --> Import[Import / Staging]
+    Import --> Validation[Policy, Provenance & Schema Validation]
+    Validation --> Canonical[Versioned Canonical Data]
+    Canonical --> P1[PoE1 Ruleset]
+    Canonical --> P2[PoE2 Ruleset]
 
-## Local setup
+    Snapshot --> Engine[Deterministic Engine]
+    P1 --> Engine
+    P2 --> Engine
+    Engine --> Findings[Findings Graph]
+    Findings --> Planner[Upgrade Planner]
+    Planner --> Trade[Trade / Market Layer]
+    Planner --> AI[AI Explanation]
+    Trade --> Decision[Player Decision]
+    AI --> Decision
+```
+
+The domain core under `src/` does not depend on Laravel HTTP, Eloquent, Vue, or
+an AI SDK. Laravel infrastructure under `app/` supplies persistence, queues,
+policy enforcement, source adapters, and provider integrations. The Vue layer
+renders results; it is not an authoritative calculation engine.
+
+## Deterministic analysis and AI
+
+Game-mechanical conclusions originate from four inputs:
+
+1. validated canonical game data;
+2. an immutable, edition-scoped ruleset;
+3. a normalized canonical build snapshot; and
+4. deterministic analysis rules.
+
+The same normalized input, ruleset, parser version, and engine version must
+produce the same canonical result. Missing or unsupported information stays
+unknown and lowers confidence or blocks a conclusion; it is not filled by a
+guess.
+
+AI is not Lootwright's canonical knowledge database. When enabled and allowed,
+AI may interpret natural-language intent into a closed schema and explain
+already-produced findings or recommendations. Its output is validated against
+the selected edition and deterministic result. AI cannot silently change a
+ruleset, introduce canonical facts, replace findings, invent market values, or
+create an unsupported recommendation. The core workflow is designed to remain
+usable with AI disabled.
+
+## Sources and capabilities
+
+Lootwright is source-agnostic at the application boundary, not source-blind.
+The Source Registry records each provider and capability independently,
+including edition, URLs, allowed and forbidden operations, terms/policy
+evidence, storage and redistribution status, review date, provenance state,
+configuration state, and emergency kill switch.
+
+Potential sources include Grinding Gear Games, Path of Building Community, PoE
+Wiki, poe.ninja, approved open-source datasets, approved community datasets,
+and future providers. Listing a source is not approval, availability, or an
+endorsement by either party.
+
+Every integration is reviewed independently for technical feasibility,
+reliability, permission, authentication, rate limits, applicable terms,
+provenance, retention, redistribution, and data quality. A capability can be
+enabled, limited, experimental, disabled, or revoked without changing the
+status of other capabilities. Remote data enters through import/staging and
+validation before it can become versioned canonical data; it is not written
+directly into a production ruleset.
+
+Remote build providers such as `pobb.in`, PoB links, PoB2-compatible links, or
+other approved build-sharing sources can be added through provider-specific
+adapters when technically and policy feasible. External adapters do not accept
+arbitrary user-controlled URLs. Build guides, forum information, and community
+build discovery can likewise be evaluated when there is an approved access
+method, a concrete capability scope, and sufficient provenance; their public
+availability alone is not treated as permission.
+
+## Trade and market capability levels
+
+Trade support progresses by independently reviewed capability:
+
+| Level | Capability | Current status |
+| --- | --- | --- |
+| 0 | Human-readable manual Trade recipe | **EXPERIMENTAL** — engine and fixture UI exist; production vocabulary/data approval remains gated. |
+| 1 | Validated edition-specific Trade filters | **PLANNED / CONDITIONAL** — requires approved canonical modifier and filter vocabulary. |
+| 2 | Official Trade deep-link or search generation | **PLANNED / CONDITIONAL** — only through a reliable, provider-permitted mechanism; no availability promise. |
+| 3 | Market observations | **CONDITIONAL** — the poe.ninja economy adapter is default-off; other providers require separate review. |
+| 4 | Price-aware upgrade planning | **PLANNED** — requires suitable timestamped observations and uncertainty-aware planning. |
+
+No level implies purchasing, whispering, inviting, or acting for the player.
+When a provider does not support a safe structured search representation,
+Lootwright can still present human-readable filters for manual use.
+
+Prices are observations, not facts. Any market estimate must carry its game
+edition, league, source, timestamp, and—where possible—confidence, sample, or
+coverage context. Lootwright does not promise exact prices, current listings,
+or execution at an observed value.
+
+## Security and privacy boundaries
+
+Lootwright does not exist to control the game client, inspect process memory,
+inject code, automate combat or movement, steal credentials, circumvent access
+controls, or bypass provider rate limits. It does not automate purchases,
+whispers, invites, or gameplay.
+
+No integration may circumvent access controls, authentication requirements,
+technical restrictions, rate limits, or applicable provider policies. Every
+integration must be individually reviewed and capability-scoped.
+
+Player input and remote data are treated as hostile. Importers enforce encoded,
+decoded, decompressed, nesting, count, and time bounds. XML DTDs, external
+entities, and remote-resource resolution are disabled. Outbound HTTP uses fixed
+adapter allowlists and SSRF defenses. The application applies authorization,
+CSRF protection, rate limits, idempotency, secret/log redaction, encrypted
+storage where required, retention limits, export, and deletion controls.
+
+Lootwright minimizes data sent to optional AI providers and does not require
+game-session cookies or passwords. Raw builds, item text, prompts, tokens, and
+session secrets must not appear in logs or analytics.
+
+See the [threat model](docs/security/threat-model.md), [security baseline](docs/security/security-baseline.md), and [source register](docs/compliance/source-register.md).
+
+## Technology in this repository
+
+- PHP 8.4 and Laravel 13 modular monolith
+- Laravel Fortify authentication and Horizon for supported local/self-hosted
+  queue operation
+- PostgreSQL as the production system of record
+- Laravel cache, queue, filesystem, HTTP, and encryption abstractions; Redis is
+  available in the local Docker stack, while Laravel Cloud resources are
+  provisioned only when needed
+- Inertia 3, Vue 3 Composition API, TypeScript, Tailwind CSS 4, Vite 8, and
+  reviewed vendored shadcn-vue-style components built on Reka UI
+- PHPUnit 12, Larastan/PHPStan, Laravel Pint, ESLint, Vitest, and Playwright
+- Composer and npm lockfiles; Node.js 24 and npm 11 baseline
+
+Deployment assets include a local Docker Compose stack, a production container
+definition, and Laravel Cloud documentation. This repository does not claim a
+production deployment has occurred.
+
+## Roadmap
+
+| Phase | Status | Evidence and next gate |
+| --- | --- | --- |
+| Phase A — Platform Foundation | **AVAILABLE / ongoing** | Modular boundaries, identity, ownership, admin, policy/provenance, source lifecycle, security controls, CI and deployment foundations exist. Real PostgreSQL CI/staging and operational evidence remain release gates. |
+| Phase B — PoE1 Functional Engine | **EXPERIMENTAL / CONDITIONAL** | Safe PoB1 intake, official passive-tree import, exact ruleset resolution, and a narrow deterministic finding set exist. Broader canonical data, rules, production upgrades/recipes, and result UX remain incomplete. |
+| Phase C — PoE2 Functional Engine | **PLANNED** | Edition-isolated contracts and beta structural adapters exist; approved canonical data, ruleset, analyzer, public flow, and production tests do not. |
+| Phase D — Trade & Market Intelligence | **EXPERIMENTAL / CONDITIONAL** | Level 0 contracts and a default-off poe.ninja economy adapter exist. Higher levels depend on provider capability, policy, provenance, and data quality. |
+| Phase E — Advanced Build Intelligence | **PLANNED** | Build comparison, gear what-if simulation, passive-tree comparison, upgrade ROI, league analysis, meta statistics, build-guide ingestion, community discovery, historical markets, feedback loops, and recommendation evaluation remain future capabilities. |
+| Phase F — Production Hardening | **IN PROGRESS** | Parser, auth, authorization, queue, logging, outbound, AI, and migration controls have broad tests. PostgreSQL/staging, mail, proxy/TLS, backup restore, and aggregate browser gates still require evidence. |
+
+Roadmap items are architectural room, not delivery promises. A future provider
+or workflow becomes available only after its own implementation and review.
+
+## Local development
 
 Required baseline: PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL, and the
-PHP `dom`, `zlib`, and `pdo_pgsql` extensions. The committed lockfiles are
-authoritative.
+PHP `dom`, `zlib`, and `pdo_pgsql` extensions.
 
 ### Docker on Linux or WSL2
-
-Install Docker Engine with Compose v2, then run:
 
 ```bash
 cp .env.example .env
@@ -118,12 +263,7 @@ composer run setup:docker
 composer run dev:docker
 ```
 
-Open <http://localhost:8000>. The local stack uses PostgreSQL, Redis, and
-Horizon; its data services bind to loopback and use named Docker volumes.
-
-### Host installation
-
-With local PostgreSQL and Redis available:
+### Host or Windows web-only workflow
 
 ```bash
 cp .env.example .env
@@ -131,17 +271,11 @@ composer run setup
 composer run dev
 ```
 
-Horizon needs `pcntl` and `posix`; use WSL2/Docker on Windows, or the web-only workflow:
+On Windows without Horizon's `pcntl`/`posix` extensions:
 
 ```powershell
 composer run setup:windows
 composer run dev:web
-```
-
-Run the original structural fixture without database, queue, network, or AI:
-
-```powershell
-php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
 ```
 
 ## Quality gates
@@ -151,6 +285,7 @@ composer validate --strict
 composer audit
 composer run format:check
 composer run analyse
+composer run ci:guardrails
 composer run test
 npm ci
 npm audit --audit-level=high
@@ -161,28 +296,21 @@ npm run build
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs.ps1
 ```
 
-Additional gates include `composer run ci:guardrails`, `composer run test:architecture`,
-`composer run test:parser-security`, `composer run test:policy-gate`,
-`composer run eval:fast`, and `npm run test:e2e`.
+PostgreSQL-specific migration tests and browser E2E tests are separate release
+evidence; SQLite-only success is not PostgreSQL proof.
 
-## Deployment
+## Contributing and independence
 
-The first deployment is a locked-down pre-alpha staging environment on Laravel
-Cloud Starter. It uses Frankfurt where available, the generated Cloud hostname,
-and Serverless PostgreSQL. The initial monthly target is USD 20, with an
-absolute USD 25 ceiling; these are operator budgets, not billing guarantees.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and `AGENTS.md` before changing the
+project. Contributions must preserve edition isolation, explicit provenance,
+immutable/versioned rules, deterministic traceability, uncertainty, security
+boundaries, and automated tests. Source or capability changes require a scoped
+policy review rather than an assumption based on technical accessibility.
 
-Follow the [Laravel Cloud guide](docs/deployment/laravel-cloud.md). Docker and
-Horizon packaging remains available for local or self-hosted use and is not a
-Laravel Cloud requirement.
+Lootwright is independent. It is not affiliated with or endorsed by Grinding
+Gear Games, OpenAI, PoE Wiki, poe.ninja, Path of Building, or any other source
+or provider.
 
-## Security, contribution, and license
-
-Use [SECURITY.md](SECURITY.md) for private vulnerability reports; never publish
-credentials, private builds, prompts, cookies, or exploit details. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Ruleset and source
-changes require verified permission and provenance.
-
-Lootwright-original code and documentation are MIT licensed. [LICENSE-SCOPE.md](LICENSE-SCOPE.md)
-explains what the project license does not cover, including GGG material,
-third-party data, and user submissions. See also [third-party notices](THIRD_PARTY_NOTICES.md).
+Lootwright-original code and documentation are MIT licensed. Third-party game
+data, user submissions, trademarks, and provider material are not relicensed by
+this repository. See [LICENSE-SCOPE.md](LICENSE-SCOPE.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and [SECURITY.md](SECURITY.md).

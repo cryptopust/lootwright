@@ -2,119 +2,253 @@
 
 [English](README.md)
 
-Lootwright; Path of Exile karakter dizilimlerini ileride izlenebilir ve
-deterministik biçimde analiz etmek, ayrıca insanlar tarafından uygulanabilecek
-eşya arama planları üretmek amacıyla geliştirilen açık kaynaklı bir pre-alpha
-temelidir. Proje, altyapıdan bağımsız bir PHP alan çekirdeğine ve Inertia/Vue
-arayüzüne sahip Laravel 13 modüler monolitidir.
+Lootwright, **Path of Exile 1** ve **Path of Exile 2** için geliştirilen açık
+kaynaklı bir Path of Exile intelligence platformudur. Ürün yaklaşımı;
+yetenek-bazlı, politika-duyarlı, veri-odaklı, kaynak-bağımsız,
+oyun-sürümü-yalıtımlı, deterministik-öncelikli ve AI-desteklidir.
+
+Hedeflenen ürün; oyuncunun sağladığı build'i, hedefleri, bütçeyi, içerik
+tercihini ve korunmasını istediği ekipmanı izlenebilir bulgulara, sıralı upgrade
+grafiğine ve oyuna uygun Trade/piyasa bağlamına dönüştürür. Her sonucun oyun
+sürümü, ruleset'i, kanıtı, provenance'ı, belirsizliği ve bağımlılıkları
+incelenebilir olmalıdır.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-Lootwright, görünür kaynak ve tazelik bilgisiyle piyasa bağlamı için önbelleğe
-alınmış poe.ninja ekonomi verisini kullanabilir. Canlı Trade ilanlarını çekemez;
-bunun yerine manuel resmi Trade filtre tarifleri üretir. Fiyatlar tahmindir.
+Lootwright şu anda tamamlanmış halka açık bir servis değil, **production öncesi
+bir projedir**. Repoda güçlü bir platform temeli ve dar kapsamlı gerçek bir PoE1
+deterministik motoru bulunur; ancak aşağıdaki ürün deneyiminin tamamı henüz
+kullanılabilir değildir. Aktif release hattı PoE1'dir. PoE2 için yalıtılmış
+domain ve adapter temelleri vardır; PoE2 verileri, kuralları ve uçtan uca
+davranışı doğrulandığında bağımsız olarak yayınlanacaktır.
 
-PoE1/PoE2 oyun-sürümlü kataloğu ve sihirbazı, Fortify tabanlı üyelik, kullanıcıya ait analiz alanı ve sunucu
-tarafından yetkilendirilen üye/admin panelleri kullanılabilir. İlk doğrulanmış
-super-admin için `php artisan lootwright:admin:promote user@example.com --force`
-komutunu çalıştırın.
+## Yetenek durumları
 
-Lootwright henüz halka açık bir hizmet veya tamamlanmış bir son kullanıcı MVP'si
-değildir. Onaylı üretim kuralları ve yetkili üretim analiz motoru bulunmadığı için
-şu anda gerçek dizilim bulguları, yükseltme önerileri ya da üretim amaçlı Manuel
-Trade Tarifleri sunamaz.
+Bu README'deki etiketlerin anlamı nettir:
 
-## Bugün çalışanlar
+- **AVAILABLE** — repoda uygulanmış ve test edilmiştir. Deployment sırasında
+  operatör yapılandırması yine de gerekebilir.
+- **EXPERIMENTAL** — sınırlı, fixture-backed veya release öncesi uygulamadır;
+  production hazırlığı iddiası değildir.
+- **CONDITIONAL** — kaynak, politika, provenance, config veya operasyon
+  kapılarının arkasında uygulanmış ya da tasarlanmıştır.
+- **PLANNED** — ürün yönüdür; uçtan uca çalıştığı iddia edilmez.
 
-- Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind CSS ve shadcn-vue uygulama
-  temelleri.
-- `src/` altında yer alan ve otomatik bağımlılık sınırı testleriyle korunan,
-  framework'ten bağımsız alan ve uygulama katmanları.
-- Sürüm kimlikli değer nesneleri, DTO'lar, portlar, provenance kayıtları, iş
-  akışı durumları, kalıcılık eşlemeleri, silme ve taşınabilir dışa aktarma
-  sözleşmeleri.
-- Kimliklerin ve kuralların oyunlar arasında karışmasını engelleyen ayrı PoE1 ve
-  PoE2 ad alanları ile negatif testler.
-- Sınırlandırılmış, yerel ve yalnızca biçim uyumluluğu sağlayan PoB1 içe aktarma
-  ile ayrı biçimde beta olarak etiketlenen PoB2 okuyucu. Bunlar tam format
-  uyumluluğu veya üretim oyun analizi anlamına gelmez.
-- Varsayılan olarak reddeden Policy and Provenance Gate, sertleştirilmiş parser
-  sınırları, güvenlik başlıkları, hız sınırları, sansürlenmiş loglar ve acil
-  kapatma anahtarları.
-- Sağlayıcıdan bağımsız isteğe bağlı AI Gateway ve varsayılan olarak kapalı
-  OpenAI Responses adaptörü. Üretim çağrıları politika gereği kapalıdır; normal
-  testler sahte sağlayıcılar ve deterministik geri dönüş kullanır.
-- Özgün fixture sözlüğüyle sınanan deterministik öneri ve Manuel Trade Tarifi
-  sözleşmeleri. Bu test düzenekleri gerçek oyun tavsiyesi değildir; canlı ilan
-  veya fiyat sorgulamaz.
-- Türkçe/İngilizce duyarlı fixture ekranları, sağlık/hazır olma uçları,
-  tekrarlanabilir değerlendirmeler ve CI/üretim paketleme temelleri.
+| Alan | Durum | Mevcut repo kanıtı |
+| --- | --- | --- |
+| Laravel uygulaması, authentication, üye sahipliği, admin RBAC ve audit log | **AVAILABLE** | Fortify auth akışları, doğrulanmış üye routeları, ownership policy'leri, admin/super-admin kontrolleri, 2FA ve recent-password kapıları uygulanmış ve feature testlerle doğrulanmıştır. Production mail ve staging operasyonları yapılandırılmalıdır. |
+| Source Registry, Policy and Provenance Gate, immutable snapshot, staging, import raporu ve versioned ruleset | **AVAILABLE** | PostgreSQL hedefli persistence; idempotency, quarantine, approval, activation history ve edition isolation testleriyle uygulanmıştır. |
+| Güvenli PoB1 parse ve normalization | **AVAILABLE** | Kullanıcının sağladığı PoB1 XML/share code için boyutlu decode, decompression ve XML sınırları, edition detection ve tipli unsupported alanlar vardır. Uzak XML kaynağı çözülmez. Bu, Path of Building hesaplamalarıyla tam parity anlamına gelmez. |
+| PoE1 karakter kataloğu ve analiz girişi | **AVAILABLE** | Public katalog ve wizard şu anda PoE1'i sunar. Class/Ascendancy ilişkisi backend tarafından tekrar doğrulanır. |
+| PoE1 deterministik bulguları | **CONDITIONAL** | Gerçek fakat dar kapsamlı motor production container'a bağlıdır; tam eşleşen onaylı immutable ruleset ve passive-tree snapshot kullanır. Veri yoksa veya uyumsuzsa fail closed davranır. Kural kapsamı bilinçli olarak sınırlıdır. |
+| Upgrade grafiği ve manuel Trade recipe motoru | **EXPERIMENTAL** | Edition-scoped deterministik contract'lar, sıralama, constraint, dependency ve human-readable recipe üretimi testlidir. Production çıktısı için onaylı canonical modifier/Trade vocabulary ve tam workflow/UI bağlantısı gerekir. |
+| PoE2 format ve domain adapterları | **EXPERIMENTAL** | Ayrı PoB2-shaped parser, katalog/domain contract'ları, rule registry, item-text ve Trade vocabulary sınırları cross-edition testlerle bulunur. Onaylı PoE2 production ruleset/analyzer yoktur ve PoE2 bugün public release yüzeyi değildir. |
+| GGG PoE1 passive-tree import | **CONDITIONAL** | Operatör kontrollü, commit-pinned ve allowlist'li importer resmî export'u atomic activation öncesinde stage edip doğrular. Varsayılan kapalıdır ve oyuncu isteği sırasında çalışmaz. |
+| poe.ninja ekonomi gözlemleri | **CONDITIONAL** | Dokümante economy adapterı, bounded client, normalization, cache, freshness ve policy testleri vardır. Varsayılan kapalıdır; canonical oyun gerçeği değildir. |
+| PoE Wiki ingestion | **CONDITIONAL** | Devre dışı adapter sınırı vardır. Etkinleştirme için capability, lisans/atıf, şema ve güncel provenance incelemesi gerekir. |
+| `pobb.in`, PoB linkleri ve gelecekteki PoB2-compatible providerlar | **PLANNED** | Bugün desteklenen giriş, kullanıcının doğrudan sağladığı içeriktir. Remote retrieval ayrı, allowlist'li ve onaylı adapter gerektirir; keyfî kullanıcı URL'si fetch edilmez. |
+| İsteğe bağlı AI intent/explanation | **CONDITIONAL** | Provider-neutral gateway ve varsayılan kapalı OpenAI Responses adapterı; schema, kota, bütçe, cache, timeout/retry, circuit breaker ve deterministik fallback uygular. Normal CI fake kullanır. |
+| Canlı Trade/piyasa intelligence ve price-aware planlama | **PLANNED / CONDITIONAL** | Capability seviyeleri aşağıda tanımlıdır. Bugünkü production akışı canlı listing veya kesin fiyat vadetmez. |
 
-Kesin sürüm değerlendirmesi için [MVP hazırlık raporuna](docs/release/mvp-readiness.md),
-tarihsel uygulama kaydı için [ilerleme belgesine](docs/progress.md) bakın.
+Kesin release kararı için [MVP readiness](docs/release/mvp-readiness.md), uygulama
+tarihi ve sınırlamalar için [progress](docs/progress.md) ile
+[current-state audit](docs/audits/current-state.md) belgelerine bakın.
 
-## Planlananlar
+## Hedef oyuncu deneyimi
 
-- Kaynak izni, sürüm, checksum, parser uyumluluğu ve provenance bilgisi kesin
-  olan değişmez bir PoE1 kurallarını onaylayıp yayımlamak.
-- Dar kapsamlı ve yetkili bir PoE1 deterministik analiz/yükseltme önceliklendirme
-  dilimini bağımsız olarak doğrulamak.
-- Üretim analiz sayfalarını fixture verisi yerine kullanıcıya ait uygulama
-  sonuçlarına bağlamak.
-- Kuyruklu ham artifact aktarımından önce kalıcı nesne depolaması eklemek;
-  ardından staging yedekleme/geri yükleme, gizlilik iletişimi ve hesap deneyimini
-  tamamlamak.
-- PoE2 deterministik kurallarını bağımsız olarak onaylamadan ruleset tabanlı
-  bulguları etkinleştirmemek; katalog desteğini cross-game fallback izni saymamak.
-- Yalnızca güvenlik, politika, provenance, silme ve operasyon engelleri
-  çözüldükten sonra yayımlamak.
+Lootwright, oyuncunun gelecekte şunları yapabilmesi için geliştiriliyor:
 
-## Oyun kapsamı
+1. PoE1 veya PoE2 seçmek;
+2. desteklenen bir input adapterı üzerinden build sağlamak;
+3. hedeflerini doğal dille anlatmak ve içerik hedefini seçmek;
+4. bütçe belirtmek, korunacak ekipman veya mekanikleri kilitlemek;
+5. deterministik ve versioned build bulguları almak;
+6. zayıflıkları ve bunların kanıtlarını görmek;
+7. prerequisite, conflict ve cross-slot dependency içeren öncelikli upgrade'ler
+   almak;
+8. kullanılabilir bir Trade recipe veya search temsili üretmek;
+9. uygun ve onaylı provider varsa timestamp taşıyan piyasa gözlemlerini görmek;
+10. alternatifleri karşılaştırmak ve her önerinin nedenini anlamak.
 
-Path of Exile 1 ve Path of Exile 2 sürüm kontrollü karakter kataloğunda ve analiz
-giriş sihirbazında seçilebilir. PoE2 Early Access planned sınıfları seçilemez.
-Her iki oyunda da onaylı üretim ruleset'i bulunmayan operasyonlar kapalı kalır;
-oyunlar arası fallback yasaktır.
+Bu liste ürün yönüdür; bütün adımların bugün available olduğu anlamına gelmez.
 
-## Tasarım ilkeleri
+## PoE1 ve PoE2 mimarisi
 
-- Üretken anlatımdan önce deterministik hesaplama.
-- Güven iddiasından önce kesin kanıt ve kurallar kimliği.
-- AI isteğe bağlıdır; oyun olgusu, modifier, filtre, fiyat, kaynak, URL veya öneri
-  uyduramaz.
-- Bilinmeyen ya da desteklenmeyen olgular tipli belirsizlik veya ret üretir.
-- Scraping, belgelenmemiş Trade uçları, canlı piyasa indeksleme, tarayıcı/oyun
-  istemcisi erişimi, otomasyon, overlay ve oturum çerezi toplama yoktur.
-- Çekirdek iş akışı tüm AI sağlayıcıları kapalıyken, erişilemezken veya bütçe
-  tükendiğinde kullanılabilir kalmalıdır.
+PoE1 ile PoE2 doğrulanmamış oyun gerçeklerini değil, ortak contract'ları paylaşır.
+Her build snapshot, canonical entity, imported dataset, ruleset, finding,
+recommendation, recipe ve market observation açık bir game edition taşır.
 
-## Mimari
+- Ortak contract'lar input, output, provenance, uncertainty ve lifecycle
+  davranışını tanımlar.
+- PoE1 ve PoE2; ayrı importer, canonical identifier, adapter, ruleset, analysis
+  rule, content goal ve Trade vocabulary kullanır.
+- Cross-edition identifier ve fallback, domain/persistence/architecture
+  testleriyle reddedilir.
+- Her oyun için data approval, compatibility, release readiness ve kill switch
+  kararı bağımsızdır.
+- PoE1 ile PoE2 birbirinden bağımsız yayınlanabilir. Bugünkü public release
+  kapsamı PoE1'dir; bu tek oyunlu mimari değil, readiness kararıdır.
 
-- `src/Domain`: değişmez ve framework'ten bağımsız alan sözleşmeleri.
-- `src/Application`: taşıma katmanından bağımsız use case, DTO ve portlar.
-- `src/GameAdapters/PoE1` ve `src/GameAdapters/PoE2`: birbirinden yalıtılmış biçim
-  ve oyun adaptörleri.
-- `app/Modules`: Laravel HTTP, PostgreSQL, kuyruk, depolama, politika, kimlik ve
-  isteğe bağlı sağlayıcı altyapısı.
-- `resources/js`: Inertia/Vue sunumu; yetkili hesaplama yapmaz.
+## Sistem akışı
 
-Sistem kaydı PostgreSQL'dir. Laravel cache ve queue soyutlamaları uygulamayı
-çalışma ortamından ayırır. Yerel Docker ve self-hosted kurulumlar Redis/Horizon
-kullanabilir. İlk staging hedefi; Frankfurt bölgesinde Laravel Cloud Starter,
-Serverless PostgreSQL ve üretilen `*.laravel.cloud` alan adıdır. Valkey ve Cloud
-kuyruk kaynakları yalnızca etkin bir özellik gerektirirse eklenir; Laravel Cloud
-için Horizon zorunlu değildir.
+```mermaid
+flowchart TB
+    Player[Oyuncu] --> Input[Build / Hedef / Bütçe]
+    Input --> Intake[Input & Intent Katmanı]
+    Intake --> Snapshot[Canonical Build Snapshot]
 
-[Modül haritası](docs/architecture/module-map.md), [sistem bağlamı](docs/architecture/system-context.md) ve [Laravel Cloud ADR'si](docs/adr/0014-laravel-cloud-staging.md) ayrıntıları içerir.
+    Registry[Source Registry] --> Import[Import / Staging]
+    Import --> Validation[Policy, Provenance & Schema Validation]
+    Validation --> Canonical[Versioned Canonical Data]
+    Canonical --> P1[PoE1 Ruleset]
+    Canonical --> P2[PoE2 Ruleset]
 
-## Yerel kurulum
+    Snapshot --> Engine[Deterministik Motor]
+    P1 --> Engine
+    P2 --> Engine
+    Engine --> Findings[Findings Graph]
+    Findings --> Planner[Upgrade Planner]
+    Planner --> Trade[Trade / Market Katmanı]
+    Planner --> AI[AI Explanation]
+    Trade --> Decision[Oyuncu Kararı]
+    AI --> Decision
+```
 
-Gerekli temel: PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL ve PHP `dom`,
-`zlib`, `pdo_pgsql` eklentileri. Commit edilmiş lock dosyaları belirleyicidir.
+`src/` altındaki domain çekirdeği Laravel HTTP, Eloquent, Vue veya AI SDK'sına
+bağımlı değildir. `app/` altındaki Laravel infrastructure; persistence, queue,
+policy enforcement, source adapter ve provider entegrasyonlarını sağlar. Vue
+katmanı sonuçları sunar, authoritative hesaplama yapmaz.
+
+## Deterministik analiz ve AI
+
+Oyun mekaniklerine ilişkin sonuçlar dört girdiden doğar:
+
+1. doğrulanmış canonical oyun verisi;
+2. immutable ve edition-scoped ruleset;
+3. normalize edilmiş canonical build snapshot;
+4. deterministik analysis rule'ları.
+
+Aynı normalized input, ruleset, parser version ve engine version aynı canonical
+sonucu üretmelidir. Eksik veya unsupported bilgi `unknown` kalır; confidence'ı
+düşürür veya sonucu engeller, tahminle doldurulmaz.
+
+AI, Lootwright'ın canonical bilgi veritabanı değildir. Açık ve izinli olduğunda
+natural-language intent'i kapalı bir schema'ya dönüştürebilir ve önceden üretilmiş
+finding/recommendation'ları açıklayabilir. Çıktısı seçilen edition ve
+deterministik sonuçla doğrulanır. AI sessizce ruleset değiştiremez, canonical
+fact ekleyemez, finding'i değiştiremez, market değeri uyduramaz veya unsupported
+recommendation oluşturamaz. Çekirdek akış AI kapalıyken de çalışacak şekilde
+tasarlanmıştır.
+
+## Kaynaklar ve capability yönetimi
+
+Lootwright uygulama sınırında source-agnostic'tir; kaynakların niteliğine karşı
+kayıtsız değildir. Source Registry her provider/capability için edition, URL,
+izinli ve yasak operasyon, terms/policy evidence, storage/redistribution durumu,
+review tarihi, provenance, config ve emergency kill switch bilgisini ayrı tutar.
+
+Olası kaynaklar arasında Grinding Gear Games, Path of Building Community, PoE
+Wiki, poe.ninja, onaylı açık kaynak dataset'ler, onaylı community dataset'leri ve
+gelecekteki providerlar bulunabilir. Bir kaynağın listelenmesi; onay, availability
+veya karşılıklı endorsement anlamına gelmez.
+
+Her entegrasyon teknik uygulanabilirlik, güvenilirlik, izin, authentication,
+rate limit, geçerli terms, provenance, retention, redistribution ve data quality
+açısından bağımsız incelenir. Bir capability diğerlerinden bağımsız biçimde
+enabled, limited, experimental, disabled veya revoked olabilir. Remote veri
+production ruleset'e doğrudan yazılmaz; import/staging ve validation aşamalarını
+geçtikten sonra versioned canonical data olabilir.
+
+`pobb.in`, PoB linkleri, PoB2-compatible linkler ve başka onaylı build-sharing
+providerları, teknik ve politika koşulları sağlandığında provider-specific
+adapterlarla eklenebilir. External adapterlar keyfî user-controlled URL kabul
+etmez. Build guide, forum bilgisi ve community build discovery de onaylı bir
+erişim yöntemi, somut capability scope ve yeterli provenance bulunduğunda ayrı
+ayrı değerlendirilebilir; içeriğin public olması tek başına izin sayılmaz.
+
+## Trade ve piyasa capability seviyeleri
+
+Trade desteği bağımsız incelemelerden geçen seviyelerle ilerler:
+
+| Seviye | Capability | Bugünkü durum |
+| --- | --- | --- |
+| 0 | Human-readable manuel Trade recipe | **EXPERIMENTAL** — motor ve fixture UI vardır; production vocabulary/data onayı gated durumdadır. |
+| 1 | Doğrulanmış edition-specific Trade filter'ları | **PLANNED / CONDITIONAL** — canonical modifier ve filter vocabulary onayı gerekir. |
+| 2 | Resmî Trade deep link veya search generation | **PLANNED / CONDITIONAL** — yalnız güvenilir ve provider tarafından izin verilen yöntemle; availability sözü verilmez. |
+| 3 | Market observation | **CONDITIONAL** — poe.ninja economy adapterı varsayılan kapalıdır; diğer providerlar ayrı review gerektirir. |
+| 4 | Price-aware upgrade planning | **PLANNED** — uygun timestamped observation ve uncertainty-aware planlama gerekir. |
+
+Hiçbir seviye oyuncu adına satın alma, whisper, invite veya başka bir işlem
+yapılması anlamına gelmez. Provider güvenli structured search temsili sunmuyorsa
+Lootwright yine manuel uygulanacak human-readable filter'lar gösterebilir.
+
+Fiyatlar gerçek değil, gözlemdir. Her market estimate; edition, league, source,
+timestamp ve mümkünse confidence, sample veya coverage bağlamı taşımalıdır.
+Lootwright kesin fiyat, güncel listing ya da gözlenen değerden işlem garantisi
+vermez.
+
+## Güvenlik ve gizlilik sınırları
+
+Lootwright; oyun istemcisini kontrol etmek, process memory okumak, kod inject
+etmek, combat veya movement otomasyonu yapmak, credential çalmak, access control
+aşmak ya da provider rate limitlerini bypass etmek için geliştirilmez. Purchase,
+whisper, invite veya gameplay otomasyonu yapmaz.
+
+Hiçbir entegrasyon access control, authentication requirement, teknik kısıt,
+rate limit veya geçerli provider policy'lerini aşamaz. Her entegrasyon bağımsız
+olarak incelenmeli ve capability-scoped olmalıdır.
+
+Oyuncu girdisi ve remote veri hostile kabul edilir. Importer'lar encoded,
+decoded, decompressed boyutlarını; nesting, adet ve süreyi sınırlar. XML DTD,
+external entity ve remote-resource resolution kapalıdır. Outbound HTTP yalnız
+sabit adapter allowlist'leri ve SSRF korumasıyla çalışır. Uygulama authorization,
+CSRF, rate limit, idempotency, secret/log redaction, gerektiğinde encryption,
+retention, export ve deletion kontrolleri uygular.
+
+Opsiyonel AI providerlarına gönderilen veri minimize edilir. Lootwright oyun
+session cookie'si veya şifresi gerektirmez. Raw build, item text, prompt, token ve
+session secret log veya analytics'e yazılmamalıdır.
+
+[Threat model](docs/security/threat-model.md), [security baseline](docs/security/security-baseline.md) ve [source register](docs/compliance/source-register.md) ayrıntıları içerir.
+
+## Repodaki gerçek teknoloji yığını
+
+- PHP 8.4 ve Laravel 13 modular monolith
+- Laravel Fortify authentication; desteklenen local/self-hosted queue çalışması
+  için Horizon
+- Production system of record olarak PostgreSQL
+- Laravel cache, queue, filesystem, HTTP ve encryption abstraction'ları; local
+  Docker stack'te Redis, Laravel Cloud'da ise yalnız gerektiğinde provision
+  edilen kaynaklar
+- Inertia 3, Vue 3 Composition API, TypeScript, Tailwind CSS 4, Vite 8 ve Reka UI
+  üzerinde incelenmiş vendored shadcn-vue tarzı component'ler
+- PHPUnit 12, Larastan/PHPStan, Laravel Pint, ESLint, Vitest ve Playwright
+- Composer/npm lockfile'ları; Node.js 24 ve npm 11 baseline
+
+Repo; local Docker Compose stack'i, production container tanımı ve Laravel Cloud
+dokümantasyonu içerir. Production deployment yapılmış olduğu iddia edilmez.
+
+## Yol haritası
+
+| Faz | Durum | Kanıt ve sonraki kapı |
+| --- | --- | --- |
+| Phase A — Platform Foundation | **AVAILABLE / devam ediyor** | Module boundary, identity, ownership, admin, policy/provenance, source lifecycle, security, CI ve deployment temelleri vardır. Gerçek PostgreSQL CI/staging ve operasyon kanıtları release gate olmaya devam eder. |
+| Phase B — PoE1 Functional Engine | **EXPERIMENTAL / CONDITIONAL** | Güvenli PoB1 intake, resmî passive-tree import, exact ruleset resolution ve dar deterministik finding seti vardır. Daha geniş canonical data/rule, production upgrade/recipe ve result UX eksiktir. |
+| Phase C — PoE2 Functional Engine | **PLANNED** | Edition-isolated contract ve beta structural adapter vardır; onaylı canonical data, ruleset, analyzer, public akış ve production test yoktur. |
+| Phase D — Trade & Market Intelligence | **EXPERIMENTAL / CONDITIONAL** | Level 0 contract'ları ve default-off poe.ninja economy adapterı vardır. Üst seviyeler provider capability, policy, provenance ve data quality'ye bağlıdır. |
+| Phase E — Advanced Build Intelligence | **PLANNED** | Build comparison, gear what-if simulation, passive-tree comparison, upgrade ROI, league analysis, meta statistics, build-guide ingestion, community discovery, historical market, feedback loop ve recommendation evaluation gelecekteki capability'lerdir. |
+| Phase F — Production Hardening | **DEVAM EDİYOR** | Parser, auth, authorization, queue, logging, outbound, AI ve migration kontrolleri geniş test kapsamına sahiptir. PostgreSQL/staging, mail, proxy/TLS, backup restore ve aggregate browser kapıları için ek kanıt gerekir. |
+
+Roadmap maddeleri mimari alan bırakır; teslimat sözü değildir. Yeni provider veya
+workflow ancak kendi implementasyon ve review süreci tamamlandığında available
+olur.
+
+## Yerel geliştirme
+
+Gerekli baseline: PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL ve PHP
+`dom`, `zlib`, `pdo_pgsql` extension'ları.
 
 ### Linux veya WSL2 üzerinde Docker
-
-Docker Engine ve Compose v2 kurulduktan sonra:
 
 ```bash
 cp .env.example .env
@@ -122,13 +256,7 @@ composer run setup:docker
 composer run dev:docker
 ```
 
-<http://localhost:8000> adresini açın. Yerel stack PostgreSQL, Redis ve Horizon
-kullanır; veri servisleri loopback'e bağlanır ve adlandırılmış Docker volume'ları
-kullanır.
-
-### Host üzerinde kurulum
-
-Yerel PostgreSQL ve Redis hazırken:
+### Host veya Windows web-only akışı
 
 ```bash
 cp .env.example .env
@@ -136,17 +264,11 @@ composer run setup
 composer run dev
 ```
 
-Horizon `pcntl` ve `posix` gerektirir; Windows'ta WSL2/Docker veya yalnızca web akışını kullanın:
+Windows'ta Horizon'ın `pcntl`/`posix` extension'ları yoksa:
 
 ```powershell
 composer run setup:windows
 composer run dev:web
-```
-
-Özgün yapısal fixture'ı veritabanı, kuyruk, ağ veya AI olmadan çalıştırmak için:
-
-```powershell
-php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
 ```
 
 ## Kalite kapıları
@@ -156,6 +278,7 @@ composer validate --strict
 composer audit
 composer run format:check
 composer run analyse
+composer run ci:guardrails
 composer run test
 npm ci
 npm audit --audit-level=high
@@ -166,29 +289,23 @@ npm run build
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs.ps1
 ```
 
-Ek kapılar: `composer run ci:guardrails`, `composer run test:architecture`,
-`composer run test:parser-security`, `composer run test:policy-gate`,
-`composer run eval:fast` ve `npm run test:e2e`.
+PostgreSQL migration testleri ve browser E2E ayrı release kanıtıdır. Yalnız
+SQLite başarısı PostgreSQL uyumluluk kanıtı sayılmaz.
 
-## Dağıtım
+## Katkı ve bağımsızlık
 
-İlk dağıtım, Laravel Cloud Starter üzerinde kilitli bir pre-alpha staging
-ortamıdır. Mümkünse Frankfurt bölgesi, Cloud tarafından üretilen alan adı ve
-Serverless PostgreSQL kullanılır. Aylık başlangıç hedefi 20 USD, mutlak tavan 25
-USD'dir; bunlar işletmeci bütçeleridir, fatura garantisi değildir.
+Değişiklik yapmadan önce [CONTRIBUTING.md](CONTRIBUTING.md) ve `AGENTS.md`
+dosyalarını okuyun. Katkılar edition isolation, açık provenance,
+immutable/versioned rules, deterministic traceability, uncertainty, security
+boundary ve otomatik testleri korumalıdır. Kaynak/capability değişikliği, teknik
+erişilebilirliğe dayanarak varsayılmamalı; scoped policy review gerektirmelidir.
 
-[Laravel Cloud kılavuzunu](docs/deployment/laravel-cloud.md) izleyin. Docker ve
-Horizon paketlemesi yerel veya self-hosted kullanım için korunur; Laravel Cloud
-gereksinimi değildir.
+Lootwright bağımsızdır. Grinding Gear Games, OpenAI, PoE Wiki, poe.ninja, Path of
+Building veya başka bir kaynak/provider ile bağlantılı değildir ve bunlar
+tarafından desteklenmemektedir.
 
-## Güvenlik, katkı ve lisans
-
-Güvenlik açıklarını [SECURITY.md](SECURITY.md) içindeki özel süreçle iletin;
-kimlik bilgilerini, özel dizilimleri, prompt'ları, çerezleri veya istismar
-ayrıntılarını yayımlamayın. Değişiklikten önce [CONTRIBUTING.md](CONTRIBUTING.md)
-belgesini okuyun. Kural ve kaynak değişiklikleri doğrulanmış izin/provenance gerektirir.
-
-Lootwright'a özgü kod ve belgeler MIT lisanslıdır. [LICENSE-SCOPE.md](LICENSE-SCOPE.md),
-GGG materyali, üçüncü taraf verileri ve kullanıcı girdileri dahil proje
-lisansının kapsamadığı alanları açıklar. [Üçüncü taraf bildirimlerine](THIRD_PARTY_NOTICES.md)
-da bakın.
+Lootwright'a ait özgün kod ve dokümantasyon MIT lisanslıdır. Üçüncü taraf oyun
+verileri, kullanıcı girdileri, markalar ve provider materyalleri bu repo
+tarafından yeniden lisanslanmaz. [LICENSE-SCOPE.md](LICENSE-SCOPE.md),
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) ve [SECURITY.md](SECURITY.md)
+belgelerine bakın.
