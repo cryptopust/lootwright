@@ -33,6 +33,16 @@ The framework-independent core also exposes the canonical analysis contracts:
 - `RecommendationCandidate` is a deterministic candidate DTO only. It does
   not create Trade IDs, prices, or links.
 
+Upgrade planning is a separate deterministic stage. `DeterministicUpgradePlanner`
+converts an `AnalysisResult` into an `UpgradeGraph` through an edition-specific
+candidate factory. Each node declares prerequisites, conflicts, dependent
+slots, affected finding IDs, expected effects, score, budget uncertainty, and
+whether an approved market-data snapshot is required. Unknown prices remain
+`requires-market-check`; no price is invented. Hard user constraints preserve
+items, skills, and passive choices by excluding violating nodes into the
+graph's explicit impossible list. Dependency ordering is topological and
+cycles fail closed.
+
 Laravel infrastructure resolves encrypted persisted inputs and immutable local
 rulesets, then calls a pure game adapter. Pure rules never import Laravel,
 database, network, cache, queue, filesystem, wall-clock, randomness, locale, or

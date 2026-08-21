@@ -91,6 +91,9 @@ use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Domain\PoeCatalog\Ports\GameDataRepository;
 use Lootwright\Domain\PolicyProvenance\PolicyEvaluator;
 use Lootwright\Domain\PolicyProvenance\Ports\CapabilityPolicy;
+use Lootwright\Domain\Recommendations\DeterministicUpgradePlanner;
+use Lootwright\Domain\Recommendations\Ports\UpgradePlanner;
+use Lootwright\Domain\Recommendations\UpgradePriorityScorer;
 use Lootwright\Domain\Rulesets\Ports\ActiveRulesetResolver;
 use Lootwright\Domain\Rulesets\Ports\RulesetRepository;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
@@ -100,6 +103,7 @@ use Lootwright\GameAdapters\PoE1\ItemText\Poe1ItemTextImporter;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
+use Lootwright\GameAdapters\PoE1\Recommendations\Poe1UpgradeCandidateFactory;
 use Lootwright\GameAdapters\PoE2\BuildImport\Poe2BuildImporter;
 use Lootwright\GameAdapters\PoE2\ItemText\Poe2ItemTextImporter;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
@@ -140,6 +144,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ArtifactParser::class, PolicyGatedArtifactParser::class);
         $this->app->singleton(Poe1CoreAnalysisEngine::class);
         $this->app->bind(DeterministicAnalysisEngine::class, ProductionPoe1DeterministicAnalysisEngine::class);
+        $this->app->singleton(UpgradePlanner::class, static fn (): UpgradePlanner => new DeterministicUpgradePlanner([
+            new Poe1UpgradeCandidateFactory(new UpgradePriorityScorer),
+        ]));
         $this->app->bind(AnalysisPolicyGate::class, DatabaseAnalysisPolicyGate::class);
         $this->app->bind(ManualTradeRecipeGenerator::class, EditionManualTradeRecipeGenerator::class);
         $this->app->bind(ManualTradeRecipePolicy::class, DatabaseManualTradeRecipePolicy::class);

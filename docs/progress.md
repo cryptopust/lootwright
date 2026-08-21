@@ -785,3 +785,15 @@ an explanation trace in the canonical result projection. Golden, determinism,
 cross-edition, unsupported-data, registry, and bounded benchmark tests were
 added. Existing persistence JSON remains compatible with the prior finding
 projection. PostgreSQL availability remains an external deployment gate.
+
+2026-08-21: added the deterministic upgrade graph stage. Findings are mapped
+by the PoE1 candidate factory to immutable upgrade nodes with prerequisites,
+conflicts, dependent slots, affected findings, expected effects, stable score,
+budget uncertainty, and explicit market-data requirements. Typed budget and
+hard/soft user constraints preserve items, the main skill, and passive-tree
+choices; violating candidates remain visible as impossible rather than being
+silently applied. Unknown prices never become numeric claims. Topological
+ordering rejects cycles, conflicts are deterministic, and PoE2 planning has no
+fallback to PoE1. Added tests cover Mageblood/skill preservation, verified and
+unknown budgets, conflicts, cycles, cross-slot dependencies, and edition
+isolation.
