@@ -83,6 +83,24 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertStringContainsString('foreign key ("updated_by_user_id") references "users" ("id") on delete set null', $upSql);
     }
 
+    public function test_game_data_authority_migration_compiles_postgresql_constraints(): void
+    {
+        config(['database.default' => 'pgsql']);
+
+        $up = DB::connection('pgsql')->pretend(static function (): void {
+            $migration = require database_path('migrations/2026_08_21_130000_add_game_data_authority_and_coverage.php');
+            $migration->up();
+        });
+        $sql = implode("\n", array_column($up, 'query'));
+
+        self::assertStringContainsString('create table "game_data_source_authorities"', $sql);
+        self::assertStringContainsString('create table "canonical_data_conflicts"', $sql);
+        self::assertStringContainsString('create table "source_update_observations"', $sql);
+        self::assertStringContainsString('canonical_conflict_ruleset_edition_fk', $sql);
+        self::assertStringContainsString('canonical_data_conflicts_immutable', $sql);
+        self::assertStringContainsString('source_update_observations_immutable', $sql);
+    }
+
     /**
      * This is intentionally opt-in: CI supplies a disposable PostgreSQL
      * database. It never runs destructive migrations against a shared remote.
@@ -134,7 +152,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertSame(0, Artisan::call('migrate:fresh', ['--database' => 'pgsql', '--force' => true]));
         self::assertTrue(Schema::connection('pgsql')->hasTable('admin_audit_logs'));
         self::assertTrue(Schema::connection('pgsql')->hasColumn('analyses', 'user_id'));
-        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides'] as $table) {
+        foreach (['source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides', 'game_data_source_authorities', 'canonical_data_conflicts', 'source_update_observations'] as $table) {
             self::assertTrue(Schema::connection('pgsql')->hasTable($table));
         }
 
@@ -154,7 +172,7 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
             join pg_attribute child_attribute on child_attribute.attrelid = child_table.oid and child_attribute.attnum = child_key.attnum
             join pg_attribute parent_attribute on parent_attribute.attrelid = parent_table.oid and parent_attribute.attnum = parent_key.attnum
             where constraint_record.contype = 'f'
-              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides')
+              and child_table.relname in ('external_source_sync_runs', 'source_snapshots', 'source_conflicts', 'ruleset_versions', 'ruleset_source_snapshots', 'ruleset_activations', 'ruleset_activation_history', 'ruleset_dataset_approvals', 'canonical_game_data', 'source_import_reports', 'source_import_staging_records', 'ai_runtime_controls', 'ai_user_quota_overrides', 'game_data_source_authorities', 'canonical_data_conflicts', 'source_update_observations')
             SQL);
 
         self::assertNotEmpty($foreignKeyTypes);
@@ -169,6 +187,8 @@ final class PostgreSqlMigrationCompatibilityTest extends TestCase
         self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'source_snapshots'::regclass and tgname = 'source_snapshots_immutable' and not tgisinternal"));
         self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'ruleset_versions'::regclass and tgname = 'ruleset_versions_immutable' and not tgisinternal"));
         self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'canonical_game_data'::regclass and tgname = 'canonical_game_data_immutable' and not tgisinternal"));
+        self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'canonical_data_conflicts'::regclass and tgname = 'canonical_data_conflicts_immutable' and not tgisinternal"));
+        self::assertNotNull($connection->selectOne("select tgname from pg_trigger where tgrelid = 'source_update_observations'::regclass and tgname = 'source_update_observations_immutable' and not tgisinternal"));
 
         self::assertSame(0, Artisan::call('migrate:rollback', ['--database' => 'pgsql', '--force' => true]));
         self::assertFalse(Schema::connection('pgsql')->hasTable('users'));

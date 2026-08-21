@@ -41,6 +41,9 @@ final class ExternalSourceArchitectureTest extends TestCase
         self::assertFalse($poeNinja->enabled);
         self::assertSame([GameEdition::Poe1], $poeNinja->editions);
         self::assertSame('bounded', $poeNinja->cacheStorageStatus);
+        self::assertSame('documented_public_api', $poeNinja->technicalAccess);
+        self::assertSame('market_observation', $poeNinja->dataQualityStatus);
+        self::assertSame('approved_with_limits', $poeNinja->provenanceStatus);
         self::assertContains('live_fetch:poe_ninja.economy.leagues.fetch', $poeNinja->allowedCapabilities);
         self::assertContains('live_fetch:poe_ninja.builds.fetch', $poeNinja->forbiddenCapabilities);
 

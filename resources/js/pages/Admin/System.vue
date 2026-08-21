@@ -29,6 +29,8 @@ type SourceRecord = {
     records_imported: number;
     records_rejected: number;
     import_status: string | null;
+    update_status: string | null;
+    update_checked_at: string | null;
 };
 
 const props = defineProps<{
@@ -93,6 +95,8 @@ function requestImport(source: SourceRecord): void {
                             <td><code>{{ source.last_success_at ?? 'bilinmiyor' }}</code></td>
                             <td>
                                 {{ source.import_status ?? 'yok' }}
+                                <br /><code>{{ source.update_status ?? 'update kontrolü yok' }}</code>
+                                <br /><code>{{ source.update_checked_at ?? 'kontrol zamanı yok' }}</code>
                                 <br /><code>{{ source.ruleset_target ?? 'ruleset yok' }}</code>
                                 <br /><code v-if="source.checksum">{{ source.checksum.slice(0, 12) }}…</code>
                             </td>

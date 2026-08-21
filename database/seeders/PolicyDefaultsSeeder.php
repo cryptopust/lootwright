@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Modules\PolicyProvenance\PolicyDefaults;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
 
 class PolicyDefaultsSeeder extends Seeder
 {
@@ -17,6 +18,8 @@ class PolicyDefaultsSeeder extends Seeder
                     [...$source, 'created_at' => now(), 'updated_at' => now()],
                 );
             }
+
+            $this->seedGameDataAuthorities();
 
             foreach (PolicyDefaults::versions() as $version) {
                 DB::table('policy_data_source_versions')->updateOrInsert(
@@ -84,5 +87,32 @@ class PolicyDefaultsSeeder extends Seeder
                 ],
             );
         });
+    }
+
+    private function seedGameDataAuthorities(): void
+    {
+        $now = now();
+        foreach ([
+            CanonicalEntityType::CharacterClass,
+            CanonicalEntityType::Ascendancy,
+            CanonicalEntityType::PassiveNode,
+            CanonicalEntityType::Keystone,
+        ] as $priority => $category) {
+            DB::table('game_data_source_authorities')->updateOrInsert(
+                [
+                    'game_edition' => 'poe1',
+                    'data_category' => $category->value,
+                    'source_code' => 'GGG-POE1-SKILLTREE-001',
+                ],
+                [
+                    'authority_tier' => 'official_structured',
+                    'priority' => $priority + 1,
+                    'enabled' => true,
+                    'reviewed_at' => PolicyDefaults::REVIEWED_AT,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            );
+        }
     }
 }

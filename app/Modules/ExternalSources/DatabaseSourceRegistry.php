@@ -84,6 +84,14 @@ final class DatabaseSourceRegistry implements SourceRegistry
             $killSwitch,
             $governanceStatus,
             $reason,
+            $this->string($source, 'technical_access'),
+            $this->string($source, 'license_identifier'),
+            $this->string($source, 'rate_limit_status'),
+            $this->string($source, 'auth_requirements'),
+            $this->string($source, 'data_quality_status'),
+            $this->string($source, 'patch_versioning_status'),
+            $this->string($source, 'update_frequency'),
+            $this->string($source, 'provenance_status'),
         );
     }
 

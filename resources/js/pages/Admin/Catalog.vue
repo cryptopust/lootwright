@@ -47,6 +47,17 @@ const props = defineProps<{
         failure_code: string | null;
         started_at: string;
     }>;
+    coverage: Record<
+        'poe1' | 'poe2',
+        Array<{
+            category: string;
+            ruleset_version: string | null;
+            observed_records: number;
+            expected_records: number | null;
+            coverage_percent: number | null;
+            status: string;
+        }>
+    >;
 }>();
 const selectedGame = ref<'poe1' | 'poe2'>('poe1');
 const catalog = computed(
@@ -127,6 +138,55 @@ const counts = computed(() => ({
                 <dd>{{ catalog.early_access ? 'Evet' : 'Hayır' }}</dd>
             </div>
         </dl>
+        <section class="catalog-ledger" aria-labelledby="coverage-heading">
+            <header>
+                <h2 id="coverage-heading">Canonical veri kapsamı</h2>
+            </header>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kategori</th>
+                        <th>Ruleset</th>
+                        <th>Kayıt</th>
+                        <th>Kapsam</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr
+                        v-for="entry in props.coverage[selectedGame]"
+                        :key="entry.category"
+                    >
+                        <td>
+                            <code>{{ entry.category }}</code>
+                        </td>
+                        <td>{{ entry.ruleset_version ?? 'bilinmiyor' }}</td>
+                        <td>
+                            <code
+                                >{{ entry.observed_records }} /
+                                {{
+                                    entry.expected_records ?? 'bilinmiyor'
+                                }}</code
+                            >
+                        </td>
+                        <td>
+                            <code>{{
+                                entry.coverage_percent === null
+                                    ? 'bilinmiyor'
+                                    : `${entry.coverage_percent}%`
+                            }}</code>
+                        </td>
+                        <td>{{ entry.status }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>
+                <em
+                    >Beklenen toplam doğrulanmamışsa yüzdelik tahmin edilmez;
+                    eksik kapsam açıkça gösterilir.</em
+                >
+            </p>
+        </section>
         <div class="catalog-ledger">
             <section v-for="character in catalog.classes" :key="character.id">
                 <header>
@@ -148,31 +208,71 @@ const counts = computed(() => ({
             </section>
         </div>
         <section class="catalog-ledger" aria-labelledby="ruleset-heading">
-            <header><h2 id="ruleset-heading">Canonical ruleset kayıtları</h2></header>
+            <header>
+                <h2 id="ruleset-heading">Canonical ruleset kayıtları</h2>
+            </header>
             <article v-for="ruleset in props.rulesets" :key="ruleset.id">
                 <header>
                     <h3>{{ ruleset.game_edition }} · {{ ruleset.version }}</h3>
-                    <code>{{ ruleset.patch }} · {{ ruleset.active ? 'active' : 'inactive' }}</code>
+                    <code
+                        >{{ ruleset.patch }} ·
+                        {{ ruleset.active ? 'active' : 'inactive' }}</code
+                    >
                 </header>
                 <dl class="review-grid">
-                    <div><dt>Dataset</dt><dd>{{ ruleset.dataset_classification }}</dd></div>
-                    <div><dt>Provenance</dt><dd>{{ ruleset.provenance_status }}</dd></div>
-                    <div><dt>Uyumluluk</dt><dd>{{ ruleset.compatibility_status }}</dd></div>
-                    <div><dt>Import</dt><dd>{{ ruleset.published_at }}</dd></div>
-                    <div><dt>Kaynak</dt><dd>{{ ruleset.sources || 'bilinmiyor' }}</dd></div>
-                    <div><dt>Hata</dt><dd>{{ ruleset.import_failures || 'yok' }}</dd></div>
+                    <div>
+                        <dt>Dataset</dt>
+                        <dd>{{ ruleset.dataset_classification }}</dd>
+                    </div>
+                    <div>
+                        <dt>Provenance</dt>
+                        <dd>{{ ruleset.provenance_status }}</dd>
+                    </div>
+                    <div>
+                        <dt>Uyumluluk</dt>
+                        <dd>{{ ruleset.compatibility_status }}</dd>
+                    </div>
+                    <div>
+                        <dt>Import</dt>
+                        <dd>{{ ruleset.published_at }}</dd>
+                    </div>
+                    <div>
+                        <dt>Kaynak</dt>
+                        <dd>{{ ruleset.sources || 'bilinmiyor' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Hata</dt>
+                        <dd>{{ ruleset.import_failures || 'yok' }}</dd>
+                    </div>
                 </dl>
-                <p><code>ruleset sha256: {{ ruleset.checksum_sha256 }}</code></p>
-                <p><code>source sha256: {{ ruleset.source_checksums || 'bilinmiyor' }}</code></p>
-                <p><code>{{ JSON.stringify(ruleset.entity_counts) }}</code></p>
+                <p>
+                    <code>ruleset sha256: {{ ruleset.checksum_sha256 }}</code>
+                </p>
+                <p>
+                    <code
+                        >source sha256:
+                        {{ ruleset.source_checksums || 'bilinmiyor' }}</code
+                    >
+                </p>
+                <p>
+                    <code>{{ JSON.stringify(ruleset.entity_counts) }}</code>
+                </p>
             </article>
-            <p v-if="props.rulesets.length === 0"><em>Onaylı imported canonical ruleset henüz yok.</em></p>
+            <p v-if="props.rulesets.length === 0">
+                <em>Onaylı imported canonical ruleset henüz yok.</em>
+            </p>
         </section>
         <section class="catalog-ledger" aria-labelledby="failures-heading">
             <header><h2 id="failures-heading">Son import hataları</h2></header>
             <ul v-if="props.importFailures.length > 0">
-                <li v-for="failure in props.importFailures" :key="`${failure.source_key}:${failure.started_at}`">
-                    <code>{{ failure.game_edition }} · {{ failure.source_key }} · {{ failure.status }}</code>
+                <li
+                    v-for="failure in props.importFailures"
+                    :key="`${failure.source_key}:${failure.started_at}`"
+                >
+                    <code
+                        >{{ failure.game_edition }} · {{ failure.source_key }} ·
+                        {{ failure.status }}</code
+                    >
                     <span>{{ failure.failure_code || 'ayrıntı yok' }}</span>
                 </li>
             </ul>

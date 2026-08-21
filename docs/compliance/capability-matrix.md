@@ -1,7 +1,7 @@
 # Capability Matrix
 
-Status: binding deny-by-default baseline, policy version `1.2.0`, reviewed
-2026-08-20. A `require_review` result is non-executable and cannot be treated as
+Status: binding deny-by-default baseline, policy version `1.3.0`, reviewed
+2026-08-21. A `require_review` result is non-executable and cannot be treated as
 an allow by a UI, administrator, feature flag, AI provider, or fallback path.
 
 ## Decision semantics

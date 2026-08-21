@@ -9,8 +9,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
 use Lootwright\Application\ExternalSources\Ports\SourceRegistry;
+use Lootwright\Application\GameData\Ports\DataCoverageReporter;
 use Lootwright\Domain\PoeCatalog\Character\Poe1CharacterCatalog;
 use Lootwright\Domain\PoeCatalog\Character\Poe2CharacterCatalog;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
 final class AdminPageController extends Controller
 {
@@ -19,7 +21,7 @@ final class AdminPageController extends Controller
         return Inertia::render('Admin/AuditLog', ['entries' => DB::table('admin_audit_logs')->join('users as actors', 'actors.id', '=', 'admin_audit_logs.actor_user_id')->latest('admin_audit_logs.created_at')->paginate(50, ['admin_audit_logs.id', 'admin_audit_logs.action', 'admin_audit_logs.reason', 'admin_audit_logs.metadata', 'admin_audit_logs.created_at', 'actors.email as actor_email'])]);
     }
 
-    public function catalog(): Response
+    public function catalog(DataCoverageReporter $coverage): Response
     {
         $rulesets = DB::table('ruleset_versions as rulesets')
             ->leftJoin('ruleset_dataset_approvals as approvals', 'approvals.ruleset_version_id', '=', 'rulesets.id')
@@ -42,6 +44,10 @@ final class AdminPageController extends Controller
 
         return Inertia::render('Admin/Catalog', [
             'catalogs' => [Poe1CharacterCatalog::current(), Poe2CharacterCatalog::current()],
+            'coverage' => [
+                'poe1' => array_map(static fn ($entry): array => $entry->jsonSerialize(), $coverage->forEdition(GameEdition::Poe1)),
+                'poe2' => array_map(static fn ($entry): array => $entry->jsonSerialize(), $coverage->forEdition(GameEdition::Poe2)),
+            ],
             'importFailures' => DB::table('external_source_sync_runs')
                 ->whereIn('status', ['failed', 'quarantined'])
                 ->latest('started_at')->limit(50)
@@ -81,6 +87,7 @@ final class AdminPageController extends Controller
             $lastAttempt = DB::table('external_source_sync_runs')->where('source_key', $record->code)->latest('started_at')->first();
             $lastSuccess = DB::table('external_source_sync_runs')->where('source_key', $record->code)->whereIn('status', ['success', 'succeeded'])->latest('completed_at')->first();
             $lastReport = DB::table('source_import_reports')->where('source_code', $record->code)->latest('created_at')->first();
+            $lastUpdate = DB::table('source_update_observations')->where('source_code', $record->code)->latest('checked_at')->first();
             $attempt = $lastAttempt === null ? [] : get_object_vars($lastAttempt);
             $success = $lastSuccess === null ? [] : get_object_vars($lastSuccess);
             $report = $lastReport === null ? [] : get_object_vars($lastReport);
@@ -99,6 +106,8 @@ final class AdminPageController extends Controller
                 'records_rejected' => $report['records_rejected'] ?? 0,
                 'import_status' => $report['status'] ?? null,
                 'policy_status' => $report['policy_status'] ?? $record->governanceStatus,
+                'update_status' => $lastUpdate?->status,
+                'update_checked_at' => $lastUpdate?->checked_at,
             ];
         });
 

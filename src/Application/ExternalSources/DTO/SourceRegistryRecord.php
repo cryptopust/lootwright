@@ -32,6 +32,14 @@ final readonly class SourceRegistryRecord implements JsonSerializable
         public bool $emergencyKillSwitch,
         public string $governanceStatus,
         public string $disabledReason,
+        public string $technicalAccess,
+        public string $licenseIdentifier,
+        public string $rateLimitStatus,
+        public string $authRequirements,
+        public string $dataQualityStatus,
+        public string $patchVersioningStatus,
+        public string $updateFrequency,
+        public string $provenanceStatus,
     ) {}
 
     /** @return array<string, mixed> */
@@ -56,6 +64,14 @@ final readonly class SourceRegistryRecord implements JsonSerializable
             'emergency_kill_switch' => $this->emergencyKillSwitch,
             'governance_status' => $this->governanceStatus,
             'disabled_reason' => $this->disabledReason,
+            'technical_access' => $this->technicalAccess,
+            'license_identifier' => $this->licenseIdentifier,
+            'rate_limit_status' => $this->rateLimitStatus,
+            'auth_requirements' => $this->authRequirements,
+            'data_quality_status' => $this->dataQualityStatus,
+            'patch_versioning_status' => $this->patchVersioningStatus,
+            'update_frequency' => $this->updateFrequency,
+            'provenance_status' => $this->provenanceStatus,
         ];
     }
 }

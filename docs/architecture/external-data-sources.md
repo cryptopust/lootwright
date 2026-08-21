@@ -60,3 +60,17 @@ accepts only a fixed registry source code and mandatory reason, requires an
 active verified super-admin with 2FA and recent password confirmation, is rate
 limited, audited, queued on `source-imports`, and protected by an atomic cache
 lock.
+
+## Canonical normalization and authority
+
+Game-data snapshots pass through separate PoE1 and PoE2 normalizers. A shared
+envelope does not imply a shared upstream schema. Canonical assembly queries the
+edition/category/source authority registry and fails closed when no enabled
+authority exists. Category precedence is deterministic, but contradictory facts
+are written to the append-only conflict quarantine and no winner is selected.
+
+Successful fixed-adapter jobs compare the newest valid snapshot checksum with
+the pre-run checksum and append an `unchanged` or `changed_staged` observation;
+failures append a bounded failure code. These observations are detection
+evidence only. They cannot publish or activate a ruleset. See the [data-quality
+report](../data/data-quality.md).

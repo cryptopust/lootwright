@@ -43,6 +43,13 @@ activating a previously published immutable ruleset; never delete or edit an
 approved snapshot. Staging-only rollback is a Policy Gate operation and erases
 the normalized staging payload while retaining its bounded report.
 
+Each queued fixed-adapter run appends a checksum observation to
+`source_update_observations`: `unchanged`, `changed_staged`, or `failed`.
+`changed_staged` means new immutable content was observed; it does not mean the
+dataset was published or activated. Review import reports, validation,
+conflicts, provenance, and coverage before explicitly publishing a new ruleset.
+Never schedule automatic activation.
+
 ## Operational matrix
 
 | Adapter | State | Boundary |

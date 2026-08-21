@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
+use Lootwright\Application\ExternalSources\Ports\SourceUpdateObserver;
 
 final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
 {
@@ -32,7 +33,7 @@ final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
         $this->onQueue('source-imports');
     }
 
-    public function handle(ExternalSourceAdapterCatalog $catalog): void
+    public function handle(ExternalSourceAdapterCatalog $catalog, ?SourceUpdateObserver $updates = null): void
     {
         $correlationId = Context::get('correlation_id');
         $correlationId = is_string($correlationId) && $correlationId !== '' ? $correlationId : (string) Str::uuid7();
@@ -45,7 +46,7 @@ final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        Context::scope(fn () => $this->handleWithContext($catalog), [
+        Context::scope(fn () => $this->handleWithContext($catalog, $updates), [
             'correlation_id' => $correlationId,
             'source_code' => $this->sourceCode,
             'workflow_stage' => 'external_source_import',
@@ -57,7 +58,7 @@ final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
         return 'source-import:'.hash('sha256', $this->sourceCode);
     }
 
-    private function handleWithContext(ExternalSourceAdapterCatalog $catalog): void
+    private function handleWithContext(ExternalSourceAdapterCatalog $catalog, ?SourceUpdateObserver $updates): void
     {
         $adapter = $catalog->find($this->sourceCode);
         if ($adapter === null) {
@@ -66,6 +67,11 @@ final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
         $status = $adapter->status();
         if (! $status->operational) {
             throw new DomainException('The fixed source adapter is disabled: '.($status->disabledReason ?? 'policy_denied'));
+        }
+
+        $previous = [];
+        foreach ($status->editions as $edition) {
+            $previous[$edition->value] = $updates?->latestChecksum($status->sourceCode, $edition);
         }
 
         $lock = Cache::lock('external-source:manual-import:'.$this->sourceCode, 900);
@@ -81,9 +87,25 @@ final class RunExternalSourceImportJob implements ShouldBeUnique, ShouldQueue
             if (! $result->success) {
                 $failureCode = $result->failureCode ?? 'unknown_failure';
                 $failureCode = preg_match('/^[a-z][a-z0-9_]{1,95}$/D', $failureCode) === 1 ? $failureCode : 'invalid_failure_code';
+                foreach ($status->editions as $edition) {
+                    $updates?->record($status->sourceCode, $edition, $status->sourceVersion, $previous[$edition->value] ?? null, null, 'failed', $failureCode);
+                }
                 Log::warning('external_source_import_failed', ['failure_code' => $failureCode]);
 
                 throw new DomainException('The source import failed.');
+            }
+            foreach ($status->editions as $edition) {
+                $observed = $updates?->latestChecksum($status->sourceCode, $edition);
+                $updates?->record(
+                    $status->sourceCode,
+                    $edition,
+                    $status->sourceVersion,
+                    $previous[$edition->value] ?? null,
+                    $observed,
+                    $observed !== null && ! hash_equals((string) ($previous[$edition->value] ?? ''), $observed)
+                        ? 'changed_staged'
+                        : 'unchanged',
+                );
             }
             Log::info('external_source_import_finished', ['records_imported' => $result->recordsImported]);
         } finally {

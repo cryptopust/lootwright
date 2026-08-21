@@ -9,6 +9,7 @@ use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
 use Lootwright\Domain\PoeCatalog\Canonical\CanonicalGameEntity;
 use Lootwright\Domain\PoeCatalog\Canonical\CharacterClass;
 use Lootwright\Domain\PoeCatalog\Canonical\ContentGoalDefinition;
+use Lootwright\Domain\PoeCatalog\Canonical\GenericCanonicalEntity;
 use Lootwright\Domain\PoeCatalog\Canonical\ItemBase;
 use Lootwright\Domain\PoeCatalog\Canonical\Keystone;
 use Lootwright\Domain\PoeCatalog\Canonical\ModifierDefinition;
@@ -53,7 +54,7 @@ final class PostgresCanonicalGameDataRepository implements GameDataRepository
             ->join('policy_data_source_versions as versions', 'versions.id', '=', 'snapshots.source_version_id')
             ->where('data.game_edition', $edition->value)
             ->where('data.ruleset_version_id', $rulesetVersionId)
-            ->select(['data.*', 'snapshots.source_code', 'snapshots.checksum_sha256 as source_checksum', 'versions.version as source_version']);
+            ->select(['data.*', 'snapshots.id as source_snapshot_id', 'snapshots.source_code', 'snapshots.checksum_sha256 as source_checksum', 'snapshots.retrieved_at as source_imported_at', 'versions.version as source_version']);
     }
 
     private function hydrate(object $row): CanonicalGameEntity
@@ -71,6 +72,8 @@ final class PostgresCanonicalGameDataRepository implements GameDataRepository
             $this->string($data, 'source_code'),
             $this->string($data, 'source_version'),
             $this->string($data, 'source_checksum'),
+            $this->string($data, 'source_snapshot_id'),
+            new \DateTimeImmutable($this->string($data, 'source_imported_at')),
         );
         $arguments = [$edition, $this->string($data, 'ruleset_version_id'), $this->string($data, 'external_id'), ($data['display_name'] ?? null) === null ? null : $this->string($data, 'display_name'), $provenance];
         $attributes = is_array($payload['attributes'] ?? null) ? $payload['attributes'] : [];
@@ -87,6 +90,7 @@ final class PostgresCanonicalGameDataRepository implements GameDataRepository
             CanonicalEntityType::ModifierDefinition => new ModifierDefinition(...$arguments, attributes: $attributes),
             CanonicalEntityType::StatDefinition => new StatDefinition(...$arguments, attributes: $attributes),
             CanonicalEntityType::ContentGoalDefinition => new ContentGoalDefinition(...$arguments, attributes: $attributes),
+            default => new GenericCanonicalEntity(...$arguments, entityType: CanonicalEntityType::from($this->string($data, 'entity_type')), attributes: $attributes),
         };
     }
 
