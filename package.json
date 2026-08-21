@@ -53,13 +53,13 @@
         "reka-ui": "^2.10.3",
         "tailwind-merge": "^3.2.0",
         "tailwindcss": "^4.1.1",
-        "typescript": "^5.2.2",
+        "typescript": "^7.0.2",
         "vite": "^8.0.0",
         "vue": "^3.5.13"
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1",
-        "@rollup/rollup-linux-x64-gnu": "4.9.5",
+        "@rollup/rollup-linux-x64-gnu": "4.62.4",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1"
     }
