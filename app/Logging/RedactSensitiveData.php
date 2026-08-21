@@ -48,6 +48,8 @@ final class RedactSensitiveData
 
     private function redactString(string $value): string
     {
+        $value = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $value) ?? '[REDACTED]';
+
         // Unlabelled exception/context values can still contain an entire raw
         // import or private note. Keep normal operational messages useful, but
         // fail closed instead of retaining a prefix of oversized user input.

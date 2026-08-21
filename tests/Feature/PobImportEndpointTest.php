@@ -19,16 +19,13 @@ class PobImportEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_expected_game_rejects_a_cross_game_import_without_guessing(): void
+    public function test_inactive_poe2_expected_game_is_rejected_before_parsing(): void
     {
         $this->postJson('/api/build-imports/pob', [
             'input' => $this->fixture('poe1-minimal.xml'),
             'persist' => false,
             'expected_game' => 'poe2',
-        ])->assertConflict()
-            ->assertJsonPath('status', 'edition_mismatch')
-            ->assertJsonPath('expected_game', 'poe2')
-            ->assertJsonPath('detected_game', 'poe1');
+        ])->assertUnprocessable()->assertJsonValidationErrors('expected_game');
     }
 
     protected function setUp(): void
@@ -207,18 +204,17 @@ class PobImportEndpointTest extends TestCase
         $this->assertDatabaseCount('pob_imports', 0);
     }
 
-    public function test_poe2_uses_only_the_separate_beta_format_policy_record(): void
+    public function test_detected_poe2_input_is_rejected_while_the_adapter_remains_dormant(): void
     {
         $this->postJson('/api/build-imports/pob', [
             'input' => $this->fixture('poe2-minimal.xml'),
-        ])->assertOk()
-            ->assertJsonPath('import.canonical_build.edition', 'poe2')
-            ->assertJsonPath('import.canonical_build.beta', true);
+        ])->assertUnprocessable()
+            ->assertJsonPath('status', 'rejected')
+            ->assertJsonPath('error.code', 'unsupported_input');
 
-        $this->assertDatabaseHas('policy_decision_audits', [
+        $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB2-COMMUNITY',
             'operation' => 'pob2.community.format_interpret',
-            'decision' => 'allow',
         ]);
         $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB-COMMUNITY',
@@ -311,7 +307,7 @@ class PobImportEndpointTest extends TestCase
 
         $this->withHeaders($headers)->postJson('/api/build-imports/pob', [
             ...$payload,
-            'input' => $this->fixture('poe2-minimal.xml'),
+            'input' => str_replace('Untrusted ', 'Different ', $this->fixture('poe1-minimal.xml')),
         ])->assertConflict()->assertJsonPath('status', 'idempotency_conflict');
         $this->assertDatabaseCount('pob_imports', 1);
 

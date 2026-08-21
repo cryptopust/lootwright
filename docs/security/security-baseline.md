@@ -6,12 +6,14 @@ mandatory for every environment. The stricter production values in the
 
 ## Identity and authorization
 
-Lootwright has no public registration or login routes yet. Laravel's session
-guard and `User` model are ready for accounts, passwords use the framework's
-hashed cast, production password policy requires 12 mixed characters, and the
-password-confirmation window is 15 minutes. Email verification is available
-through `MustVerifyEmail` and becomes mandatory for account API access only
-when `AUTH_REQUIRE_VERIFIED_EMAIL=true`. Anonymous persistence uses a random
+Lootwright uses Laravel Fortify with custom Inertia pages for registration,
+login/logout, password reset and confirmation, email verification, profile and
+password changes, and two-factor authentication. The session guard regenerates
+on login and invalidates on logout. Passwords use the framework's hashed cast,
+the production password policy requires 12 mixed characters, and the
+password-confirmation window is 15 minutes. Verified email is required on the
+member workflow, while `AUTH_REQUIRE_VERIFIED_EMAIL` controls the legacy
+principal API boundary. Anonymous persistence uses a random
 256-bit privacy-session secret stored only as SHA-256, never an IP, user agent,
 cookie fingerprint, or browser fingerprint.
 
@@ -111,6 +113,10 @@ Jobs validate UUIDv7, edition, and exact lowercase ruleset checksum before
 claiming work. Invalid payloads, missing identities, stale selections, policy
 denials, and emergency switches are terminal.
 
+Manual source-import jobs accept only fixed registry codes, use queue uniqueness
+and a distributed overlap lock, fail on a 600-second timeout, and run once at the
+queue layer because source HTTP clients already perform bounded transient retry.
+
 ## Secrets, logs, and telemetry
 
 Secrets live only in deployment secret storage and environment variables.
@@ -121,6 +127,11 @@ cookie, password, token, API-key, raw artifact, PoB, prompt, session, and privat
 note fields; it also scrubs bearer/OpenAI/privacy credential patterns and caps
 strings. Application logs use opaque hashes, IDs, exception types, and coarse
 outcomes.
+
+Every HTTP request receives a validated UUID correlation ID that is returned in
+`X-Correlation-ID` and propagated through Laravel queue context. Deterministic
+analysis job logs add analysis ID, edition, ruleset checksum, engine version, and
+workflow stage. ASCII controls are removed to prevent line injection.
 
 PostgreSQL and Redis are loopback-only in local Compose. Local Compose creates a
 non-superuser PostgreSQL application role and requires Redis authentication.

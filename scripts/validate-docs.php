@@ -48,7 +48,7 @@ foreach ($iterator as $file) {
 
     $path = str_replace('\\', '/', $file->getPathname());
 
-    if (preg_match('#/(vendor|node_modules|\.git)/#', $path) === 1) {
+    if (preg_match('#/(vendor|node_modules|storage|\.git)/#', $path) === 1) {
         continue;
     }
 

@@ -32,7 +32,7 @@ final class SubmitAnalysisRequest extends FormRequest
     {
         return [
             'idempotency_key' => ['required', 'string', 'between:32,128', 'regex:/^[A-Za-z0-9._:-]+$/D'],
-            'game' => ['required', Rule::enum(GameEdition::class)],
+            'game' => ['required', Rule::in(config('game-editions.public', ['poe1']))],
             'platform_realm' => ['sometimes', Rule::enum(PlatformRealm::class)],
             'locale' => ['required', 'string', 'max:32', 'regex:/^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-(?:[A-Z]{2}|\d{3}))?$/D'],
             'artifact_type' => ['required', Rule::in(['pob'])],

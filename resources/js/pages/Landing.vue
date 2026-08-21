@@ -126,13 +126,6 @@ const showcaseItem = {
                     <span>{{
                         tx({ tr: 'MVP analizi', en: 'MVP analysis' })
                     }}</span>
-                    <EditionBadge edition="poe2" />
-                    <span>{{
-                        tx({
-                            tr: 'Yalnızca format inceleme',
-                            en: 'Format review only',
-                        })
-                    }}</span>
                 </div>
             </div>
 

@@ -13,7 +13,7 @@ final class CharacterOptionsController extends Controller
     public function __invoke(Request $request, string $game): JsonResponse
     {
         $edition = GameEdition::tryFrom($game);
-        abort_if($edition === null, 404);
+        abort_if($edition === null || ! in_array($edition->value, config('game-editions.public', []), true), 404);
 
         $catalog = CharacterCatalogRegistry::for($edition);
         $payload = json_encode($catalog, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);

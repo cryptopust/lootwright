@@ -28,7 +28,7 @@ final class SubmitWizardAnalysisRequest extends FormRequest
         return [
             'idempotency_key' => ['required', 'string', 'between:32,128', 'regex:/^[A-Za-z0-9._:-]+$/D'],
             'flow' => ['required', Rule::in(['plan', 'analyse', 'upgrade'])],
-            'game' => ['required', Rule::enum(GameEdition::class)],
+            'game' => ['required', Rule::in(config('game-editions.public', ['poe1']))],
             'character_class' => ['required', 'string', 'max:128'],
             'ascendancy' => ['nullable', 'string', 'max:128'],
             'alternate_ascendancy' => ['nullable', 'string', 'max:128'],

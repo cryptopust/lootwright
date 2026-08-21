@@ -9,7 +9,9 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Lootwright\Application\Workflow\AnalysisState;
 use Lootwright\Application\Workflow\Exception\TransientWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
@@ -45,6 +47,19 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(ParseAndNormalizeBuild $useCase, WorkflowRepository $repository): void
     {
+        $correlationId = Context::get('correlation_id');
+        $correlationId = is_string($correlationId) && $correlationId !== '' ? $correlationId : (string) Str::uuid7();
+
+        Context::scope(fn () => $this->handleWithContext($useCase, $repository), [
+            'correlation_id' => $correlationId,
+            'artifact_id' => $this->artifactId,
+            'game_edition' => $this->edition?->value,
+            'workflow_stage' => 'build_parse',
+        ]);
+    }
+
+    private function handleWithContext(ParseAndNormalizeBuild $useCase, WorkflowRepository $repository): void
+    {
         if (! $this->validUuid7($this->artifactId) || ! $this->edition instanceof GameEdition) {
             Log::warning('analysis_parse_invalid_job_identity', [
                 'artifact_id_hash' => hash('sha256', $this->artifactId),
@@ -68,7 +83,9 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
         }
 
         try {
+            Log::info('analysis_parse_started');
             $useCase->handle($this->artifactId);
+            Log::info('analysis_parse_finished');
         } catch (TransientWorkflowFailure|QueryException|PDOException|RedisException $exception) {
             throw $exception;
         } catch (Throwable $exception) {

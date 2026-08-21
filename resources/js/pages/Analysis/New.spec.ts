@@ -88,25 +88,12 @@ describe('New analysis wizard', () => {
         expect((selects[1].element as HTMLSelectElement).disabled).toBe(false);
     });
 
-    it('switches games, fetches the isolated catalog and clears game-specific values', async () => {
+    it('exposes only the active PoE1 production scope', async () => {
         const wrapper = mountWizard();
         await flushPromises();
-        await wrapper.get('.wizard-actions .is-primary').trigger('click');
-        await wrapper.findAll('select')[0].setValue('ranger');
-        await wrapper.findAll('select')[1].setValue('warden');
-        await wrapper.get('.wizard-actions .is-secondary').trigger('click');
-        await wrapper.get('input[value="poe2"]').setValue(true);
-        await flushPromises();
-        await wrapper.get('.wizard-actions .is-primary').trigger('click');
-
-        expect(
-            (wrapper.findAll('select')[0].element as HTMLSelectElement).value,
-        ).toBe('');
-        expect(
-            (wrapper.findAll('select')[1].element as HTMLSelectElement).value,
-        ).toBe('');
+        expect(wrapper.find('input[value="poe2"]').exists()).toBe(false);
         expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-            '/api/catalog/poe2/character-options',
+            '/api/catalog/poe1/character-options',
         );
     });
 

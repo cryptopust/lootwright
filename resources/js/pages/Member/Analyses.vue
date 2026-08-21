@@ -24,6 +24,10 @@ const filters = reactive({
 function apply() {
     router.get('/analyses', filters, { preserveState: true });
 }
+
+function paginationLabel(label: string): string {
+    return label.replaceAll('&laquo;', '«').replaceAll('&raquo;', '»');
+}
 </script>
 <template>
     <Head title="Analizler" /><AppShell current="analyses" :contained="false"
@@ -85,7 +89,8 @@ function apply() {
                 :key="link.label"
                 :href="link.url ?? undefined"
                 :aria-current="link.active ? 'page' : undefined"
-                v-html="link.label"
-            ></a></nav
-    ></AppShell>
+                >{{ paginationLabel(link.label) }}</a
+            >
+        </nav></AppShell
+    >
 </template>

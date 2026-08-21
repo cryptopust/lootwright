@@ -58,7 +58,7 @@ final class AnalysisDraftController extends Controller
         $request->merge(['game' => $request->input('game', 'poe1')]);
         $data = $request->validate([
             'flow' => ['required', Rule::in(['plan', 'analyse', 'upgrade'])], 'current_step' => ['required', 'integer', 'between:1,7'],
-            'game' => ['required', Rule::in(['poe1', 'poe2'])],
+            'game' => ['required', Rule::in(config('game-editions.public', ['poe1']))],
             'safe_fields' => ['required', 'array', 'max:30'],
         ]);
 

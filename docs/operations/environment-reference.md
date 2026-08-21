@@ -74,6 +74,8 @@ the temporary outbound switch; see the [import runbook](poe1-passive-tree-import
 | `POLICY_ADMIN_TOKEN` | Empty while disabled | Yes | Rotate after every approved window. |
 | `IMPORTS_ENABLED`, `RULESETS_ENABLED`, `EXTERNAL_LINKS_ENABLED` | `false` initially | No | Enable individually only after release evidence and tests. |
 | `AUTH_REQUIRE_VERIFIED_EMAIL` | `false` until accounts launch | No | Review account UX before enabling. |
+| `INERTIA_SSR_ENABLED` | `false` | No | SSR is not a production dependency; enabling it requires a reviewed loopback renderer process. |
+| `INERTIA_SSR_URL` | `http://127.0.0.1:13714` | No | Used only when SSR is explicitly enabled; never point it at a user-controlled or remote URL. |
 | `ANALYSIS_RAW_ARTIFACT_TTL_MINUTES` | `60` | No | Maximum encrypted queue-handoff lifetime. |
 | `POB_IMPORT_RETENTION_HOURS`, `POB_IMPORT_MAX_RETENTION_HOURS` | `24`, `168` | No | Consent and owner deletion still apply. |
 | `ANALYSIS_RETENTION_DAYS`, `AI_AUDIT_RETENTION_DAYS` | `30`, `30` | No | Must not exceed approved schedule. |

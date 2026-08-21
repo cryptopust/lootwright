@@ -466,7 +466,7 @@ onMounted(async () => {
         if (draftResponse.ok && body.draft?.safe_fields) {
             const draftGame = body.draft.game_edition;
 
-            if (draftGame === 'poe1' || draftGame === 'poe2') {
+            if (draftGame === 'poe1') {
                 form.game = draftGame;
                 await loadCatalog(draftGame);
             }
@@ -563,27 +563,17 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
             <fieldset v-if="currentStep === 1">
                 <legend>Ne yapmak istiyorsun?</legend>
                 <div class="choice-list" aria-label="Oyun seçimi">
-                    <label
-                        v-for="game in [
-                            { id: 'poe1', label: 'Path of Exile 1' },
-                            {
-                                id: 'poe2',
-                                label: 'Path of Exile 2 · Early Access',
-                            },
-                        ]"
-                        :key="game.id"
-                    >
+                    <label>
                         <input
                             v-model="form.game"
                             type="radio"
                             name="game"
-                            :value="game.id"
+                            value="poe1"
                         />
                         <span
-                            ><strong>{{ game.label }}</strong
+                            ><strong>Path of Exile 1</strong
                             ><small
-                                >Oyun katalogları ve importlar birbirinden izole
-                                edilir.</small
+                                >Aktif production MVP kapsamı.</small
                             ></span
                         >
                     </label>

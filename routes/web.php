@@ -33,7 +33,7 @@ Route::inertia('/', 'Landing')->name('home');
 Route::inertia('/analyses/new', 'Analysis/New')->name('analyses.new');
 Route::inertia('/style-guide', 'StyleGuide')->name('style-guide');
 Route::get('/api/catalog/{game}/character-options', CharacterOptionsController::class)
-    ->where('game', 'poe1|poe2')
+    ->where('game', 'poe1')
     ->middleware('throttle:60,1')
     ->name('catalog.characters');
 Route::inertia('/analyses/demo/import', 'Analysis/ImportReview')->name('analyses.demo.import');

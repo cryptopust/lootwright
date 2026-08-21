@@ -10,5 +10,5 @@ final class Analysis extends Model
 
     protected $keyType = 'string';
 
-    protected $guarded = [];
+    protected $guarded = ['*'];
 }

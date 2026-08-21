@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ReadinessController;
+use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureAdminTwoFactorEnabled;
 use App\Http\Middleware\EnsurePolicyAdminTokenIsValid;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(AssignCorrelationId::class);
         $middleware->trustHosts(
             static function (): array {
                 $hosts = config('deployment.trusted_hosts', []);
