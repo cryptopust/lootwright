@@ -22,11 +22,19 @@ use App\Modules\Analysis\Infrastructure\PolicyGatedArtifactParser;
 use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
 use App\Modules\Analysis\Persistence\PostgresWorkflowRepository;
 use App\Modules\BuildIntake\PolicyGatedItemTextImporter;
+use App\Modules\ExternalSources\DatabaseSourceImportStaging;
+use App\Modules\ExternalSources\DatabaseSourceRegistry;
 use App\Modules\ExternalSources\DisabledOfficialTradeSearchProvider;
+use App\Modules\ExternalSources\FixedExternalSourceAdapterCatalog;
+use App\Modules\ExternalSources\Ggg\DisabledOfficialGggApiSourceAdapter;
+use App\Modules\ExternalSources\Ggg\GggPassiveTreeSourceAdapter;
+use App\Modules\ExternalSources\Poe2\DisabledPoe2DatasetAdapter;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaEconomyClient;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaNormalizer;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaPolicyGate;
+use App\Modules\ExternalSources\PoeNinja\PoeNinjaSourceAdapter;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaSyncService;
+use App\Modules\ExternalSources\PoeWiki\DisabledPoeWikiCargoAdapter;
 use App\Modules\Funding\PolicyGatedFundingStatusProvider;
 use App\Modules\Identity\LaravelSecretGenerator;
 use App\Modules\Identity\PostgresPrivacySessionRepository;
@@ -57,7 +65,10 @@ use Lootwright\Application\AIGateway\Ports\AiTelemetry;
 use Lootwright\Application\AIGateway\Ports\AnalysisExplanationRepository;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Services\ProviderNeutralAiGateway;
+use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
 use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
+use Lootwright\Application\ExternalSources\Ports\SourceImportStaging;
+use Lootwright\Application\ExternalSources\Ports\SourceRegistry;
 use Lootwright\Application\Funding\Ports\FundingStatusProvider;
 use Lootwright\Application\Identity\Ports\PrivacySessionRepository;
 use Lootwright\Application\Identity\Ports\SecretGenerator;
@@ -109,6 +120,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PolicyEvaluator::class);
         $this->app->bind(CapabilityPolicy::class, DatabaseCapabilityPolicy::class);
         $this->app->bind(SourceGovernancePolicy::class, DatabaseSourceGovernancePolicy::class);
+        $this->app->bind(SourceRegistry::class, DatabaseSourceRegistry::class);
+        $this->app->bind(SourceImportStaging::class, DatabaseSourceImportStaging::class);
+        $this->app->singleton(ExternalSourceAdapterCatalog::class, FixedExternalSourceAdapterCatalog::class);
         $this->app->bind(GovernedRulesetRepository::class, PostgresGovernedRulesetRepository::class);
         $this->app->bind(RulesetResolver::class, PostgresRulesetResolver::class);
         $this->app->bind(ActiveRulesetResolver::class, PostgresRulesetResolver::class);
@@ -136,6 +150,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PoeNinjaNormalizer::class);
         $this->app->singleton(PoeNinjaPolicyGate::class);
         $this->app->singleton(PoeNinjaSyncService::class);
+        $this->app->singleton(GggPassiveTreeSourceAdapter::class);
+        $this->app->singleton(PoeNinjaSourceAdapter::class);
+        $this->app->singleton(DisabledOfficialGggApiSourceAdapter::class);
+        $this->app->singleton(DisabledPoe2DatasetAdapter::class);
+        $this->app->singleton(DisabledPoeWikiCargoAdapter::class);
         $this->app->bind(OfficialTradeSearchProvider::class, DisabledOfficialTradeSearchProvider::class);
         $this->app->singleton(AiGatewayConfiguration::class, static function (): AiGatewayConfiguration {
             $prices = config('ai.prices_micro_usd_per_million');
@@ -264,6 +283,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('deletion', static fn (Request $request): array => self::limits($request, 'deletion', 3, 10));
         RateLimiter::for('policy-read', static fn (Request $request): array => self::limits($request, 'policy-read', 30, 300));
         RateLimiter::for('policy-admin', static fn (Request $request): array => self::limits($request, 'policy-admin', 10, 50));
+        RateLimiter::for('source-import-admin', static fn (Request $request): array => self::limits($request, 'source-import-admin', 2, 10));
     }
 
     /** @return list<Limit> */

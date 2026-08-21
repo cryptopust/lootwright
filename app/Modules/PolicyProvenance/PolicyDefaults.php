@@ -40,6 +40,7 @@ final class PolicyDefaults
             self::source('REPOE-CANDIDATE', 'RePoE or similar generated datasets', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Candidate generated game data with unresolved underlying rights.', 'prohibited', false, 'prohibited'),
             self::source('POENINJA-ECONOMY-001', 'poe.ninja public economy API lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled unless policy and configuration both permit an out-of-band import.', 'conditional', false, 'optional'),
             self::source('POEWIKI-CARGO-001', 'Path of Exile Wiki Cargo lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled pending the recorded rights review.', 'conditional', false, 'candidate'),
+            self::source('POE2-DATASET-CANDIDATE', 'PoE2 approved dataset contract', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Adapter contract only; no PoE2 canonical dataset has passed policy and provenance review.', 'conditional', false, 'future'),
             self::source('GGG-PROTECTED-ASSETS', 'GGG protected media and expression', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Artwork, images, logos, music, flavour text, screenshots, and fonts.'),
             self::source('OPENAI-API', 'OpenAI API', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Optional provider remains disabled until an explicit reviewed provider decision.'),
             self::source('LOOTWRIGHT-FUNDING', 'Lootwright funding policy', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Funding and monetized hosting are disabled pending explicit review.'),
@@ -67,6 +68,7 @@ final class PolicyDefaults
             ['source_id' => 'REPOE-CANDIDATE', 'version' => 'unreviewed-2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'POENINJA-ECONOMY-001', 'version' => 'economy-v1', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'POEWIKI-CARGO-001', 'version' => 'candidate-2026-08-20', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'POE2-DATASET-CANDIDATE', 'version' => 'unavailable', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-PROTECTED-ASSETS', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'OPENAI-API', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
@@ -94,6 +96,7 @@ final class PolicyDefaults
             self::evidenceRecord('REPOE-RIGHTS-UNKNOWN', 'REPOE-CANDIDATE', 'unreviewed-2026-08-14', 'https://github.com/brather1ng/RePoE', PermissionStatus::Unknown, 'Repository accessibility does not establish rights in generated underlying game data.', true),
             self::evidenceRecord('POENINJA-ECONOMY-LIFECYCLE-EVIDENCE', 'POENINJA-ECONOMY-001', 'economy-v1', 'https://poe.ninja/docs/api', PermissionStatus::Allowed, 'The canonical lifecycle identity inherits only the reviewed public PoE1 economy boundary and remains configuration-disabled.', true, 'Attribute poe.ninja as the market-context source where displayed.', '2026-08-20T00:00:00Z'),
             self::evidenceRecord('POEWIKI-CARGO-LIFECYCLE-EVIDENCE', 'POEWIKI-CARGO-001', 'candidate-2026-08-20', 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API', PermissionStatus::Unknown, 'The canonical lifecycle identity remains disabled pending licensing, redistribution, underlying-rights, and funding review.', true, 'Review CC BY-NC-SA attribution and share-alike requirements before activation.', '2026-08-20T00:00:00Z'),
+            self::evidenceRecord('POE2-DATASET-CANDIDATE-EVIDENCE', 'POE2-DATASET-CANDIDATE', 'unavailable', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Unknown, 'No PoE2 canonical dataset is approved for production ingestion.', false),
             self::evidenceRecord('GGG-TERMS-ASSETS-20260814', 'GGG-PROTECTED-ASSETS', '2026-08-14', 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy', PermissionStatus::Denied, 'Protected GGG media and expression are outside Lootwright redistribution rights.', true),
             self::evidenceRecord('OPENAI-DATA-CONTROLS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/your-data', PermissionStatus::Allowed, 'Official OpenAI documentation describes API data use and retention controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('OPENAI-RESPONSES-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/reference/resources/responses/methods/create', PermissionStatus::Allowed, 'Official OpenAI API reference documents POST /v1/responses and its stateless request controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
@@ -141,6 +144,17 @@ final class PolicyDefaults
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'poewiki.cargo.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['license_chain_reviewed', 'ggg_data_rights_reviewed', 'funding_reviewed', 'exact_field_allowlist'], 'PoE Wiki Cargo imports remain conditional and disabled.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'poeninja.economy.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'exact_endpoint_allowlist', 'normalized_snapshot_only'], 'A normalized poe.ninja economy snapshot is conditional on the independent source switch and exact Policy Gate decision.');
         $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'repoe.snapshot.import', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'RePoE is prohibited as a production snapshot source until a new reviewed source decision supersedes this denial.');
+        $rules[] = self::rule('POE2-DATASET-CANDIDATE', 'unavailable', Capability::Import, 'poe2.dataset.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['approved_source_record', 'poe2_scope', 'checksum_verified'], 'The PoE2 adapter contract exists, but no canonical production dataset is approved.');
+
+        $rollbackConditions = ['authorized_actor', 'staging_only', 'no_canonical_mutation'];
+        $approvalConditions = ['approved_snapshot', 'same_source', 'same_edition', 'no_canonical_mutation'];
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'source.import.rollback', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $rollbackConditions, 'An authorized operator may discard staging records without mutating an immutable snapshot or canonical ruleset.');
+        $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'source.import.rollback', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $rollbackConditions, 'An authorized operator may discard staging records without mutating approved market snapshots.');
+        $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'source.import.rollback', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $rollbackConditions, 'The disabled Cargo source has no executable rollback workflow.');
+        $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'source.import.rollback', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'The prohibited RePoE source has no executable import lifecycle.');
+        $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'source.import.approve', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $approvalConditions, 'Approval only links a valid same-edition immutable snapshot to staged records.');
+        $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'source.import.approve', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $approvalConditions, 'Approval only links a valid same-edition immutable snapshot to staged market records.');
+        $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'source.import.approve', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $approvalConditions, 'The disabled Cargo source has no executable approval workflow.');
 
         foreach (['USER-POB-001', 'USER-ITEM-TEXT-001'] as $source) {
             $rules[] = self::rule($source, '1.0.0', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Private user input can never become ruleset authority.');
@@ -151,6 +165,7 @@ final class PolicyDefaults
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'ruleset.source.activate', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $activationConditions, 'PoE Wiki Cargo cannot become ruleset authority before the separate rights review.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Market context is never deterministic game-rule authority.');
         $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'RePoE cannot become production ruleset authority under the current decision.');
+        $rules[] = self::rule('POE2-DATASET-CANDIDATE', 'unavailable', Capability::Import, 'ruleset.source.activate', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'No approved PoE2 canonical dataset exists for activation.');
 
         $rules[] = self::rule('GGG-DOCUMENTED-API', '2026-08-14', Capability::LiveFetch, 'ggg.api.documented_operation', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['application_registration', 'configured_credentials', 'current_policy_evidence', 'least_privilege_scopes'], 'No documented GGG API operation is enabled; each exact method and path requires a reviewed rule.');
         $rules[] = self::rule('GGG-APPLICATION-REGISTRATION', '2026-08-14', Capability::LiveFetch, 'ggg.application.register', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'GGG currently states that it is unable to process new application registrations.');
@@ -231,7 +246,87 @@ final class PolicyDefaults
             'governance_status' => $governanceStatus,
             'enabled_by_default' => $enabledByDefault,
             'mvp_scope' => $mvpScope,
+            ...self::registryMetadata($id),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function registryMetadata(string $id): array
+    {
+        $common = [
+            'game_editions' => json_encode([], JSON_THROW_ON_ERROR),
+            'reference_url' => null,
+            'documentation_url' => null,
+            'terms_url' => null,
+            'redistribution_status' => 'unknown',
+            'commercial_use_status' => 'unknown',
+            'cache_storage_status' => 'prohibited',
+            'last_policy_review_at' => self::REVIEWED_AT,
+        ];
+
+        return [...$common, ...match ($id) {
+            'GGG-POE1-SKILLTREE-001' => [
+                'game_editions' => '["poe1"]',
+                'reference_url' => 'https://github.com/grindinggear/skilltree-export',
+                'documentation_url' => 'https://github.com/grindinggear/skilltree-export',
+                'terms_url' => 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy',
+                'redistribution_status' => 'restricted',
+                'commercial_use_status' => 'unknown',
+                'cache_storage_status' => 'bounded',
+            ],
+            'GGG-POE1-ATLASTREE-001' => [
+                'game_editions' => '["poe1"]',
+                'reference_url' => 'https://www.pathofexile.com/developer/docs/reference',
+                'documentation_url' => 'https://www.pathofexile.com/developer/docs/reference',
+                'terms_url' => 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy',
+            ],
+            'GGG-DOCUMENTED-API' => [
+                'game_editions' => '["poe1","poe2"]',
+                'reference_url' => 'https://www.pathofexile.com/developer/docs',
+                'documentation_url' => 'https://www.pathofexile.com/developer/docs/reference',
+                'terms_url' => 'https://www.pathofexile.com/developer/docs',
+            ],
+            'POEWIKI-CARGO-001' => [
+                'game_editions' => '["poe1"]',
+                'reference_url' => 'https://www.poewiki.net/',
+                'documentation_url' => 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Cargo',
+                'terms_url' => 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Copyrights',
+                'redistribution_status' => 'unknown',
+                'commercial_use_status' => 'unknown',
+                'cache_storage_status' => 'prohibited',
+            ],
+            'POENINJA-ECONOMY-001' => [
+                'game_editions' => '["poe1"]',
+                'reference_url' => 'https://poe.ninja',
+                'documentation_url' => 'https://poe.ninja/docs/api',
+                'terms_url' => 'https://poe.ninja/docs/api',
+                'redistribution_status' => 'restricted',
+                'commercial_use_status' => 'unknown',
+                'cache_storage_status' => 'bounded',
+            ],
+            'REPOE-CANDIDATE' => [
+                'game_editions' => '["poe1"]',
+                'reference_url' => 'https://github.com/brather1ng/RePoE',
+                'documentation_url' => 'https://github.com/brather1ng/RePoE',
+                'redistribution_status' => 'prohibited',
+                'commercial_use_status' => 'prohibited',
+                'cache_storage_status' => 'prohibited',
+            ],
+            'POE2-DATASET-CANDIDATE' => [
+                'game_editions' => '["poe2"]',
+                'documentation_url' => 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md',
+                'redistribution_status' => 'unknown',
+                'commercial_use_status' => 'unknown',
+                'cache_storage_status' => 'prohibited',
+            ],
+            'USER-POB-001', 'USER-ITEM-TEXT-001' => [
+                'game_editions' => '["poe1","poe2"]',
+                'redistribution_status' => 'prohibited',
+                'commercial_use_status' => 'prohibited',
+                'cache_storage_status' => 'bounded',
+            ],
+            default => [],
+        }];
     }
 
     /** @return array<string, mixed> */

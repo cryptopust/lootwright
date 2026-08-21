@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPageController;
+use App\Http\Controllers\Admin\AdminSourceImportController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\PolicyEvidenceController;
 use App\Http\Controllers\Admin\PolicyKillSwitchController;
@@ -122,6 +123,9 @@ Route::prefix('admin')->middleware(['auth', 'active', 'verified', 'role:admin,su
     Route::get('/audit-log', [AdminPageController::class, 'audit'])->name('admin.audit');
     Route::get('/catalog', [AdminPageController::class, 'catalog'])->name('admin.catalog');
     Route::get('/system', [AdminPageController::class, 'system'])->name('admin.system');
+    Route::post('/sources/import', AdminSourceImportController::class)
+        ->middleware(['password.confirm', 'role:super_admin', 'throttle:source-import-admin'])
+        ->name('admin.sources.import');
 });
 
 Route::prefix('/admin/policy')

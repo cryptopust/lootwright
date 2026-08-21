@@ -648,6 +648,31 @@ runtime; PHP 8.4 was available through Laravel Herd.
 
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
 
+2026-08-21: extended the existing Policy Gate, immutable snapshot and ruleset
+lifecycle with one executable Source Registry projection, bounded normalized
+staging, import reports, content-addressed replay, approval and policy-gated
+staging rollback. GGG PoE1 passive-tree and conditional poe.ninja economy data
+now stage before snapshot/read-model publication. Fixed disabled adapters for
+documented GGG APIs, Wiki Cargo, PoE2 datasets, Atlas and RePoE have explicit
+reasons and no HTTP client. The admin system registry is read-only except for a
+super-admin-only, 2FA/recent-password/rate-limited/audited queue request using a
+fixed source code. No Trade endpoint, scraper, arbitrary URL or credential path
+was added. See ADR 0020 and the current validation report for actual gate
+results; SQLite is not PostgreSQL proof.
+
+Validation for this source-governance change: `composer validate --strict`,
+`composer audit`, Pint, PHPStan, repository guardrails, documentation checks,
+`git diff --check`, `npm run lint`, `npm run typecheck`, `npm run test` (21/21),
+`npm run build`, and the focused source/import/policy suite (131 tests, 129
+passed in the combined run with the two pre-existing opt-in PostgreSQL tests
+skipped). The full backend suite then passed 817/819 tests with 10,732
+assertions. After the final mock poe.ninja staging coverage, the complete suite
+passed 818/820 tests with 10,745 assertions; the two PostgreSQL tests remain skipped because no local service is
+listening on `127.0.0.1:5432`. A real PostgreSQL fresh/rollback/reapply run was
+attempted and failed closed with connection refused; SQLite is not reported as
+PostgreSQL evidence. No real external HTTP request was made; the poe.ninja
+sync path is covered with `Http::fake`.
+
 2026-08-20: extended the governed ruleset lifecycle with edition-scoped
 canonical game-data contracts and persistence. `GameVersion`, `GameRuleset`,
 historical/active ruleset repositories, compatibility statuses, and eleven

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
+use Lootwright\Application\ExternalSources\Ports\SourceRegistry;
 use Lootwright\Domain\PoeCatalog\Character\Poe1CharacterCatalog;
 use Lootwright\Domain\PoeCatalog\Character\Poe2CharacterCatalog;
 
@@ -67,8 +70,45 @@ final class AdminPageController extends Controller
         ]);
     }
 
-    public function system(): Response
+    public function system(Request $request, SourceRegistry $registry, ExternalSourceAdapterCatalog $adapters): Response
     {
-        return Inertia::render('Admin/System', ['failedJobs' => DB::table('failed_jobs')->count(), 'killSwitches' => DB::table('policy_kill_switches')->where('active', true)->get(['scope', 'source_id', 'capability', 'reason']), 'sourceRuns' => DB::table('external_source_sync_runs')->latest('started_at')->limit(20)->get(['source_key', 'status', 'league', 'category', 'started_at', 'completed_at', 'failure_code']), 'release' => config('deployment.release_sha')]);
+        $adapterStatuses = collect($adapters->all())->mapWithKeys(static function ($adapter): array {
+            $status = $adapter->status();
+
+            return [$status->sourceCode => $status->jsonSerialize()];
+        });
+        $sources = collect($registry->all())->map(function ($record) use ($adapterStatuses): array {
+            $lastAttempt = DB::table('external_source_sync_runs')->where('source_key', $record->code)->latest('started_at')->first();
+            $lastSuccess = DB::table('external_source_sync_runs')->where('source_key', $record->code)->whereIn('status', ['success', 'succeeded'])->latest('completed_at')->first();
+            $lastReport = DB::table('source_import_reports')->where('source_code', $record->code)->latest('created_at')->first();
+            $attempt = $lastAttempt === null ? [] : get_object_vars($lastAttempt);
+            $success = $lastSuccess === null ? [] : get_object_vars($lastSuccess);
+            $report = $lastReport === null ? [] : get_object_vars($lastReport);
+            $attemptStatus = is_string($attempt['status'] ?? null) ? $attempt['status'] : null;
+
+            return [
+                ...$record->jsonSerialize(),
+                'adapter' => $adapterStatuses->get($record->code),
+                'last_attempt_at' => $attempt['started_at'] ?? null,
+                'last_success_at' => $success['completed_at'] ?? null,
+                'last_error' => in_array($attemptStatus, ['failed', 'quarantined'], true) ? ($attempt['failure_code'] ?? null) : null,
+                'dataset_edition' => $report['game_edition'] ?? null,
+                'ruleset_target' => $report['ruleset_target'] ?? null,
+                'checksum' => $report['normalized_checksum_sha256'] ?? null,
+                'records_imported' => $report['records_imported'] ?? 0,
+                'records_rejected' => $report['records_rejected'] ?? 0,
+                'import_status' => $report['status'] ?? null,
+                'policy_status' => $report['policy_status'] ?? $record->governanceStatus,
+            ];
+        });
+
+        return Inertia::render('Admin/System', [
+            'failedJobs' => DB::table('failed_jobs')->count(),
+            'killSwitches' => DB::table('policy_kill_switches')->where('active', true)->get(['scope', 'source_id', 'capability', 'reason']),
+            'sourceRuns' => DB::table('external_source_sync_runs')->latest('started_at')->limit(20)->get(['source_key', 'status', 'league', 'category', 'started_at', 'completed_at', 'failure_code']),
+            'sources' => $sources,
+            'canTriggerImports' => $request->user()?->isSuperAdmin() === true,
+            'release' => config('deployment.release_sha'),
+        ]);
     }
 }

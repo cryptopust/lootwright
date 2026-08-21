@@ -34,26 +34,43 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
 
         return DB::transaction(function (Connection $_connection) use ($snapshot): SourceSnapshotRecord {
             $now = CarbonImmutable::now('UTC');
-            $runId = (string) Str::uuid7();
+            $runId = $snapshot->importRunId ?? (string) Str::uuid7();
             $versionId = $this->sourceVersionId($snapshot->sourceCode, $snapshot->sourceVersion);
+            $sourceLocatorChecksum = hash('sha256', $snapshot->sourceUrl);
 
-            DB::table('external_source_sync_runs')->insert([
-                'id' => $runId,
-                'policy_source_version_id' => $versionId,
-                'source_key' => $snapshot->sourceCode,
-                'source_version' => $snapshot->sourceVersion,
-                'game_edition' => $snapshot->edition->value,
-                'operation' => $snapshot->operation,
-                'status' => 'started',
-                'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
-                'started_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+            if ($snapshot->importRunId === null) {
+                DB::table('external_source_sync_runs')->insert([
+                    'id' => $runId,
+                    'policy_source_version_id' => $versionId,
+                    'source_key' => $snapshot->sourceCode,
+                    'source_version' => $snapshot->sourceVersion,
+                    'game_edition' => $snapshot->edition->value,
+                    'operation' => $snapshot->operation,
+                    'status' => 'started',
+                    'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                    'started_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            } else {
+                $stagedRun = DB::table('external_source_sync_runs')->where('id', $runId)->lockForUpdate()->first();
+
+                if ($stagedRun === null
+                    || $this->property($stagedRun, 'source_key') !== $snapshot->sourceCode
+                    || $this->property($stagedRun, 'source_version') !== $snapshot->sourceVersion
+                    || $this->property($stagedRun, 'game_edition') !== $snapshot->edition->value
+                    || $this->property($stagedRun, 'operation') !== $snapshot->operation
+                    || $this->property($stagedRun, 'response_checksum_sha256') !== ($snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256)
+                    || $this->property($stagedRun, 'status') !== 'staged'
+                ) {
+                    throw new DomainException('The staged import run does not match this source snapshot.');
+                }
+            }
 
             $existing = DB::table('source_snapshots')
                 ->where('source_code', $snapshot->sourceCode)
                 ->where('game_edition', $snapshot->edition->value)
+                ->where('source_locator_sha256', $sourceLocatorChecksum)
                 ->where(function ($query) use ($snapshot): void {
                     $query->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256)
                         ->orWhere(function ($legacy) use ($snapshot): void {
@@ -109,6 +126,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                 'source_code' => $snapshot->sourceCode,
                 'game_edition' => $snapshot->edition->value,
                 'source_url' => $snapshot->sourceUrl,
+                'source_locator_sha256' => $sourceLocatorChecksum,
                 'upstream_revision' => $snapshot->upstreamRevision,
                 'retrieved_at' => $snapshot->retrievedAt,
                 'checksum_sha256' => $snapshot->checksumSha256,
@@ -132,6 +150,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
             $now = CarbonImmutable::now('UTC');
             $runId = (string) Str::uuid7();
             $versionId = $this->sourceVersionId($snapshot->sourceCode, $snapshot->sourceVersion);
+            $sourceLocatorChecksum = hash('sha256', $snapshot->sourceUrl);
 
             DB::table('external_source_sync_runs')->insert([
                 'id' => $runId,
@@ -152,6 +171,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
             $existing = DB::table('source_snapshots')
                 ->where('source_code', $snapshot->sourceCode)
                 ->where('game_edition', $snapshot->edition->value)
+                ->where('source_locator_sha256', $sourceLocatorChecksum)
                 ->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256)
                 ->first(['id']);
             if ($existing !== null) {
@@ -176,6 +196,7 @@ final readonly class PostgresGovernedRulesetRepository implements GovernedRulese
                 'source_code' => $snapshot->sourceCode,
                 'game_edition' => $snapshot->edition->value,
                 'source_url' => $snapshot->sourceUrl,
+                'source_locator_sha256' => $sourceLocatorChecksum,
                 'upstream_revision' => $snapshot->upstreamRevision,
                 'retrieved_at' => $snapshot->retrievedAt,
                 'checksum_sha256' => hash('sha256', CanonicalJson::encode($quarantinePayload)),

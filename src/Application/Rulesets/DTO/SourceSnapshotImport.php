@@ -23,6 +23,7 @@ final readonly class SourceSnapshotImport
         public string $schemaVersion,
         public array $normalizedPayload,
         public ?string $sourceChecksumSha256 = null,
+        public ?string $importRunId = null,
     ) {
         if (preg_match('/^[A-Z][A-Z0-9-]{2,63}$/D', $sourceCode) !== 1
             || preg_match('/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/D', $sourceVersion) !== 1
@@ -33,6 +34,7 @@ final readonly class SourceSnapshotImport
             || trim($licenseIdentifier) === ''
             || trim($schemaVersion) === ''
             || ($sourceChecksumSha256 !== null && preg_match('/^[0-9a-f]{64}$/D', $sourceChecksumSha256) !== 1)
+            || ($importRunId !== null && preg_match('/^[0-9a-f-]{36}$/D', $importRunId) !== 1)
         ) {
             throw new InvalidArgumentException('Source snapshot metadata is invalid.');
         }

@@ -5,9 +5,12 @@ namespace App\Modules\Rulesets\PassiveTree;
 use DateTimeImmutable;
 use DomainException;
 use Illuminate\Support\Str;
+use Lootwright\Application\ExternalSources\DTO\StagedSourceRecord;
+use Lootwright\Application\ExternalSources\Ports\SourceImportStaging;
 use Lootwright\Application\Rulesets\DTO\RulesetPublication;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotQuarantine;
+use Lootwright\Application\Rulesets\DTO\SourceSnapshotRecord;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
 use Lootwright\Application\Rulesets\Services\GovernedRulesetLifecycle;
 use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
@@ -48,6 +51,7 @@ final readonly class GggPassiveTreeImporter
         private PassiveTreeNormalizer $normalizer,
         private GovernedRulesetLifecycle $lifecycle,
         private SourceGovernancePolicy $policy,
+        private SourceImportStaging $staging,
     ) {}
 
     public function importFile(string $path, bool $dryRun, bool $activate): GggPassiveTreeImportResult
@@ -134,28 +138,55 @@ final readonly class GggPassiveTreeImporter
             return new GggPassiveTreeImportResult('validated', $revision, $sourceChecksum, $snapshotChecksum, null, null, false, count($tree['classes']), count($tree['nodes']));
         }
 
-        $retrievedAt = new DateTimeImmutable('now');
-        $record = $this->lifecycle->import(new SourceSnapshotImport(
+        $stagedRecords = $this->stagedRecords($tree);
+        $report = $this->staging->stage(
             self::SOURCE_CODE,
             $revision,
-            GameEdition::Poe1,
             self::OPERATION,
-            $sourceUrl,
-            $revision,
-            $retrievedAt,
-            $snapshotChecksum,
-            'application/json',
-            'LicenseRef-GGG-Terms-of-Use',
-            (string) config('source-governance.ggg_passive_tree.schema_version'),
-            $payload,
+            GameEdition::Poe1,
             $sourceChecksum,
-        ), self::CONDITIONS);
+            $snapshotChecksum,
+            $approved['patch'],
+            $stagedRecords,
+            self::CONDITIONS,
+        );
+        if (! in_array($report->status, ['staged', 'approved'], true)
+            || ($report->status === 'approved' && $report->sourceSnapshotId === null)
+        ) {
+            throw new DomainException('The normalized source records are not eligible for snapshot import.');
+        }
+
+        $retrievedAt = new DateTimeImmutable('now');
+        $record = $report->status === 'approved'
+            ? new SourceSnapshotRecord($report->importRunId, $report->sourceSnapshotId, 'succeeded', true)
+            : $this->lifecycle->import(new SourceSnapshotImport(
+                self::SOURCE_CODE,
+                $revision,
+                GameEdition::Poe1,
+                self::OPERATION,
+                $sourceUrl,
+                $revision,
+                $retrievedAt,
+                $snapshotChecksum,
+                'application/json',
+                'LicenseRef-GGG-Terms-of-Use',
+                (string) config('source-governance.ggg_passive_tree.schema_version'),
+                $payload,
+                $sourceChecksum,
+                $report->importRunId,
+            ), self::CONDITIONS);
+
+        if ($record->snapshotId === null || $record->status !== 'succeeded') {
+            $this->staging->reject($report->id, $record->status === 'quarantined' ? 'snapshot_quarantined' : 'snapshot_import_failed');
+
+            return new GggPassiveTreeImportResult($record->status, $revision, $sourceChecksum, $snapshotChecksum, $record->snapshotId, null, $record->replayed, count($tree['classes']), count($tree['nodes']), 'snapshot_import_failed');
+        }
+        if ($report->status === 'staged') {
+            $this->staging->approve($report->id, $record->snapshotId);
+        }
 
         $rulesetId = null;
         if ($activate) {
-            if ($record->snapshotId === null) {
-                throw new DomainException('A quarantined import cannot be activated.');
-            }
             $rulesetPayload = [...$payload, 'deterministic_analysis' => Poe1AnalysisRuleset::publishedV1()->jsonSerialize()];
             $rulesetChecksum = hash('sha256', CanonicalJson::encode($rulesetPayload));
             $rulesetId = (string) Str::uuid7();
@@ -181,6 +212,27 @@ final readonly class GggPassiveTreeImporter
         }
 
         return new GggPassiveTreeImportResult($record->status, $revision, $sourceChecksum, $snapshotChecksum, $record->snapshotId, $rulesetId, $record->replayed, count($tree['classes']), count($tree['nodes']));
+    }
+
+    /**
+     * @param  array<string, mixed>  $tree
+     * @return list<StagedSourceRecord>
+     */
+    private function stagedRecords(array $tree): array
+    {
+        $records = [];
+        foreach ($tree['classes'] as $class) {
+            $payload = ['kind' => 'character_class', ...$class];
+            $encoded = CanonicalJson::encode($payload);
+            $records[] = new StagedSourceRecord('class:'.(string) $class['index'], hash('sha256', $encoded), 'staged', null, $payload);
+        }
+        foreach ($tree['nodes'] as $node) {
+            $payload = ['kind' => 'passive_node', ...$node];
+            $encoded = CanonicalJson::encode($payload);
+            $records[] = new StagedSourceRecord('passive:'.(string) $node['id'], hash('sha256', $encoded), 'staged', null, $payload);
+        }
+
+        return $records;
     }
 
     /**

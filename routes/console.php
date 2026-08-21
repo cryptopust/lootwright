@@ -32,7 +32,11 @@ Artisan::command('lootwright:sources:status', function (): int {
 
 Artisan::command('lootwright:sources:prune', function (): int {
     $deleted = DB::table('external_source_sync_runs')->where('completed_at', '<', now()->subDays(30))->whereNotExists(fn ($query) => $query->selectRaw('1')->from('economy_quotes')->whereColumn('economy_quotes.source_sync_run_id', 'external_source_sync_runs.id'))->delete();
-    $this->line("Pruned {$deleted} historical sync runs.");
+    $payloadsCleared = DB::table('source_import_staging_records')
+        ->whereNotNull('normalized_payload')
+        ->whereIn('import_report_id', DB::table('source_import_reports')->select('id')->where('completed_at', '<', now()->subDays(7)))
+        ->update(['normalized_payload' => null, 'updated_at' => now()]);
+    $this->line("Pruned {$deleted} historical sync runs and cleared {$payloadsCleared} bounded staging payloads.");
 
     return 0;
 })->purpose('Prune bounded external-source operational history.');

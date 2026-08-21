@@ -4,7 +4,13 @@ External data is an application concern. `src/Application/ExternalSources`
 contains immutable DTOs and ports only; Laravel HTTP, cache, database and policy
 implementations stay in `app/Modules/ExternalSources`.
 
-The only active-capable adapter is `POENINJA-ECONOMY-001`, and it remains off
+Two adapters are operational-capable, and both remain default-off:
+
+- `GGG-POE1-SKILLTREE-001` accepts only the reviewed commit-pinned official
+  export through its operator workflow; and
+- `POENINJA-ECONOMY-001` accepts only the documented PoE1 economy API surface.
+
+The poe.ninja adapter remains off
 until both `POE_NINJA_ENABLED=true` and `POENINJA_ECONOMY_ENABLED=true`, an
 operator contact is configured, and the
 database Policy and Provenance Gate allows the exact operation. It calls only
@@ -26,3 +32,31 @@ review-gated candidates. The GGG Currency Exchange interface is limited to
 historical hourly aggregates. Public Stash indexing is deferred: it needs
 `service:psapi`, has documented delay, and violates the MVP cost and
 full-market-indexing boundary.
+
+## Registry and staged imports
+
+`policy_data_sources` is the sole Source Registry. Its records carry reference,
+documentation and terms URLs; edition scope; allowed and forbidden exact
+capabilities; redistribution, commercial-use and cache/storage decisions;
+policy-review evidence; configuration state; and emergency kill-switch state.
+An adapter's presence never grants authority. `ExternalSourceAdapterCatalog`
+contains only fixed source codes and reports `operational` or a bounded disabled
+reason. Disabled adapters have no HTTP dependency.
+
+Remote normalized records enter `source_import_staging_records` through a
+Policy Gate decision before an immutable `source_snapshots` row can be cited.
+`source_import_reports` records source/version/edition, target, raw and
+normalized checksums, received/imported/rejected counts and approval status.
+Raw bodies are not stored in staging. A content-derived identity makes replay
+idempotent under concurrent imports. Approval requires a valid same-source,
+same-edition immutable snapshot. Staging rollback is separately policy-gated,
+clears normalized staging payloads, and cannot mutate approved snapshots or
+published canonical rulesets; canonical rollback remains activation of a prior
+immutable ruleset.
+
+The GGG passive-tree importer and poe.ninja quote synchronization both pass
+through staging. No normal user request dispatches an import. The admin action
+accepts only a fixed registry source code and mandatory reason, requires an
+active verified super-admin with 2FA and recent password confirmation, is rate
+limited, audited, queued on `source-imports`, and protected by an atomic cache
+lock.

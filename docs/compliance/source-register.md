@@ -56,6 +56,7 @@ funding permission. No approval may be inferred from that absence.
 | `POBBIN-REMOTE` | Remote <https://pobb.in/> fetching | Optional future retrieval of a user-selected build | Explicit operator permission, terms, retention, security review, exact host/path policy, and user consent | `disabled-candidate`; remote fetch remains prohibited. A locally extracted canonical pasted URL wrapper is governed by `USER-INPUT-002`, not this record. |
 | `REPOE-CANDIDATE` | RePoE candidate <https://github.com/brather1ng/RePoE> or a similar generated dataset | Candidate ruleset facts | Exact version, license chain, underlying GGG-data rights, commercial/derivative/redistribution permission, checksum, and attribution | `disabled-candidate`; hosted redistribution prohibited while rights are unknown |
 | `POEWIKI-CARGO-001` | Path of Exile Wiki [Cargo API](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API) and [copyright](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Copyrights) | Candidate factual metadata fields only | CC BY-NC-SA/share-alike, underlying GGG data, attribution, caching, redistribution, production activation and funding review | `conditional-disabled`; `POEWIKI_IMPORT_ENABLED=false`; no article prose, images, icons, audio, flavour text, screenshots, or rendering templates |
+| `POE2-DATASET-CANDIDATE` | No approved source selected | Edition-isolated adapter/import contract only | Exact source, provenance, permission, commercial/cache/redistribution rights, schema, checksum and activation review | `unavailable-disabled`; no HTTP client and no canonical data authority |
 | `AI-PROVIDER-001` | Official OpenAI [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5.4 nano](https://developers.openai.com/api/docs/models/gpt-5.4-nano), [pricing](https://developers.openai.com/api/docs/pricing), [data controls](https://developers.openai.com/api/docs/guides/your-data), and [spend limits](https://developers.openai.com/api/docs/guides/spend-limits), retrieved 2026-08-15 | Optional intent extraction, clarification, and deterministic-result explanation through the tested adapter only | User-facing privacy disclosure and opt-in UX, provider approval, deployment endpoint/model/region/retention review, and verified OpenAI project hard spend limit | `disabled-candidate`; adapter exists, but exact operations remain non-executable `require_review` |
 
 ## Record requirements
@@ -75,3 +76,9 @@ Before changing a candidate to `allowed`, add:
 ## Explicit exclusions
 
 Lootwright's [MIT license scope](../../LICENSE-SCOPE.md) does not grant rights to any entry owned by GGG, a user, or a third party. Technical accessibility, user submission, factual nature, or an upstream repository's open-source license does not automatically prove that embedded publisher data/assets may be copied or redistributed.
+
+The executable Source Registry is the `policy_data_sources` projection seeded
+from `PolicyDefaults`; it does not supersede this reviewed register. Registry
+metadata may only restrict a documented decision. Enabling configuration cannot
+turn `unknown`, `require_review`, `prohibited`, expired evidence or an active
+kill switch into an allow decision.

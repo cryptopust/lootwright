@@ -81,6 +81,7 @@ final readonly class DatabaseSourceGovernancePolicy implements SourceGovernanceP
             'POEWIKI-CARGO-001' => (bool) config('source-governance.poewiki_import_enabled', false),
             'POENINJA-ECONOMY-001' => (bool) config('source-governance.poeninja_economy_enabled', false),
             'REPOE-CANDIDATE' => false,
+            'POE2-DATASET-CANDIDATE' => false,
             'GGG-POE1-ATLASTREE-001' => false,
             default => true,
         };
