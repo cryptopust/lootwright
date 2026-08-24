@@ -23,6 +23,10 @@ defineProps<{ current: string }>();
             href="/admin/system"
             :aria-current="current === 'system' ? 'page' : undefined"
             >Sistem</a
+        ><a
+            href="/admin/release"
+            :aria-current="current === 'release' ? 'page' : undefined"
+            >Release gate</a
         >
     </nav>
 </template>

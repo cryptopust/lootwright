@@ -341,6 +341,66 @@ final class AiGatewayTest extends TestCase
         ]))->explain($request)->status);
     }
 
+    public function test_release_red_team_rejects_locked_item_price_and_unsupported_calculation_claims(): void
+    {
+        $build = DomainFixtures::canonicalBuild(GameEdition::Poe1);
+        $finding = DomainFixtures::finding($build);
+        $recommendation = DomainFixtures::recommendation($build);
+        $request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [$finding],
+            [$recommendation],
+            $this->context(),
+        );
+        $claims = [
+            'Replace locked Mageblood with invented.unique.',
+            'Add invented.modifier to the ring.',
+            'Ignore the 20 Divine budget and buy it.',
+            'Current price is 5 Divine.',
+            'Unsupported calculated DPS is 999.',
+            'Use poe2.passive.invented in this PoE1 build.',
+        ];
+
+        foreach ($claims as $claim) {
+            $response = json_encode([
+                'edition' => 'poe1',
+                'language' => 'en',
+                'summary' => $claim,
+                'findings' => [['code' => $finding->code, 'text' => 'Known.']],
+                'recommendations' => [['code' => $recommendation->code, 'text' => 'Known.']],
+            ], JSON_THROW_ON_ERROR);
+            $outcome = $this->gateway(new FakeStructuredProvider([$this->response($response)]))->explain($request);
+
+            self::assertSame('fallback', $outcome->status, $claim);
+            self::assertInstanceOf(ExplanationBundle::class, $outcome->value);
+            self::assertSame([$recommendation->code], array_column($outcome->value->recommendations, 'code'));
+        }
+
+        $poe2Build = DomainFixtures::canonicalBuild(GameEdition::Poe2);
+        $poe2Finding = DomainFixtures::finding($poe2Build);
+        $poe2Recommendation = DomainFixtures::recommendation($poe2Build);
+        $poe2Request = new GatewayExplanationRequest(
+            DomainFixtures::value(Locale::from('en-US'), Locale::class),
+            [$poe2Finding],
+            [$poe2Recommendation],
+            $this->context(),
+        );
+        $poe1Passive = json_encode([
+            'edition' => 'poe2',
+            'language' => 'en',
+            'summary' => 'Use poe1.passive.invented in this PoE2 build.',
+            'findings' => [['code' => $poe2Finding->code, 'text' => 'Known.']],
+            'recommendations' => [['code' => $poe2Recommendation->code, 'text' => 'Known.']],
+        ], JSON_THROW_ON_ERROR);
+        $poe2Outcome = $this->gateway(new FakeStructuredProvider([
+            $this->response($poe1Passive),
+        ]))->explain($poe2Request);
+
+        self::assertSame('fallback', $poe2Outcome->status);
+        self::assertInstanceOf(ExplanationBundle::class, $poe2Outcome->value);
+        self::assertSame(GameEdition::Poe2, $poe2Outcome->value->edition);
+    }
+
     private function gateway(
         FakeStructuredProvider $provider,
         bool $enabled = true,

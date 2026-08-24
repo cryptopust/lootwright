@@ -148,7 +148,8 @@ izinli ve yasak operasyon, terms/policy evidence, storage/redistribution durumu,
 review tarihi, provenance, config ve emergency kill switch bilgisini ayrı tutar.
 
 Olası kaynaklar arasında Grinding Gear Games, Path of Building Community, PoE
-Wiki, poe.ninja, onaylı açık kaynak dataset'ler, onaylı community dataset'leri ve
+Wiki, poe.ninja, onaylı açık kaynak da
+taset'ler, onaylı community dataset'leri ve
 gelecekteki providerlar bulunabilir. Bir kaynağın listelenmesi; onay, availability
 veya karşılıklı endorsement anlamına gelmez.
 

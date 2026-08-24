@@ -113,6 +113,7 @@
         "eval:live": "@php artisan eval:live-openai",
         "ci:guardrails": "@php scripts/ci/guardrails.php",
         "test:architecture": "@php artisan test --testsuite=Architecture",
+        "test:acceptance": "@php artisan test --testsuite=Acceptance",
         "test:parser-security": "@php artisan test tests/Unit/GameAdapters/PobImportTest.php tests/Feature/PobImportEndpointTest.php tests/Feature/SecurityHardeningTest.php",
         "test:policy-gate": "@php artisan test tests/Feature/PolicyProvenanceGateTest.php tests/Feature/ManualTradePolicyGateTest.php",
         "quality": [

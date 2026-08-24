@@ -110,7 +110,7 @@ final class Poe1DeterministicAnalysisEngineTest extends TestCase
         $second = $engine->analyze($this->build(90, 'poe1.pob.class.ranger', 'poe1.pob.ascendancy.deadeye', [], [], array_reverse($this->coreItems()), $two), $id, $ruleset, $manifest, [], ['snapshot' => 'fixture']);
 
         self::assertSame(CanonicalJson::encode($first), CanonicalJson::encode($second));
-        self::assertSame('2c8093a8f0628b411fc7fe4e31fa604ff228096243fa3ef44b90b546fa5a28d7', hash('sha256', CanonicalJson::encode($first)));
+        self::assertSame('a17abaacfc86e7abd50e7da6f551650fce9d03dd31e087823a608171a7336703', hash('sha256', CanonicalJson::encode($first)));
     }
 
     private function engine(): Poe1DeterministicAnalysisEngine

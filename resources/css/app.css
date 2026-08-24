@@ -3214,6 +3214,201 @@ tbody tr:last-child td {
     margin-top: 1.5rem;
 }
 
+/* Release acceptance ledger */
+.release-verdict {
+    display: inline-flex;
+    min-width: 7rem;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-control);
+    padding: 0.55rem 0.8rem;
+    font: 0.75rem var(--font-mono);
+    letter-spacing: 0.12em;
+}
+.release-verdict.is-pass,
+.status-chip.is-pass {
+    border-color: var(--state-verified);
+    color: var(--state-verified);
+}
+.release-verdict.is-fail,
+.status-chip.is-fail {
+    border-color: var(--state-blocked);
+    color: var(--state-blocked);
+}
+.release-verdict.is-blocked,
+.status-chip.is-blocked {
+    border-color: var(--state-warning);
+    color: var(--state-warning);
+}
+.release-scope-note {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--color-accent);
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+    color: var(--muted);
+}
+.release-edition {
+    margin-top: 3rem;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+}
+.release-edition > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.release-edition h2,
+.release-edition h3,
+.release-operations h2 {
+    margin: 0;
+}
+.release-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+}
+.release-metrics > div {
+    min-width: 0;
+    border-right: 1px solid var(--border);
+    padding: 1rem;
+}
+.release-metrics > div:last-child {
+    border-right: 0;
+}
+.release-metrics dt,
+.coverage-ledger dt,
+.release-latency dt {
+    color: var(--muted);
+    font: 0.65rem var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.release-metrics dd,
+.coverage-ledger dd,
+.release-latency dd {
+    margin: 0.4rem 0 0;
+    overflow-wrap: anywhere;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.release-metrics dd small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+}
+.release-columns {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+}
+.release-columns > section {
+    padding: 1.5rem;
+}
+.release-columns > section + section {
+    border-left: 1px solid var(--border);
+}
+.release-gate-list {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+.release-gate-list li {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    padding: 0.9rem 0;
+}
+.release-gate-list p,
+.release-latency p,
+.release-operations small {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+.coverage-ledger {
+    margin: 1rem 0 0;
+}
+.coverage-ledger > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    padding: 0.8rem 0;
+}
+.coverage-ledger em {
+    display: block;
+    color: var(--state-unknown);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+}
+.release-latency {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.release-limitations {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem;
+}
+.release-limitations ul {
+    margin: 0.75rem 0 0;
+    padding-left: 1.25rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+.release-latency dl {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 1rem 0;
+}
+.release-latency dl > div {
+    border-right: 1px solid var(--border);
+    padding-right: 1rem;
+}
+.release-operations {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 3rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+}
+.release-operations > div {
+    padding: 1.5rem;
+}
+.release-operations > div + div {
+    border-left: 1px solid var(--border);
+}
+
+@media (max-width: 800px) {
+    .release-metrics,
+    .release-columns,
+    .release-latency dl,
+    .release-operations {
+        grid-template-columns: 1fr;
+    }
+    .release-columns > section + section,
+    .release-operations > div + div {
+        border-top: 1px solid var(--border);
+        border-left: 0;
+    }
+    .release-metrics > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .release-scope-note {
+        flex-direction: column;
+    }
+}
+
 @media (max-width: 800px) {
     .metric-strip,
     .detail-ledger,

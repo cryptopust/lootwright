@@ -321,6 +321,9 @@ final readonly class Finding implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
+            'finding_id' => $this->findingId,
+            'game_edition' => $this->gameEdition->value,
+            'ruleset_version' => $this->rulesetVersion->value,
             'analysis_id' => $this->analysisId,
             'code' => $this->code,
             'severity' => $this->severity->value,
@@ -336,8 +339,15 @@ final readonly class Finding implements JsonSerializable
             'affected_slots' => $this->affectedSlots,
             'affected_gems' => $this->affectedGems,
             'affected_nodes' => $this->affectedNodes,
+            'affected_entity' => $this->affectedEntity,
+            'evidence' => $this->evidence,
+            'rule_id' => $this->ruleId,
             'source_provenance' => $this->sourceProvenance,
             'confidence_basis_points' => $this->confidenceBasisPoints,
+            'confidence' => $this->confidence,
+            'unsupported_data' => $this->unsupportedData,
+            'dependencies' => $this->dependencies,
+            'explanation_trace' => $this->explanationTrace,
         ];
     }
 }

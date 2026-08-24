@@ -468,7 +468,7 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
             $finding->summary,
             $finding->explanation,
         ], $request->findings)));
-        foreach (['modifier', 'modifiye', 'passive node', 'pasif dÃ¼ÄŸÃ¼m', 'ascendancy', 'item id'] as $canonicalTerm) {
+        foreach (['modifier', 'modifiye', 'passive node', 'pasif düğüm', 'ascendancy', 'item id'] as $canonicalTerm) {
             if (str_contains($text, $canonicalTerm) && ! str_contains($sourceText, $canonicalTerm)) {
                 return true;
             }
