@@ -5,7 +5,7 @@ The register controls external facts, formats, APIs, and content. Absence from t
 Last reviewed: GGG Developer Docs/API Reference on 2026-08-14 at 13:16 UTC;
 GGG Terms re-verified on 2026-08-15 at 20:26 UTC; OpenAI API/program evidence on
 2026-08-15; game-data candidates and current upstream revisions reviewed on
-2026-08-21.
+2026-08-21; repository and API availability rechecked on 2026-08-25.
 
 The Developer Docs, API Reference, and Terms were retrieved again from the
 exact first-party URLs below. All returned HTTP 200. No material policy-text
@@ -62,6 +62,9 @@ funding permission. No approval may be inferred from that absence.
 | `PYPOE-CANDIDATE` | PyPoE/client-derived tooling | None in production | Intended data path reads client files and produces derived game data; both are prohibited by the current constitution | `prohibited-disabled` |
 | `POEWIKI-CARGO-001` | Path of Exile Wiki [Cargo API](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API) and [copyright](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Copyrights) | Candidate factual metadata fields only | CC BY-NC-SA/share-alike, underlying GGG data, attribution, caching, redistribution, production activation and funding review | `conditional-disabled`; `POEWIKI_IMPORT_ENABLED=false`; no article prose, images, icons, audio, flavour text, screenshots, or rendering templates |
 | `POE2-DATASET-CANDIDATE` | No approved source selected | Edition-isolated adapter/import contract only | Exact source, provenance, permission, commercial/cache/redistribution rights, schema, checksum and activation review | `unavailable-disabled`; no HTTP client and no canonical data authority |
+| `POE-DB-CANDIDATE` | PoEDB community database, <https://poedb.tw/> | Candidate lookup/reference only | No documented redistribution/commercial licence or canonical snapshot permission recorded; no runtime client | `requires-review`; do not scrape or import |
+| `CRAFT-OF-EXILE-CANDIDATE` | Craft of Exile, <https://www.craftofexile.com/> | Candidate crafting-reference source only | No approved API/data licence, cache, redistribution, or commercial-use evidence; no runtime client | `disabled-candidate`; do not scrape or import |
+| `POE-TRADE-VOCABULARY-CANDIDATE` | Official Trade vocabulary/internal data paths | None; manual recipes use Lootwright-owned canonical keys only | `/api/trade/search`, `/api/trade/fetch`, and `/api/trade/data/*` are undocumented and prohibited | `permanently-prohibited`; no adapter |
 | `AI-PROVIDER-001` | Official OpenAI [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5.4 nano](https://developers.openai.com/api/docs/models/gpt-5.4-nano), [pricing](https://developers.openai.com/api/docs/pricing), [data controls](https://developers.openai.com/api/docs/guides/your-data), and [spend limits](https://developers.openai.com/api/docs/guides/spend-limits), retrieved 2026-08-15 | Optional intent extraction, clarification, and deterministic-result explanation through the tested adapter only | User-facing privacy disclosure and opt-in UX, provider approval, deployment endpoint/model/region/retention review, and verified OpenAI project hard spend limit | `disabled-candidate`; adapter exists, but exact operations remain non-executable `require_review` |
 
 ## Record requirements

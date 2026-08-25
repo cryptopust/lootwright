@@ -45,6 +45,9 @@ final class PolicyDefaults
             self::source('POENINJA-ECONOMY-001', 'poe.ninja public economy API lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled unless policy and configuration both permit an out-of-band import.', 'conditional', false, 'optional'),
             self::source('POEWIKI-CARGO-001', 'Path of Exile Wiki Cargo lifecycle source', SourceType::ThirdPartySite, AccessMode::AnonymousHttp, 'Canonical lifecycle identity; conditional and disabled pending the recorded rights review.', 'conditional', false, 'candidate'),
             self::source('POE2-DATASET-CANDIDATE', 'PoE2 approved dataset contract', SourceType::CommunityDataset, AccessMode::RemoteFetch, 'Adapter contract only; no PoE2 canonical dataset has passed policy and provenance review.', 'conditional', false, 'future'),
+            self::source('POE-DB-CANDIDATE', 'PoEDB community database', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Reference candidate only; no reviewed API, licence, or redistribution permission.', 'conditional', false, 'candidate'),
+            self::source('CRAFT-OF-EXILE-CANDIDATE', 'Craft of Exile crafting reference', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Reference candidate only; scraping and hosted extraction are disabled.', 'prohibited', false, 'prohibited'),
+            self::source('POE-TRADE-VOCABULARY-CANDIDATE', 'Official Trade vocabulary/internal data paths', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Undocumented Trade paths are permanently prohibited; manual recipes use Lootwright vocabulary.', 'prohibited', false, 'prohibited'),
             self::source('GGG-PROTECTED-ASSETS', 'GGG protected media and expression', SourceType::ThirdPartySite, AccessMode::RemoteFetch, 'Artwork, images, logos, music, flavour text, screenshots, and fonts.'),
             self::source('OPENAI-API', 'OpenAI API', SourceType::OfficialDocumentedApi, AccessMode::AuthenticatedApi, 'Optional provider remains disabled until an explicit reviewed provider decision.'),
             self::source('LOOTWRIGHT-FUNDING', 'Lootwright funding policy', SourceType::FirstPartyOriginal, AccessMode::LocalRuntime, 'Funding and monetized hosting are disabled pending explicit review.'),
@@ -77,6 +80,9 @@ final class PolicyDefaults
             ['source_id' => 'POENINJA-ECONOMY-001', 'version' => 'economy-v1', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'POEWIKI-CARGO-001', 'version' => 'candidate-2026-08-20', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'POE2-DATASET-CANDIDATE', 'version' => 'unavailable', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'POE-DB-CANDIDATE', 'version' => 'candidate-2026-08-25', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'CRAFT-OF-EXILE-CANDIDATE', 'version' => 'candidate-2026-08-25', 'policy_version' => self::POLICY_VERSION],
+            ['source_id' => 'POE-TRADE-VOCABULARY-CANDIDATE', 'version' => '2026-08-25', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'GGG-PROTECTED-ASSETS', 'version' => '2026-08-14', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'OPENAI-API', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
             ['source_id' => 'LOOTWRIGHT-FUNDING', 'version' => '2026-08-15', 'policy_version' => self::POLICY_VERSION],
@@ -109,6 +115,9 @@ final class PolicyDefaults
             self::evidenceRecord('POENINJA-ECONOMY-LIFECYCLE-EVIDENCE', 'POENINJA-ECONOMY-001', 'economy-v1', 'https://poe.ninja/docs/api', PermissionStatus::Allowed, 'The canonical lifecycle identity inherits only the reviewed public PoE1 economy boundary and remains configuration-disabled.', true, 'Attribute poe.ninja as the market-context source where displayed.', '2026-08-20T00:00:00Z'),
             self::evidenceRecord('POEWIKI-CARGO-LIFECYCLE-EVIDENCE', 'POEWIKI-CARGO-001', 'candidate-2026-08-20', 'https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API', PermissionStatus::Unknown, 'The canonical lifecycle identity remains disabled pending licensing, redistribution, underlying-rights, and funding review.', true, 'Review CC BY-NC-SA attribution and share-alike requirements before activation.', '2026-08-20T00:00:00Z'),
             self::evidenceRecord('POE2-DATASET-CANDIDATE-EVIDENCE', 'POE2-DATASET-CANDIDATE', 'unavailable', 'https://github.com/cryptopust/lootwright/blob/main/docs/compliance/source-register.md', PermissionStatus::Unknown, 'No PoE2 canonical dataset is approved for production ingestion.', false),
+            self::evidenceRecord('POE-DB-CANDIDATE-EVIDENCE', 'POE-DB-CANDIDATE', 'candidate-2026-08-25', 'https://poedb.tw/', PermissionStatus::Unknown, 'Technical availability was confirmed, but no API, licence, cache, redistribution, or commercial-use approval is recorded.', false),
+            self::evidenceRecord('CRAFT-OF-EXILE-CANDIDATE-EVIDENCE', 'CRAFT-OF-EXILE-CANDIDATE', 'candidate-2026-08-25', 'https://www.craftofexile.com/', PermissionStatus::Denied, 'No approved API/data licence is recorded; scraping and hosted extraction remain disabled.', false),
+            self::evidenceRecord('POE-TRADE-VOCABULARY-CANDIDATE-EVIDENCE', 'POE-TRADE-VOCABULARY-CANDIDATE', '2026-08-25', 'https://www.pathofexile.com/developer/docs/reference', PermissionStatus::Denied, 'Undocumented internal Trade paths are outside the supported API boundary and permanently prohibited.', false),
             self::evidenceRecord('GGG-TERMS-ASSETS-20260814', 'GGG-PROTECTED-ASSETS', '2026-08-14', 'https://www.pathofexile.com/legal/terms-of-use-and-privacy-policy', PermissionStatus::Denied, 'Protected GGG media and expression are outside Lootwright redistribution rights.', true),
             self::evidenceRecord('OPENAI-DATA-CONTROLS-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/docs/guides/your-data', PermissionStatus::Allowed, 'Official OpenAI documentation describes API data use and retention controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
             self::evidenceRecord('OPENAI-RESPONSES-20260815', 'OPENAI-API', '2026-08-15', 'https://developers.openai.com/api/reference/resources/responses/methods/create', PermissionStatus::Allowed, 'Official OpenAI API reference documents POST /v1/responses and its stateless request controls.', false, retrievedAt: '2026-08-15T00:00:00Z'),
@@ -157,6 +166,9 @@ final class PolicyDefaults
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'poeninja.economy.snapshot.import', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, ['operator_contact_configured', 'exact_endpoint_allowlist', 'normalized_snapshot_only'], 'A normalized poe.ninja economy snapshot is conditional on the independent source switch and exact Policy Gate decision.');
         $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'repoe.snapshot.import', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'RePoE is prohibited as a production snapshot source until a new reviewed source decision supersedes this denial.');
         $rules[] = self::rule('POE2-DATASET-CANDIDATE', 'unavailable', Capability::Import, 'poe2.dataset.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['approved_source_record', 'poe2_scope', 'checksum_verified'], 'The PoE2 adapter contract exists, but no canonical production dataset is approved.');
+        $rules[] = self::rule('POE-DB-CANDIDATE', 'candidate-2026-08-25', Capability::Import, 'poedb.snapshot.import', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, ['current_permission_evidence', 'exact_field_allowlist', 'cache_reviewed'], 'PoEDB is a reference candidate and has no canonical import authority.');
+        $rules[] = self::rule('CRAFT-OF-EXILE-CANDIDATE', 'candidate-2026-08-25', Capability::Import, 'craftofexile.snapshot.import', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Craft of Exile scraping or hosted extraction is disabled.');
+        $rules[] = self::rule('POE-TRADE-VOCABULARY-CANDIDATE', '2026-08-25', Capability::Import, 'trade.vocabulary.import', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'Undocumented Trade vocabulary paths are prohibited; Lootwright uses only reviewed local vocabulary.');
 
         $rollbackConditions = ['authorized_actor', 'staging_only', 'no_canonical_mutation'];
         $approvalConditions = ['approved_snapshot', 'same_source', 'same_edition', 'no_canonical_mutation'];
@@ -419,6 +431,46 @@ final class PolicyDefaults
                 'redistribution_status' => 'unknown',
                 'commercial_use_status' => 'unknown',
                 'cache_storage_status' => 'prohibited',
+            ],
+            'POE-DB-CANDIDATE' => [
+                'game_editions' => '["poe1","poe2"]',
+                'reference_url' => 'https://poedb.tw/',
+                'documentation_url' => 'https://poedb.tw/',
+                'technical_access' => 'public_website',
+                'license_identifier' => 'NOASSERTION',
+                'redistribution_status' => 'unknown',
+                'commercial_use_status' => 'unknown',
+                'cache_storage_status' => 'prohibited',
+                'rate_limit_status' => 'unknown',
+                'auth_requirements' => 'none_observed',
+                'data_quality_status' => 'community_reference',
+                'patch_versioning_status' => 'unknown',
+                'update_frequency' => 'unknown',
+                'provenance_status' => 'requires_review',
+            ],
+            'CRAFT-OF-EXILE-CANDIDATE' => [
+                'game_editions' => '["poe1","poe2"]',
+                'reference_url' => 'https://www.craftofexile.com/',
+                'documentation_url' => 'https://www.craftofexile.com/',
+                'technical_access' => 'public_website',
+                'license_identifier' => 'NOASSERTION',
+                'redistribution_status' => 'prohibited',
+                'commercial_use_status' => 'prohibited',
+                'cache_storage_status' => 'prohibited',
+                'data_quality_status' => 'community_reference',
+                'provenance_status' => 'prohibited',
+            ],
+            'POE-TRADE-VOCABULARY-CANDIDATE' => [
+                'game_editions' => '["poe1","poe2"]',
+                'reference_url' => 'https://www.pathofexile.com/developer/docs/reference',
+                'documentation_url' => 'https://www.pathofexile.com/developer/docs/reference',
+                'technical_access' => 'undocumented_internal_paths',
+                'license_identifier' => 'NOASSERTION',
+                'redistribution_status' => 'prohibited',
+                'commercial_use_status' => 'prohibited',
+                'cache_storage_status' => 'prohibited',
+                'data_quality_status' => 'live_observation_not_canonical',
+                'provenance_status' => 'prohibited',
             ],
             'USER-POB-001', 'USER-ITEM-TEXT-001' => [
                 'game_editions' => '["poe1","poe2"]',

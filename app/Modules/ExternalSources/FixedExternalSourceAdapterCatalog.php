@@ -31,6 +31,9 @@ final readonly class FixedExternalSourceAdapterCatalog implements ExternalSource
             $poe2,
             new DisabledSourceAdapter('GGG-POE1-ATLASTREE-001', '1.0.0', [GameEdition::Poe1], ['approved_dataset_contract'], 'outside_poe1_mvp'),
             new DisabledSourceAdapter('REPOE-CANDIDATE', 'unreviewed-2026-08-14', [GameEdition::Poe1], ['dataset_contract'], 'policy_prohibited'),
+            new DisabledSourceAdapter('POE-DB-CANDIDATE', 'candidate-2026-08-25', [GameEdition::Poe1, GameEdition::Poe2], ['reference_only'], 'permission_and_redistribution_review_required'),
+            new DisabledSourceAdapter('CRAFT-OF-EXILE-CANDIDATE', 'candidate-2026-08-25', [GameEdition::Poe1, GameEdition::Poe2], ['reference_only'], 'scraping_and_redistribution_prohibited'),
+            new DisabledSourceAdapter('POE-TRADE-VOCABULARY-CANDIDATE', '2026-08-25', [GameEdition::Poe1, GameEdition::Poe2], ['vocabulary_candidate'], 'undocumented_trade_paths_prohibited'),
         ];
     }
 

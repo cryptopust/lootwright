@@ -63,6 +63,14 @@ final readonly class GggPassiveTreeImporter
         if (! is_string($resolved) || ! is_file($resolved) || is_link($path)) {
             throw new RuntimeException('The file option must identify a regular local file.');
         }
+        // Test fixtures are test evidence, never a production dataset.  Keep
+        // the explicit fixture path usable by the test suite while refusing
+        // accidental promotion from a deployed checkout.
+        if (! app()->environment('testing')
+            && preg_match('#[\\\\/]tests[\\\\/]fixtures[\\\\/]#i', $resolved) === 1
+        ) {
+            throw new DomainException('Test fixtures cannot be imported as production game data.');
+        }
         $size = filesize($resolved);
         if (! is_int($size) || $size > self::MAX_SOURCE_BYTES) {
             throw new RuntimeException('The passive-tree export exceeds the 8 MB size limit.');

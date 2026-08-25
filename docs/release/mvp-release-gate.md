@@ -1,6 +1,6 @@
 # Lootwright MVP release gate
 
-Date: 2026-08-24
+Date: 2026-08-25
 
 Overall status: **FAIL**
 
@@ -33,7 +33,7 @@ the dormant phase-two PoE2 adapter to pass.
 | AI-off deterministic operation | PASS_WITH_LIMITATIONS | FAIL | Findings, planner output, decision traces, and safe recipe refusals run with AI disabled. Market-dependent advice remains explicitly uncertain when no approved snapshot exists. |
 | AI authority red team | PASS_WITH_LIMITATIONS | PASS_WITH_LIMITATIONS | Fake-provider tests reject unknown recommendations, wrong editions, invented canonical names/codes, numeric claims, price/Trade content, and prompt injection. Staging red-team sign-off is not recorded. |
 | Fixture-free production dependency | PASS_WITH_LIMITATIONS | FAIL | PoE1 binding is `ProductionPoe1DeterministicAnalysisEngine` and requires approved imported data. The repository still needs a staging proof against production infrastructure. |
-| Critical security suite | BLOCKED | BLOCKED | The local full suite passed on PHP 8.4.24 (984 tests, 982 passed, 2 skipped, 13,848 assertions), and both dependency audits reported no advisories. A reviewed CI/staging security acceptance record for this exact release is still absent. |
+| Critical security suite | BLOCKED | BLOCKED | The local full suite passed on PHP 8.4.24 (988 tests, 986 passed, 2 skipped, 13,891 assertions), and both dependency audits reported no advisories. A reviewed CI/staging security acceptance record for this exact release is still absent. |
 | PostgreSQL migration proof | BLOCKED | BLOCKED | The local environment has no reachable PostgreSQL service. SQLite success is not PostgreSQL evidence. |
 | Staging player acceptance | BLOCKED | BLOCKED | No signed manual run using the checklist in `mvp-acceptance-manual.md` is present. |
 
@@ -74,15 +74,15 @@ composer run test:acceptance
 php artisan release:check-mvp --json --write
 ```
 
-## Verification executed on 2026-08-24
+## Verification executed on 2026-08-25
 
 - `composer validate --strict`: passed.
 - `composer audit --locked`: passed, no advisories.
 - `composer run format:check`: passed.
 - `composer run analyse`: passed.
-- `composer run test`: passed, 984 tests with 982 passed, 2 skipped, and 13,862
+- `composer run test`: passed, 988 tests with 986 passed, 2 skipped, and 13,891
   assertions.
-- `composer run test:acceptance`: passed, 6 tests and 60 assertions. The
+- `composer run test:acceptance`: passed, 6 tests and 63 assertions. The
   representative journey persists ranked recommendations, decision traces,
   and explicit safe recipe outputs; staging and approved vocabulary evidence
   are still required for release.
@@ -111,5 +111,6 @@ php artisan release:check-mvp --json --write
    Trade vocabulary, production binding, and staging acceptance before adding
    it to the public edition allowlist.
 
-Until blockers 1–8 are closed, PoE1 remains **FAIL**. PoE2 remains **FAIL**
-until blocker 5 is completed independently.
+Until blockers 1–4 are closed, PoE1 remains **FAIL**. PoE2 remains **FAIL**
+until blocker 5 is completed independently. These statuses are independent;
+PoE2 incompleteness does not block a future PoE1 PASS.

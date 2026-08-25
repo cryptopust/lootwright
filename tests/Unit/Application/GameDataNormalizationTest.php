@@ -23,6 +23,11 @@ final class GameDataNormalizationTest extends TestCase
 
         self::assertSame(GameEdition::Poe1, $dataset->edition);
         self::assertSame('class:fixture', $dataset->records[0]->externalId);
+        self::assertSame(GameEdition::Poe1, $dataset->records[0]->provenance->edition);
+        self::assertSame('SOURCE-ONE', $dataset->records[0]->provenance->sourceCode);
+        self::assertSame(self::SNAPSHOT, $dataset->records[0]->provenance->snapshotId);
+        self::assertNotNull($dataset->records[0]->provenance->importedAt);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $dataset->records[0]->checksumSha256);
 
         $this->expectException(DomainException::class);
         (new Poe2GameDataNormalizer)->normalize($document);
@@ -81,6 +86,21 @@ final class GameDataNormalizationTest extends TestCase
 
         self::assertTrue($conflict->conflict);
         self::assertNull($conflict->selected);
+    }
+
+    public function test_unconfigured_authority_tier_is_quarantined_even_when_sorted(): void
+    {
+        $record = (new Poe1GameDataNormalizer)->normalize(
+            $this->document(GameEdition::Poe1, 'lootwright.poe1.game-data.v1'),
+        )->records[0];
+
+        $resolution = (new SourceAuthorityResolver(['character_class' => ['official_structured']]))->resolve([
+            new SourceAuthorityCandidate($record, 'heuristic'),
+        ]);
+
+        self::assertTrue($resolution->conflict);
+        self::assertNull($resolution->selected);
+        self::assertSame('unconfigured_authority_tier', $resolution->reason);
     }
 
     private function document(

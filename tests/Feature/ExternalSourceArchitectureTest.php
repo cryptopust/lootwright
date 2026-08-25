@@ -48,7 +48,7 @@ final class ExternalSourceArchitectureTest extends TestCase
         self::assertContains('live_fetch:poe_ninja.builds.fetch', $poeNinja->forbiddenCapabilities);
 
         $catalog = $this->app->make(ExternalSourceAdapterCatalog::class);
-        foreach (['GGG-DOCUMENTED-API', 'POEWIKI-CARGO-001', 'POE2-DATASET-CANDIDATE', 'GGG-POE1-ATLASTREE-001', 'REPOE-CANDIDATE'] as $sourceCode) {
+        foreach (['GGG-DOCUMENTED-API', 'POEWIKI-CARGO-001', 'POE2-DATASET-CANDIDATE', 'GGG-POE1-ATLASTREE-001', 'REPOE-CANDIDATE', 'POE-DB-CANDIDATE', 'CRAFT-OF-EXILE-CANDIDATE', 'POE-TRADE-VOCABULARY-CANDIDATE'] as $sourceCode) {
             $adapter = $catalog->find($sourceCode);
             self::assertNotNull($adapter);
             self::assertFalse($adapter->status()->operational);

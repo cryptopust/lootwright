@@ -1,6 +1,6 @@
 # Canonical game-data quality
 
-Status date: 2026-08-21. This report describes data that a clean production
+Status date: 2026-08-25. This report describes data that a clean production
 installation can resolve from an active, approved ruleset. Test fixtures,
 hard-coded presentation catalogs, parser aliases, and candidate repositories
 are deliberately excluded.
@@ -10,7 +10,7 @@ are deliberately excluded.
 No approved canonical ruleset is active in a clean installation. Therefore
 every requested category has zero active records in both editions. The verified
 total population (the denominator needed for a completeness percentage) is
-also unavailable, so Lootwright reports the percentage as `bilinmiyor` rather
+also unavailable, so Lootwright reports the percentage as `unknown` rather
 than inventing one.
 
 | Edition | Classes | Ascendancies | Skills | Supports | Passives | Items | Modifiers | Trade vocabulary |
@@ -68,6 +68,36 @@ These gaps are visible and block dependent deterministic rules.
 | Path of Exile Trade | Undocumented internal search/fetch/data paths are technically reachable but prohibited | No approved ingestion/redistribution capability | Session secrets never accepted; rate limits never bypassed | Live listings are observations, not canonical facts | Edition-specific vocabulary absent | DISABLED |
 | `dat-schema` | Public Git repository | MIT schema; contains no approved game rows | No runtime auth | Schema-only, commit-versioned | Cross-edition schema candidate with no fact authority | APPROVED for schema research only |
 | PyPoE/client-derived tooling | Public code but requires client-file extraction for intended data path | Game-data rights unresolved | Local client access prohibited | Derived client data | PoE1 candidate only | DISABLED / prohibited production path |
+
+## Source discovery evidence (2026-08-25)
+
+The following read-only checks were performed against the canonical source
+locations. HTTP availability is not permission to import. GitHub API metadata
+reported `NOASSERTION` for the Path of Building repositories, RePoE and PyPoE;
+the MIT result for `dat-schema` applies to its schema code only. The official
+GGG `skilltree-export` repository has no separate licence file, so its source
+register entry remains `LicenseRef-GGG-Terms-of-Use` and is limited to the
+reviewed commit and checksum. The PoE Wiki Cargo API is technically reachable,
+but its CC BY-NC-SA/share-alike and underlying GGG-data implications keep it
+disabled. PoEDB and Craft of Exile are recorded as review candidates, not
+runtime dependencies. No source is fetched while serving a player request.
+
+| Capability | Technical access | Licence/terms | Cache/redistribution/commercial | Rate/auth | Data quality/versioning | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| GGG documented API | HTTPS documented API; application registration currently unavailable | Operation-specific GGG review required | Unknown until operation approval | OAuth/application and documented limits | First-party, operation-specific versioning | REQUIRES_REVIEW |
+| GGG official passive-tree export | Pinned Git/raw file, operator-only | No separate licence file; GGG terms reference | Bounded local snapshot only; no hosted copy/assets | No auth; pinned fetch | Structured, commit + checksum | APPROVED_WITH_LIMITS |
+| PoB Community PoE1/PoE2 | Public Git; format parsers implemented independently | MIT software licence; embedded game rows are separate rights question | Format-only local interpretation allowed; no data redistribution | No auth; Git commits | Strong format evidence; PoE2 beta | APPROVED (format only) / REQUIRES_REVIEW (data) |
+| RePoE / PyPoE | Public repositories; intended path derives client data | Underlying GGG rights and commercial terms unresolved | Production import/cache/redistribution denied; client inspection prohibited | No runtime auth | Derived/client-versioned, stale or unknown | DISABLED |
+| PoE Wiki Cargo | Public HTTP API | CC BY-NC-SA plus underlying GGG-data review | Cache/redistribution/commercial use not approved | Limits require review; no auth observed | Community rows and page revisions | REQUIRES_REVIEW |
+| poe.ninja economy | Documented public API | Conditional source-specific review | Normalized, bounded market observations only; no raw/icon retention | Provider cache/rate headers; contact required | League/timestamp observations, not rules | APPROVED_WITH_LIMITS (default off) |
+| Official Trade | Website and undocumented internal paths technically reachable | No approved ingestion right; internal paths prohibited | No listing/query/price ingestion | Session secrets prohibited | Live observations, never canonical facts | DISABLED |
+| PoEDB / Craft of Exile | Public websites | No reviewed API/data licence or commercial/cache permission | Scraping and hosted extraction disabled | Unknown | Presentation/reference quality only | DISABLED / REQUIRES_REVIEW |
+
+These classifications are mirrored in `source-register.md`, the executable
+`policy_data_sources` projection, and adapter status tests. A newly discovered
+source must first receive an immutable version, checksum/provenance evidence,
+field-level rights review, and a category authority decision before it can
+produce canonical data.
 
 Technical accessibility never changes a Policy and Provenance Gate decision.
 See the [source register](../compliance/source-register.md) for exact evidence

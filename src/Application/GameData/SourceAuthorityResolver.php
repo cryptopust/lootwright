@@ -28,6 +28,15 @@ final readonly class SourceAuthorityResolver
         }
         $precedence = $this->precedenceByCategory[$first->category->value]
             ?? ['official_structured', 'approved_upstream', 'trusted_community', 'derived', 'heuristic'];
+        // A source authority tier is executable policy, not a display label.
+        // Refuse candidates that are not present in the category's reviewed
+        // precedence list instead of allowing an unreviewed tier to win by
+        // deterministic tie-breaking.
+        foreach ($candidates as $candidate) {
+            if (! in_array($candidate->authorityTier, $precedence, true)) {
+                return new SourceAuthorityResolution(null, $candidates, true, 'unconfigured_authority_tier');
+            }
+        }
         usort($candidates, static function (SourceAuthorityCandidate $left, SourceAuthorityCandidate $right) use ($precedence): int {
             $leftRank = array_search($left->authorityTier, $precedence, true);
             $rightRank = array_search($right->authorityTier, $precedence, true);

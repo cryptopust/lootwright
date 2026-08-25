@@ -236,7 +236,15 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             if (str_contains($name, 'mageblood') && (str_contains($text, 'keep') || str_contains($text, 'without replacing'))) {
                 $values[] = UserConstraint::keepItem('mageblood');
             }
-            if (($item['slot'] ?? null) === 'weapon' && str_contains($text, 'without replacing')) {
+            // PoB normalizes equipment placement as a `slots` list.  Older
+            // imports may expose a scalar `slot`, so accept both shapes but
+            // never infer a weapon from an item name alone.
+            $slots = $item['slots'] ?? ($item['slot'] ?? []);
+            $slots = is_array($slots) ? $slots : [$slots];
+            $slots = array_map(static fn (mixed $slot): string => strtolower(trim((string) $slot)), $slots);
+            if (array_filter($slots, static fn (string $slot): bool => str_contains($slot, 'weapon')) !== []
+                && str_contains($text, 'without replacing')
+            ) {
                 $values[] = UserConstraint::keepItem((string) ($item['id'] ?? 'main_weapon'));
             }
         }
