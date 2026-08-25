@@ -1,0 +1,16 @@
+{
+  "schema": "lootwright.analysis-golden.v1",
+  "edition": "poe1",
+  "engine_version": "1.0.0",
+  "ruleset_version": "1.0.0",
+  "cases": {
+    "melee-armour-mapping": {"finding_codes": [], "unsupported_data": []},
+    "ranged-evasion-bossing": {"finding_codes": [], "unsupported_data": []},
+    "spell-energy-shield-sanctum": {"finding_codes": [], "unsupported_data": []},
+    "minion-hybrid-delve": {"finding_codes": [], "unsupported_data": []},
+    "totem-armour-bossing": {"finding_codes": [], "unsupported_data": []},
+    "mine-trap-aura-heavy": {"finding_codes": [], "unsupported_data": []},
+    "dot-hybrid-mapping": {"finding_codes": [], "unsupported_data": []},
+    "crit-es-delve": {"finding_codes": [], "unsupported_data": []}
+  }
+}
