@@ -17,6 +17,7 @@ final readonly class Recommendation implements JsonSerializable
     /**
      * @param  array<array-key, mixed>  $findings
      * @param  array<array-key, mixed>  $alternatives
+     * @param  array<string, mixed>  $decisionTrace
      */
     private function __construct(
         public GameEdition $edition,
@@ -27,11 +28,14 @@ final readonly class Recommendation implements JsonSerializable
         public array $findings,
         public array $alternatives,
         public ExplanationTrace $trace,
+        /** @var array<string,mixed> */
+        public array $decisionTrace = [],
     ) {}
 
     /**
      * @param  array<array-key, mixed>  $findings
      * @param  array<array-key, mixed>  $alternatives
+     * @param  array<string, mixed>  $decisionTrace
      */
     public static function create(
         GameEdition $edition,
@@ -42,6 +46,7 @@ final readonly class Recommendation implements JsonSerializable
         array $findings,
         array $alternatives,
         ExplanationTrace $trace,
+        array $decisionTrace = [],
     ): DomainResult {
         if (! $analysisId->belongsTo($edition) || $trace->edition !== $edition) {
             return DomainResult::failure(DomainError::because(
@@ -99,6 +104,7 @@ final readonly class Recommendation implements JsonSerializable
             $validatedFindings,
             $validatedAlternatives,
             $trace,
+            $decisionTrace,
         ));
     }
 
@@ -114,6 +120,7 @@ final readonly class Recommendation implements JsonSerializable
             'findings' => $this->findings,
             'alternatives' => $this->alternatives,
             'trace' => $this->trace,
+            'decision_trace' => $this->decisionTrace,
         ];
     }
 }

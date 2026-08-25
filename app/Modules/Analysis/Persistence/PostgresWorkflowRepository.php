@@ -28,6 +28,7 @@ use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Lootwright\Domain\TradePlanning\ManualTradeRecipe as DomainManualTradeRecipe;
+use Lootwright\Domain\TradePlanning\TradeRecipe as DomainTradeRecipe;
 use RuntimeException;
 
 final class PostgresWorkflowRepository implements AnalysisDocumentRepository, BuildLifecycleRepository, WorkflowRepository
@@ -679,7 +680,9 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
 
         foreach ($snapshot->recipes as $sequence => $recipe) {
             $payload = CanonicalJson::encode($recipe);
-            $key = $recipe instanceof DomainManualTradeRecipe ? $recipe->recommendationCode : $recipe->slot;
+            $key = $recipe instanceof DomainManualTradeRecipe
+                ? $recipe->recommendationCode
+                : ($recipe instanceof DomainTradeRecipe ? $recipe->slot : $recipe->slot);
             DB::table('manual_trade_recipes')->insert([
                 'id' => (string) Str::uuid7(),
                 'analysis_id' => $analysisId,

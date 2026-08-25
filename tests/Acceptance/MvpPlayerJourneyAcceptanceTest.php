@@ -62,7 +62,7 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         );
     }
 
-    public function test_representative_poe1_artifact_reaches_traceable_findings_but_exposes_the_product_gap(): void
+    public function test_representative_poe1_artifact_reaches_traceable_findings_and_ranked_recommendations(): void
     {
         Queue::fake();
         $fixture = base_path('tests/Fixtures/ggg/passive-tree-8bd138b-reduced.json');
@@ -109,8 +109,8 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         self::assertLessThan(10_000, $analysisMs);
         $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'completed']);
         self::assertGreaterThan(0, DB::table('analysis_findings')->where('analysis_id', $analysisId)->count());
-        self::assertSame(0, DB::table('analysis_recommendations')->where('analysis_id', $analysisId)->count());
-        self::assertSame(0, DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->count());
+        self::assertGreaterThan(0, DB::table('analysis_recommendations')->where('analysis_id', $analysisId)->count(), 'recommendations missing');
+        self::assertGreaterThan(0, DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->count(), 'recipes missing');
 
         $finding = DB::table('analysis_findings')->where('analysis_id', $analysisId)->orderBy('sequence')->first();
         self::assertNotNull($finding);
@@ -118,6 +118,14 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         foreach (['finding_id', 'rule_id', 'ruleset_version', 'evidence', 'source_provenance', 'explanation_trace'] as $field) {
             self::assertArrayHasKey($field, $payload);
         }
+        $recommendation = DB::table('analysis_recommendations')->where('analysis_id', $analysisId)->orderBy('sequence')->first();
+        self::assertNotNull($recommendation);
+        $recommendationPayload = json_decode(Crypt::decryptString($recommendation->payload_encrypted), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(
+            ['constraints', 'evidence', 'finding', 'market_evidence', 'recommendation', 'rule', 'upgrade_candidate', 'user_goal'],
+            array_keys($recommendationPayload['decision_trace']),
+        );
+        self::assertArrayHasKey('latencies_ms', json_decode(Crypt::decryptString(DB::table('analyses')->where('id', $analysisId)->value('output_snapshot_encrypted')), true, flags: JSON_THROW_ON_ERROR));
 
         $report = $this->app->make(MvpReleaseDashboard::class)->report();
         $gates = [];
@@ -126,8 +134,8 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         }
         self::assertSame('BLOCKED', $gates['real_build_import']['status']);
         self::assertSame('PASS', $gates['deterministic_findings']['status']);
-        self::assertSame('FAIL', $gates['upgrade_planner']['status']);
-        self::assertSame('FAIL', $gates['recommendation_trace']['status']);
+        self::assertSame('PASS', $gates['upgrade_planner']['status']);
+        self::assertSame('PASS', $gates['recommendation_trace']['status']);
         self::assertSame('FAIL', $gates['trade_recipes']['status']);
     }
 

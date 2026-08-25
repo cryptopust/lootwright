@@ -66,6 +66,17 @@ final readonly class Poe1UpgradeCandidateFactory implements UpgradeCandidateFact
         }
         $slots = array_map(static fn (string $slot): string => 'slot:'.$slot, $finding->affectedSlots);
         $score = $this->scorer->score($finding, $classification, $intent);
+        $tradeRequirements = match ($finding->code) {
+            'defence.fire_resistance.below_reported_max' => [['modifier_id' => 'defence.fire_resistance', 'mode' => 'required', 'minimum' => '1']],
+            'defence.cold_resistance.below_reported_max' => [['modifier_id' => 'defence.cold_resistance', 'mode' => 'required', 'minimum' => '1']],
+            'defence.lightning_resistance.below_reported_max' => [['modifier_id' => 'defence.lightning_resistance', 'mode' => 'required', 'minimum' => '1']],
+            'defence.chaos_resistance.negative' => [['modifier_id' => 'defence.chaos_resistance', 'mode' => 'required', 'minimum' => '1']],
+            default => [],
+        };
+        $targetSlot = $finding->affectedSlots[0] ?? null;
+        if (is_string($targetSlot) && str_starts_with($targetSlot, 'slot:')) {
+            $targetSlot = substr($targetSlot, 5);
+        }
 
         return new UpgradeCandidate(
             $id,
@@ -81,6 +92,8 @@ final readonly class Poe1UpgradeCandidateFactory implements UpgradeCandidateFact
             $market === MarketDataRequirement::Required ? BudgetUncertainty::MarketPriceUnknown : BudgetUncertainty::NotApplicable,
             $market,
             $score,
+            tradeRequirements: $tradeRequirements,
+            targetSlot: is_string($targetSlot) && $targetSlot !== '' ? $targetSlot : null,
         );
     }
 }

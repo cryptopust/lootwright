@@ -78,7 +78,8 @@ final readonly class MvpReleaseDashboard
         $findingCount = $analysisId === null ? 0 : DB::table('analysis_findings')->where('analysis_id', $analysisId)->count();
         $recommendationCount = $analysisId === null ? 0 : DB::table('analysis_recommendations')->where('analysis_id', $analysisId)->count();
         $traceableRecommendationCount = $analysisId === null ? 0 : $this->traceableRecommendationCount($analysisId);
-        $recipeCount = $analysisId === null ? 0 : DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->count();
+        $recipeCount = $analysisId === null ? 0 : $this->validRecipeCount($analysisId);
+        $stageLatencies = $analysisId === null ? [] : $this->stageLatencies($analysisId);
         $approved = $activeRuleset !== null
             && $activeRuleset['status'] === 'published'
             && $activeRuleset['dataset_classification'] === 'approved_import'
@@ -150,8 +151,8 @@ final readonly class MvpReleaseDashboard
             'latencies_ms' => [
                 'import' => $this->elapsedMilliseconds($artifactQuery?->value('created_at'), $artifactQuery?->value('updated_at')),
                 'analysis_end_to_end' => $this->elapsedMilliseconds($analysisQuery->value('created_at'), $analysisQuery->value('updated_at')),
-                'planner' => $recommendationCount > 0 ? 'not_instrumented' : null,
-                'trade_recipe' => $recipeCount > 0 ? 'not_instrumented' : null,
+                'planner' => $stageLatencies['planner'] ?? null,
+                'trade_recipe' => $stageLatencies['trade_recipe'] ?? null,
             ],
             'gates' => $gates,
             'blockers' => array_map(static fn (array $gate): string => $gate['label'].': '.$gate['evidence'], $failed),
@@ -226,6 +227,44 @@ final readonly class MvpReleaseDashboard
         }
 
         return $complete;
+    }
+
+    private function validRecipeCount(string $analysisId): int
+    {
+        $valid = 0;
+        foreach (DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->get(['payload_encrypted', 'payload_hash_sha256']) as $row) {
+            try {
+                $payload = Crypt::decryptString((string) $row->payload_encrypted);
+                if (! hash_equals((string) $row->payload_hash_sha256, hash('sha256', $payload))) {
+                    continue;
+                }
+                $decoded = json_decode($payload, true, flags: JSON_THROW_ON_ERROR);
+                if (is_array($decoded) && ($decoded['unsupported_filters'] ?? []) === [] && trim((string) ($decoded['strict_recipe'] ?? '')) !== '') {
+                    $valid++;
+                }
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return $valid;
+    }
+
+    /** @return array<string,int> */
+    private function stageLatencies(string $analysisId): array
+    {
+        $payload = DB::table('analyses')->where('id', $analysisId)->value('output_snapshot_encrypted');
+        if (! is_string($payload)) {
+            return [];
+        }
+        try {
+            $decoded = json_decode(Crypt::decryptString($payload), true, flags: JSON_THROW_ON_ERROR);
+            $latencies = $decoded['latencies_ms'] ?? [];
+
+            return is_array($latencies) ? array_filter($latencies, static fn (mixed $value): bool => is_int($value)) : [];
+        } catch (Throwable) {
+            return [];
+        }
     }
 
     /** @return array<string, mixed> */

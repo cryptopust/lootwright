@@ -3,14 +3,35 @@
 namespace App\Modules\Analysis\Infrastructure;
 
 use Illuminate\Support\Facades\DB;
+use Lootwright\Application\TradePlanning\TradeRecipeBuilder;
 use Lootwright\Application\Workflow\DTO\AnalysisRecord;
 use Lootwright\Application\Workflow\DTO\ArtifactRecord;
 use Lootwright\Application\Workflow\DTO\DeterministicAnalysisSnapshot;
 use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\DeterministicAnalysisEngine;
+use Lootwright\Domain\Analysis\Finding;
+use Lootwright\Domain\BuildIntake\BuildSnapshot;
 use Lootwright\Domain\BuildIntake\Import\CanonicalImportedBuild;
 use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
+use Lootwright\Domain\BuildIntake\Intent\ContentGoal;
+use Lootwright\Domain\BuildIntake\Intent\PlayerGoal;
+use Lootwright\Domain\BuildIntake\Intent\PlayStyle;
+use Lootwright\Domain\BuildIntake\Intent\UpgradePriority;
+use Lootwright\Domain\PoeCatalog\BuildCatalog;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
+use Lootwright\Domain\PoeCatalog\Canonical\ModifierDefinition;
+use Lootwright\Domain\PoeCatalog\Identifier\AscendancyId;
+use Lootwright\Domain\PoeCatalog\Identifier\CharacterClassId;
+use Lootwright\Domain\PoeCatalog\Ports\GameDataRepository;
+use Lootwright\Domain\Recommendations\BudgetConstraint;
+use Lootwright\Domain\Recommendations\Ports\UpgradePlanner;
+use Lootwright\Domain\Recommendations\Recommendation;
+use Lootwright\Domain\Recommendations\RecommendationImpact;
+use Lootwright\Domain\Recommendations\UpgradeClassification;
+use Lootwright\Domain\Recommendations\UpgradeGraph;
+use Lootwright\Domain\Recommendations\UserConstraint;
+use Lootwright\Domain\Recommendations\UserConstraints;
 use Lootwright\Domain\Rulesets\DatasetClassification;
 use Lootwright\Domain\Rulesets\GameRuleset;
 use Lootwright\Domain\Rulesets\GameVersion;
@@ -18,16 +39,27 @@ use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\Domain\Rulesets\ProvenanceStatus;
 use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Rulesets\RulesetIdentity;
+use Lootwright\Domain\Shared\Evidence\RulesetReference;
 use Lootwright\Domain\Shared\Game\GameEdition;
+use Lootwright\Domain\Shared\Game\GameScope;
+use Lootwright\Domain\Shared\Game\PlatformRealm;
 use Lootwright\Domain\Shared\Identity\AnalysisId;
+use Lootwright\Domain\Shared\Identity\BuildId;
+use Lootwright\Domain\Shared\Provenance\SourceProvenanceReference;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use Lootwright\Domain\Shared\Value\Budget;
+use Lootwright\Domain\Shared\Value\Confidence;
+use Lootwright\Domain\Shared\Value\CurrencyCode;
 use Lootwright\Domain\Shared\Value\Locale;
 use Lootwright\Domain\Shared\Version\LeagueId;
 use Lootwright\Domain\Shared\Version\ParserVersion;
 use Lootwright\Domain\Shared\Version\PatchVersion;
+use Lootwright\Domain\TradePlanning\TradeRecipe;
+use Lootwright\Domain\TradePlanning\TradeVocabularyEntry;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine as CoreEngine;
+use Lootwright\GameAdapters\PoE1\TradePlanning\Poe1TradeVocabulary;
 use RuntimeException;
 use Throwable;
 
@@ -36,6 +68,9 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
     public function __construct(
         private RulesetResolver $rulesets,
         private CoreEngine $engine,
+        private UpgradePlanner $planner,
+        private TradeRecipeBuilder $tradeRecipeBuilder,
+        private GameDataRepository $gameData,
     ) {}
 
     public function resolve(AnalysisRecord $analysis, ArtifactRecord $artifact): ResolvedAnalysisContext
@@ -91,10 +126,23 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             if ($locale->isFailure()) {
                 throw new RuntimeException('The deterministic fallback locale is invalid.');
             }
-            $intent = BuildIntent::unspecified(GameEdition::Poe1, $locale->value());
+            $intent = $this->intent($analysis, $locale->value());
             $result = (new Poe1AnalysisEngine($this->engine, $analysisRules, $knownNodes, sourceProvenance: $provenance))
                 ->analyzeFor($analysisId->value(), $build, $intent, $gameRuleset);
             $findings = $result->findings;
+            $plannerStarted = hrtime(true);
+            $graphResult = $this->planner->plan($result, $intent, $this->budget($analysis), $this->constraints($analysis, $build));
+            $plannerLatencyMs = (int) ceil((hrtime(true) - $plannerStarted) / 1_000_000);
+            if ($graphResult->isFailure() || ! $graphResult->value() instanceof UpgradeGraph) {
+                throw new RuntimeException('The deterministic upgrade planner failed closed.');
+            }
+            $graph = $graphResult->value();
+            $constraints = $this->constraints($analysis, $build);
+            $budget = $this->budget($analysis);
+            $recommendations = $this->recommendations($graph, $findings, $analysisId->value(), $intent, $constraints, $budget);
+            $recipeStarted = hrtime(true);
+            $recipes = $this->recipes($graph, $build, $artifact, $identity, $gameRuleset);
+            $recipeLatencyMs = (int) ceil((hrtime(true) - $recipeStarted) / 1_000_000);
             $input = CanonicalJson::encode([
                 'analysis_parameters_hash_sha256' => $analysis->parametersHashSha256,
                 'build' => $this->safeBuildProjection($build),
@@ -105,8 +153,14 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
                 'analysis_result' => $result,
                 'engine_version' => $result->engineVersion,
                 'findings' => $result->findings,
-                'recommendations' => [],
-                'manual_trade_recipes' => [],
+                'recommendations' => $recommendations,
+                'manual_trade_recipes' => $recipes,
+                'upgrade_graph' => $graph,
+                'intent' => $intent,
+                'latencies_ms' => [
+                    'planner' => $plannerLatencyMs,
+                    'trade_recipe' => $recipeLatencyMs,
+                ],
             ]);
 
             return new DeterministicAnalysisSnapshot(
@@ -120,14 +174,243 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
                 $output,
                 hash('sha256', $output),
                 $findings,
-                [],
-                [],
+                $recommendations,
+                $recipes,
             );
         } catch (TerminalWorkflowFailure $exception) {
             throw $exception;
         } catch (Throwable) {
             throw new TerminalWorkflowFailure('deterministic_analysis_failed_closed', 'The deterministic PoE1 analysis input or ruleset failed validation.');
         }
+    }
+
+    private function intent(AnalysisRecord $analysis, Locale $locale): BuildIntent
+    {
+        $parameters = $this->parameters($analysis);
+        $selection = is_array($parameters['selection'] ?? null) ? $parameters['selection'] : [];
+        $goals = array_values(array_filter($parameters['goals'] ?? [], 'is_string'));
+        $description = implode(' ', $goals) ?: 'Review the imported PoE1 build for the selected content.';
+        $content = (string) ($selection['content_goal'] ?? 'progression');
+        if (! in_array($content, ['mapping', 'bossing', 'delve', 'simulacrum', 'sanctum', 'progression'], true)) {
+            $lower = strtolower($description);
+            $content = str_contains($lower, 'boss') ? 'bossing' : (str_contains($lower, 'delve') ? 'delve' : 'progression');
+        }
+        $style = str_contains(strtolower($description), 'defen') ? 'tank' : 'balanced';
+        $goal = PlayerGoal::create(
+            GameEdition::Poe1,
+            $description,
+            ContentGoal::from(GameEdition::Poe1, $content)->value(),
+            PlayStyle::from(GameEdition::Poe1, $style)->value(),
+        )->value();
+        $intent = BuildIntent::create($goal, $locale, Confidence::fromBasisPoints(10_000)->value(), []);
+        if ($intent->isFailure() || ! $intent->value() instanceof BuildIntent) {
+            throw new RuntimeException('PoE1 player intent could not be normalized.');
+        }
+
+        return $intent->value();
+    }
+
+    private function budget(AnalysisRecord $analysis): BudgetConstraint
+    {
+        $parameters = $this->parameters($analysis);
+        $budget = $parameters['budget'] ?? null;
+        if (! is_array($budget) || ! is_string($budget['currency'] ?? null) || ! is_string($budget['amount'] ?? null)) {
+            return BudgetConstraint::unknown();
+        }
+        $currency = CurrencyCode::from($budget['currency']);
+        if ($currency->isFailure()) {
+            return BudgetConstraint::unknown();
+        }
+        $value = Budget::fromDecimal($currency->value(), $budget['amount']);
+
+        return $value->isFailure() ? BudgetConstraint::unknown() : BudgetConstraint::limitedTo($value->value());
+    }
+
+    private function constraints(AnalysisRecord $analysis, CanonicalImportedBuild $build): UserConstraints
+    {
+        $parameters = $this->parameters($analysis);
+        $text = strtolower(implode(' ', array_values(array_filter($parameters['goals'] ?? [], 'is_string'))));
+        $values = [];
+        foreach ($build->items as $item) {
+            $name = strtolower((string) ($item['name'] ?? $item['id'] ?? ''));
+            if (str_contains($name, 'mageblood') && (str_contains($text, 'keep') || str_contains($text, 'without replacing'))) {
+                $values[] = UserConstraint::keepItem('mageblood');
+            }
+            if (($item['slot'] ?? null) === 'weapon' && str_contains($text, 'without replacing')) {
+                $values[] = UserConstraint::keepItem((string) ($item['id'] ?? 'main_weapon'));
+            }
+        }
+
+        return new UserConstraints($values);
+    }
+
+    /**
+     * @param  list<Finding>  $findings
+     * @return list<Recommendation>
+     */
+    private function recommendations(UpgradeGraph $graph, array $findings, AnalysisId $analysisId, BuildIntent $intent, UserConstraints $constraints, BudgetConstraint $budget): array
+    {
+        $byId = [];
+        foreach ($findings as $finding) {
+            $byId[$finding->findingId] = $finding;
+        }
+        $recommendations = [];
+        foreach ($graph->ordered() as $candidate) {
+            $owned = array_values(array_filter(array_map(static fn (string $id) => $byId[$id] ?? null, $candidate->affectedFindings), static fn (mixed $finding): bool => $finding instanceof Finding));
+            if ($owned === []) {
+                continue;
+            }
+            $priority = match ($candidate->classification) {
+                UpgradeClassification::Mandatory => UpgradePriority::Critical,
+                UpgradeClassification::Structural, UpgradeClassification::HighImpact => UpgradePriority::High,
+                default => UpgradePriority::Medium,
+            };
+            $impact = RecommendationImpact::create(['deterministic_score' => min(10_000, $candidate->score)]);
+            $decisionTrace = [
+                'user_goal' => $intent->goal->description,
+                'finding' => array_map(static fn ($finding): string => $finding->findingId, $owned),
+                'evidence' => array_map(static fn ($finding): array => $finding->evidence, $owned),
+                'rule' => array_map(static fn ($finding): string => $finding->ruleId, $owned),
+                'upgrade_candidate' => $candidate,
+                'constraints' => ['user_constraints' => $constraints, 'budget' => $budget],
+                'market_evidence' => ['status' => $candidate->budgetUncertainty->value],
+                'recommendation' => ['rank_score' => $candidate->score, 'ordering_reason' => $graph->orderingReasons()[$candidate->id] ?? null],
+            ];
+            $recommendation = Recommendation::create(
+                GameEdition::Poe1,
+                $analysisId,
+                'recommendation.'.str_replace(':', '.', $candidate->id),
+                $priority,
+                $impact->value(),
+                $owned,
+                [],
+                $owned[0]->trace,
+                $decisionTrace,
+            );
+            if ($recommendation->isSuccess() && $recommendation->value() instanceof Recommendation) {
+                $recommendations[] = $recommendation->value();
+            }
+        }
+
+        return $recommendations;
+    }
+
+    /** @return list<TradeRecipe> */
+    private function recipes(UpgradeGraph $graph, CanonicalImportedBuild $build, ArtifactRecord $artifact, RulesetIdentity $identity, GameRuleset $ruleset): array
+    {
+        $class = is_string($build->characterClassId) ? CharacterClassId::from(GameEdition::Poe1, $build->characterClassId) : null;
+        if ($class === null || $class->isFailure()) {
+            return $this->unsupportedRecipes($graph, $identity, 'canonical character class is unavailable');
+        }
+        $ascendancy = is_string($build->ascendancyId) ? AscendancyId::from(GameEdition::Poe1, $build->ascendancyId) : null;
+        if ($ascendancy !== null && $ascendancy->isFailure()) {
+            $ascendancy = null;
+        }
+        $catalog = BuildCatalog::create(GameEdition::Poe1, $class->value(), $ascendancy?->value());
+        $scope = GameScope::create(GameEdition::Poe1, PlatformRealm::Pc);
+        $buildId = BuildId::from(GameEdition::Poe1, $artifact->id);
+        $patch = PatchVersion::from(GameEdition::Poe1, $identity->patch->value);
+        $parser = ParserVersion::from(GameEdition::Poe1, $artifact->parserVersion ?? $identity->parserVersion->value);
+        $locale = Locale::from('en-US');
+        if ($catalog->isFailure() || $scope->isFailure() || $buildId->isFailure() || $patch->isFailure() || $parser->isFailure() || $locale->isFailure()) {
+            return $this->unsupportedRecipes($graph, $identity, 'canonical build snapshot context is unavailable');
+        }
+        $snapshot = BuildSnapshot::create(
+            $buildId->value(),
+            $scope->value(),
+            $patch->value(),
+            $identity->league,
+            $parser->value(),
+            $locale->value(),
+            $catalog->value(),
+            $artifact->normalizedHashSha256 ?? hash('sha256', $artifact->normalizedSnapshot ?? ''),
+        );
+        if ($snapshot->isFailure()) {
+            return $this->unsupportedRecipes($graph, $identity, 'canonical build snapshot could not be constructed');
+        }
+        $vocabulary = $this->vocabulary($identity);
+        $recipes = [];
+        foreach ($graph->ordered() as $candidate) {
+            try {
+                $recipes[] = $this->tradeRecipeBuilder->build($candidate, $snapshot->value(), $ruleset, $vocabulary);
+            } catch (Throwable) {
+                // Unknown vocabulary is a typed unsupported result at the
+                // recommendation layer, never a fabricated manual filter.
+                $recipes[] = new TradeRecipe(
+                    GameEdition::Poe1,
+                    new RulesetReference(GameEdition::Poe1, $identity->id->value, $identity->version->value, $identity->checksumSha256),
+                    $candidate->targetSlot ?? 'unsupported.'.str_replace(':', '.', $candidate->id),
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    '',
+                    '',
+                    'Unsupported manual recipe: exact approved vocabulary or compatible build context is unavailable.',
+                    ['ruleset' => $identity],
+                    [['candidate' => $candidate->id, 'reason' => 'exact approved vocabulary or build context unavailable']],
+                );
+            }
+        }
+
+        return $recipes;
+    }
+
+    /** @return list<TradeRecipe> */
+    private function unsupportedRecipes(UpgradeGraph $graph, RulesetIdentity $identity, string $reason): array
+    {
+        $ruleset = new RulesetReference(GameEdition::Poe1, $identity->id->value, $identity->version->value, $identity->checksumSha256);
+
+        return array_map(static fn ($candidate): TradeRecipe => new TradeRecipe(
+            GameEdition::Poe1,
+            $ruleset,
+            $candidate->targetSlot ?? 'unsupported.'.str_replace(':', '.', $candidate->id),
+            null,
+            [], null, null, null, [], [], [], [], [], [], '', '',
+            'Unsupported manual recipe: '.$reason,
+            ['ruleset' => $identity],
+            [['candidate' => $candidate->id, 'reason' => $reason]],
+        ), $graph->ordered());
+    }
+
+    private function vocabulary(RulesetIdentity $identity): Poe1TradeVocabulary
+    {
+        $entities = $this->gameData->listForRuleset(GameEdition::Poe1, $identity->id->value, CanonicalEntityType::ModifierDefinition);
+        $entries = [];
+        foreach ($entities as $entity) {
+            if (! $entity instanceof ModifierDefinition || $entity->displayName === null) {
+                continue;
+            }
+            $entries[] = new TradeVocabularyEntry(
+                GameEdition::Poe1,
+                $entity->externalId,
+                $entity->displayName,
+                new SourceProvenanceReference(
+                    GameEdition::Poe1,
+                    $entity->provenance->sourceCode,
+                    $entity->provenance->sourceVersion,
+                    $entity->provenance->checksumSha256,
+                    $entity->provenance->snapshotId,
+                    $entity->provenance->importedAt,
+                ),
+            );
+        }
+
+        return new Poe1TradeVocabulary($identity, $entries, [
+            'helmet' => 'Armour > Helmets',
+            'ring' => 'Rings',
+            'amulet' => 'Amulets',
+            'gloves' => 'Armour > Gloves',
+            'boots' => 'Armour > Boots',
+            'belt' => 'Belts',
+        ]);
     }
 
     private function resolveIdentity(ArtifactRecord $artifact): RulesetIdentity
@@ -252,5 +535,13 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         }
 
         return $decoded;
+    }
+
+    /** @return array<string,mixed> */
+    private function parameters(AnalysisRecord $analysis): array
+    {
+        $decoded = json_decode($analysis->parametersSnapshot, true, 64, JSON_THROW_ON_ERROR);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }
