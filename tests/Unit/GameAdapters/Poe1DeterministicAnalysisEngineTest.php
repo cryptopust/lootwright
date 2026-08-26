@@ -3,8 +3,20 @@
 namespace Tests\Unit\GameAdapters;
 
 use Lootwright\Domain\BuildIntake\Import\CanonicalImportedBuild;
+use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
+use Lootwright\Domain\BuildIntake\Intent\ContentGoal;
+use Lootwright\Domain\BuildIntake\Intent\PlayerGoal;
+use Lootwright\Domain\BuildIntake\Intent\PlayStyle;
+use Lootwright\Domain\Rulesets\DatasetClassification;
+use Lootwright\Domain\Rulesets\GameRuleset;
+use Lootwright\Domain\Rulesets\GameVersion;
+use Lootwright\Domain\Rulesets\ProvenanceStatus;
+use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use Lootwright\Domain\Shared\Value\Confidence;
+use Lootwright\Domain\Shared\Value\Locale;
+use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1PlayerStatAliasRegistry;
@@ -111,6 +123,47 @@ final class Poe1DeterministicAnalysisEngineTest extends TestCase
 
         self::assertSame(CanonicalJson::encode($first), CanonicalJson::encode($second));
         self::assertSame('a17abaacfc86e7abd50e7da6f551650fce9d03dd31e087823a608171a7336703', hash('sha256', CanonicalJson::encode($first)));
+    }
+
+    public function test_explicit_attribute_and_mana_requirements_are_reported_without_inference(): void
+    {
+        $build = $this->build(90, 'poe1.pob.class.ranger', 'poe1.pob.ascendancy.deadeye', [], [], $this->coreItems(), [
+            'Strength' => 80,
+            'StrengthRequirement' => 100,
+            'ManaCost' => 120,
+            'UnreservedMana' => 80,
+        ]);
+        $codes = array_column($this->engine()->analyze($build, DomainFixtures::analysisId(GameEdition::Poe1), DomainFixtures::canonicalBuild(GameEdition::Poe1)->ruleset, Poe1AnalysisRuleset::publishedV1(), [], ['test' => 'requirements']), 'code');
+
+        self::assertContains('attributes.requirement.missing', $codes);
+        self::assertContains('resources.mana.cost_unsustainable', $codes);
+    }
+
+    public function test_content_goal_from_analysis_intent_selects_the_profile(): void
+    {
+        $build = new CanonicalImportedBuild(GameEdition::Poe1, '3.29.1', 90, 'poe1.pob.class.ranger', 'poe1.pob.ascendancy.deadeye', [], [], [], $this->coreItems(), [], ['Life' => 4000], '', false);
+        $ruleset = DomainFixtures::canonicalBuild(GameEdition::Poe1)->ruleset;
+        $intent = $this->intent('bossing');
+        $result = (new Poe1AnalysisEngine($this->engine(), Poe1AnalysisRuleset::publishedV1()))->analyze($build, $intent, new GameRuleset($ruleset, new GameVersion(GameEdition::Poe1, $ruleset->patch), DatasetClassification::ApprovedImport, ProvenanceStatus::Approved, RulesetCompatibilityStatus::Compatible))->value();
+
+        self::assertContains('defence.life.below_content_profile', array_column($result->findings, 'code'));
+        $life = array_values(array_filter($result->findings, static fn ($finding): bool => $finding->code === 'defence.life.below_content_profile'))[0];
+        self::assertSame(4500, $life->expectedValue);
+    }
+
+    public function test_ci_build_does_not_receive_a_life_threshold_finding(): void
+    {
+        $build = new CanonicalImportedBuild(GameEdition::Poe1, '3.29.1', 90, 'poe1.pob.class.witch', 'poe1.pob.ascendancy.occultist', [], [], [], $this->coreItems(), [], ['Life' => 1, 'EnergyShield' => 6000], '', false, keystones: ['poe1.pob.keystone.chaos_inoculation']);
+        $findings = $this->engine()->analyze($build, DomainFixtures::analysisId(GameEdition::Poe1), DomainFixtures::canonicalBuild(GameEdition::Poe1)->ruleset, Poe1AnalysisRuleset::publishedV1(), [], ['test' => 'ci']);
+
+        self::assertNotContains('defence.life.below_content_profile', array_column($findings, 'code'));
+    }
+
+    private function intent(string $content): BuildIntent
+    {
+        $goal = PlayerGoal::create(GameEdition::Poe1, 'Test content goal', ContentGoal::from(GameEdition::Poe1, $content)->value(), PlayStyle::from(GameEdition::Poe1, 'balanced')->value())->value();
+
+        return BuildIntent::create($goal, Locale::from('en-US')->value(), Confidence::fromBasisPoints(10_000)->value(), [])->value();
     }
 
     private function engine(): Poe1DeterministicAnalysisEngine

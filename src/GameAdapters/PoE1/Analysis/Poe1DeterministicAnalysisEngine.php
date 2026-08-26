@@ -112,7 +112,17 @@ final readonly class Poe1DeterministicAnalysisEngine
             $this->equipment($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
         } elseif (str_starts_with($ruleId, 'defence.')) {
             $this->resistances($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
-            $this->defensiveProfile($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+            $this->defensiveProfile(
+                $context->build,
+                $context->analysisId,
+                $identity,
+                $analysisRules,
+                $context->sourceProvenance,
+                $all,
+                $context->intent->goal->contentGoal->value,
+            );
+        } elseif (str_starts_with($ruleId, 'resources.mana.cost_')) {
+            $this->attributesAndSustainability($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
         } elseif (str_starts_with($ruleId, 'resources.')) {
             $this->mana($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
         } elseif (str_starts_with($ruleId, 'skills.')) {
@@ -121,7 +131,7 @@ final readonly class Poe1DeterministicAnalysisEngine
             $this->passives($context->build, $context->analysisId, $identity, $knownPassiveNodeIds, $context->sourceProvenance, $all);
         } elseif (str_starts_with($ruleId, 'recovery.') || str_starts_with($ruleId, 'offence.')) {
             $this->recoveryAndOffence($context->build, $context->analysisId, $identity, $context->sourceProvenance, $all);
-        } elseif (str_starts_with($ruleId, 'attributes.') || str_starts_with($ruleId, 'resources.mana.cost_')) {
+        } elseif (str_starts_with($ruleId, 'attributes.')) {
             $this->attributesAndSustainability($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
         } else {
             throw new RuntimeException('The PoE1 registry requested an unknown rule.');
@@ -233,6 +243,7 @@ final readonly class Poe1DeterministicAnalysisEngine
     {
         $disabled = [];
         $mainGroups = [];
+        $hasSkillGroups = $build->skills !== [];
         foreach ($build->skills as $groupIndex => $group) {
             $gems = is_array($group['gems'] ?? null) ? $group['gems'] : [];
             foreach ($gems as $gemIndex => $gem) {
@@ -248,6 +259,9 @@ final readonly class Poe1DeterministicAnalysisEngine
         sort($disabled, SORT_STRING);
         if ($disabled !== []) {
             $findings[] = $this->finding($id, $ruleset, 'skills.gem.disabled', FindingSeverity::Information, FindingCategory::Skills, 'Disabled gems are present', 'One or more gems are explicitly disabled in the normalized PoB.', count($disabled), 0, [], $disabled, [], ['skills:gems:enabled'], $provenance, 10_000);
+        }
+        if ($hasSkillGroups && count($mainGroups) !== 1) {
+            $findings[] = $this->finding($id, $ruleset, 'skills.main.unknown', FindingSeverity::Information, FindingCategory::Skills, 'Main skill could not be identified deterministically', 'The normalized build does not contain exactly one enabled skill group with an enabled main active gem. No damage or support assumptions were made.', count($mainGroups), 1, [], [], [], ['skills:main_active_gem_index', 'skills:gems:enabled'], $provenance, 10_000);
         }
         if (count($mainGroups) === 1 && $mainGroups[0]['enabled_links'] < $analysisRules->minimumMainSkillLinks) {
             $gemId = is_string($mainGroups[0]['gem']['id'] ?? null) ? $mainGroups[0]['gem']['id'] : 'unknown-main-gem';
@@ -280,10 +294,13 @@ final readonly class Poe1DeterministicAnalysisEngine
      * @param  array<string,mixed>  $provenance
      * @param  list<Finding>  &$findings
      */
-    private function defensiveProfile(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, Poe1AnalysisRuleset $rules, array $provenance, array &$findings): void
+    private function defensiveProfile(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, Poe1AnalysisRuleset $rules, array $provenance, array &$findings, ?string $contentGoal = null): void
     {
         $stats = (new Poe1PlayerStatAliasRegistry($rules->playerStatAliases))->canonicalize($build->summaryValues);
-        $goal = (string) ($build->configuration['content_goal'] ?? 'progression');
+        // The production workflow carries the user-selected goal in the
+        // immutable AnalysisContext intent. Direct callers may still provide
+        // a legacy build configuration, so retain that compatibility fallback.
+        $goal = $contentGoal ?? (string) ($build->configuration['content_goal'] ?? 'progression');
         $profile = $rules->contentProfiles[$goal] ?? $rules->contentProfiles['progression'];
         $life = $this->integer($build->life ?? $stats['life'] ?? null);
         $es = $this->integer($build->energyShield ?? $stats['energy_shield'] ?? null);
@@ -292,7 +309,9 @@ final readonly class Poe1DeterministicAnalysisEngine
             ['energy shield', $es, (int) ($profile['energy_shield'] ?? 0), 'defence.energy_shield.below_content_profile', 'Energy shield is below the selected content profile'],
         ];
         foreach ($checks as [$label, $value, $minimum, $code, $title]) {
-            if ($value !== null && $minimum > 0 && $value < $minimum && ! $this->hasKeystone($build, 'Chaos Inoculation')) {
+            $ci = $this->hasKeystone($build, 'Chaos Inoculation');
+            $lifeExempt = $label === 'life' && $ci;
+            if ($value !== null && $minimum > 0 && $value < $minimum && ! $lifeExempt) {
                 $findings[] = $this->finding($id, $ruleset, $code, FindingSeverity::Warning, FindingCategory::Defence, $title, 'The reported defensive pool is below the versioned threshold for the requested content profile.', $value, $minimum, [], [], [], ['player_stat:'.$label, 'content_profile:'.$goal], $provenance, 9_000);
             }
         }
@@ -316,14 +335,14 @@ final readonly class Poe1DeterministicAnalysisEngine
      */
     private function recoveryAndOffence(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, array $provenance, array &$findings): void
     {
-        $stats = $build->summaryValues;
+        $stats = (new Poe1PlayerStatAliasRegistry)->canonicalize($build->summaryValues);
         $recoveryKeys = ['LifeRegen', 'LifeRegenRate', 'LifeLeechRate', 'EnergyShieldRegen'];
-        $recoveryEvidence = array_filter($recoveryKeys, static fn (string $key): bool => array_key_exists($key, $stats));
-        $hasRecovery = array_filter($recoveryEvidence, static fn (string $key): bool => (int) $stats[$key] > 0) !== [];
+        $recoveryEvidence = array_filter($recoveryKeys, static fn (string $key): bool => array_key_exists($key, $build->summaryValues));
+        $hasRecovery = array_filter($recoveryEvidence, static fn (string $key): bool => (int) $build->summaryValues[$key] > 0) !== [];
         if ($recoveryEvidence !== [] && ! $hasRecovery && $build->life !== null && $this->integer($build->life) !== null && $this->integer($build->life) > 0) {
             $findings[] = $this->finding($id, $ruleset, 'recovery.life.missing', FindingSeverity::Warning, FindingCategory::Recovery, 'No life recovery was reported', 'The normalized summary contains no positive regeneration, leech, or energy-shield recovery signal.', null, 'one recovery source', [], [], [], ['summary_values:recovery'], $provenance, 7_500);
         }
-        if ($this->hasKeystone($build, 'Resolute Technique') && ($stats['CriticalStrikeChance'] ?? null) !== null) {
+        if ($this->hasKeystone($build, 'Resolute Technique') && ($stats['critical_strike_chance'] ?? null) !== null) {
             $findings[] = $this->finding($id, $ruleset, 'offence.crit.resolute_technique_conflict', FindingSeverity::Warning, FindingCategory::KeystoneConflicts, 'Resolute Technique conflicts with critical-strike scaling', 'The active keystone prevents critical strikes; critical scaling recommendations are suppressed.', true, false, [], [], [], ['keystone:resolute_technique', 'player_stat:CriticalStrikeChance'], $provenance, 10_000);
         }
     }
@@ -354,7 +373,7 @@ final readonly class Poe1DeterministicAnalysisEngine
 
     private function hasKeystone(CanonicalImportedBuild $build, string $name): bool
     {
-        $needle = strtolower(preg_replace('/[^a-z0-9]+/', '_', $name) ?? $name);
+        $needle = preg_replace('/[^a-z0-9]+/', '_', strtolower($name)) ?? strtolower($name);
         foreach ($build->keystones as $keystone) {
             $value = strtolower(trim((string) $keystone));
             $value = preg_replace('/^poe1\\.pob\\.(?:keystone|node)\\./', '', $value) ?? $value;

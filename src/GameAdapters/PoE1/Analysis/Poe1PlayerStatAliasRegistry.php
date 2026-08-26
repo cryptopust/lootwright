@@ -49,5 +49,13 @@ final readonly class Poe1PlayerStatAliasRegistry
         'intelligence_requirement' => ['IntelligenceRequirement', 'RequiredIntelligence'],
         'mana_cost' => ['ManaCost', 'MainSkillManaCost'],
         'mana_regeneration' => ['ManaRegen', 'ManaRegeneration'],
+        'life' => ['Life', 'TotalLife'],
+        'energy_shield' => ['EnergyShield', 'TotalEnergyShield'],
+        'armour' => ['Armour', 'TotalArmour', 'ArmourRating'],
+        'evasion' => ['Evasion', 'TotalEvasion', 'EvasionRating'],
+        'block_chance' => ['BlockChance', 'TotalBlockChance', 'ChanceToBlock'],
+        'spell_block_chance' => ['SpellBlockChance', 'TotalSpellBlockChance', 'ChanceToBlockSpells'],
+        'spell_suppression' => ['SpellSuppression', 'SpellSuppressionChance', 'SpellSuppressionPercent'],
+        'critical_strike_chance' => ['CriticalStrikeChance', 'CritChance', 'MainHandCriticalStrikeChance'],
     ];
 }
