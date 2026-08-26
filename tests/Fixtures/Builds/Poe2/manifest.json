@@ -3,8 +3,8 @@
   "corpus_version": "1.0.0-beta.1",
   "source": "project_created_real_shaped",
   "cases": [
-    {"id":"warrior-melee","file":"warrior-melee.xml","archetypes":["melee"],"class":"poe2.pob.class.warrior","ascendancy":"poe2.pob.ascendancy.warbringer","main_skill":"poe2.pob.gem.perfect_strike","expected_findings":[],"forbidden_findings":["defence.fire_resistance.below_reported_max","poe1_rule_leakage"]},
-    {"id":"ranger-ranged","file":"ranger-ranged.xml","archetypes":["ranged_attack"],"class":"poe2.pob.class.ranger","ascendancy":"poe2.pob.ascendancy.deadeye","main_skill":"poe2.pob.gem.lightning_arrow","expected_findings":[],"forbidden_findings":["poe1_rule_leakage"]},
-    {"id":"sorceress-spell","file":"sorceress-spell.xml","archetypes":["spell"],"class":"poe2.pob.class.sorceress","ascendancy":"poe2.pob.ascendancy.stormweaver","main_skill":"poe2.pob.gem.arc","expected_findings":[],"forbidden_findings":["poe1_rule_leakage"]}
+    {"id":"warrior-melee","file":"warrior-melee.xml","archetypes":["melee"],"class":"poe2.pob.class.warrior","ascendancy":"poe2.pob.ascendancy.warbringer","main_skill":"poe2.pob.gem.perfect_strike","defence_profile":"unknown_until_approved_ruleset","expected_defence":{"status":"unknown"},"resource_profile":{"status":"unknown"},"known_weaknesses":[],"known_incompatibilities":[],"expected_findings":[],"forbidden_findings":["defence.fire_resistance.below_reported_max","poe1_rule_leakage"]},
+    {"id":"ranger-ranged","file":"ranger-ranged.xml","archetypes":["ranged_attack"],"class":"poe2.pob.class.ranger","ascendancy":"poe2.pob.ascendancy.deadeye","main_skill":"poe2.pob.gem.lightning_arrow","defence_profile":"unknown_until_approved_ruleset","expected_defence":{"status":"unknown"},"resource_profile":{"status":"unknown"},"known_weaknesses":[],"known_incompatibilities":[],"expected_findings":[],"forbidden_findings":["poe1_rule_leakage"]},
+    {"id":"sorceress-spell","file":"sorceress-spell.xml","archetypes":["spell"],"class":"poe2.pob.class.sorceress","ascendancy":"poe2.pob.ascendancy.stormweaver","main_skill":"poe2.pob.gem.arc","defence_profile":"unknown_until_approved_ruleset","expected_defence":{"status":"unknown"},"resource_profile":{"status":"unknown"},"known_weaknesses":[],"known_incompatibilities":[],"expected_findings":[],"forbidden_findings":["poe1_rule_leakage"]}
   ]
 }

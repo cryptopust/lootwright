@@ -83,6 +83,17 @@ final readonly class UpgradeCandidate implements JsonSerializable
         );
     }
 
+    public function withPriceEvidence(?MarketPriceEvidence $evidence, ?int $score = null): self
+    {
+        return new self(
+            $this->id, $this->gameEdition, $this->ruleset, $this->classification,
+            $this->title, $this->prerequisites, $this->conflicts, $this->dependentSlots,
+            $this->affectedFindings, $this->expectedEffects, $this->budgetUncertainty,
+            $this->marketDataRequirement, $score ?? $this->score, $this->impossible,
+            $this->impossibleReason, $evidence, $this->tradeRequirements, $this->targetSlot,
+        );
+    }
+
     /** @return array<string,mixed> */
     public function jsonSerialize(): array
     {

@@ -69,6 +69,23 @@ funding permission. No approval may be inferred from that absence.
 
 ## Record requirements
 
+## Market capability decisions
+
+Market permissions are reviewed independently. The current executable defaults
+are intentionally conservative:
+
+| Source | Search | Read/listings | Cache | Aggregate/analyze | Store/display | Link | Generate filters |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GGG documented API reference | disabled | disabled | disabled | disabled | disabled | disabled | disabled |
+| Official Trade pages/internal paths | prohibited | prohibited | prohibited | prohibited | prohibited | prohibited | prohibited |
+| poe.ninja economy record (`POENINJA-ECONOMY-001`) | disabled by default | conditional, operator-only | conditional, bounded TTL | conditional, contextual only | conditional with attribution/freshness | disabled | disabled |
+| Approved community dataset | requires source-specific review | requires source-specific review | requires source-specific review | requires source-specific review | requires source-specific review | disabled unless documented | disabled unless documented |
+
+The `TradeProvider` contract reflects these separate decisions. Enabling one
+capability never implies permission for another. No provider may collect
+credentials, reuse sessions, bypass rate limits, automate purchases or seller
+interactions, or call undocumented Trade endpoints.
+
 Before changing a candidate to `allowed`, add:
 
 - exact owner, canonical URL, immutable version/commit, retrieval date, and checksum;

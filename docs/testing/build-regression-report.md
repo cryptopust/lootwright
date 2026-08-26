@@ -44,7 +44,7 @@ defects:
 
 | Mutation | Expected deterministic finding | Result |
 | --- | --- | --- |
-| Fire resistance 75 → 60 | `defence.fire_resistance.below_reported_max` | Detected |
+| Fire resistance 75 -> 60 | `defence.fire_resistance.below_reported_max` | Detected |
 | Reserved mana above total | `resources.mana.reservation_invalid` | Detected |
 | Unknown passive node | `passive_tree.node.unknown` | Detected |
 | Support compatibility corruption | No guessed `skills.support_incompatible` rule | Safely unsupported |
@@ -70,8 +70,8 @@ not a claim that every game mechanic is modelled.
 | Recommendation coverage | corpus cases producing recommendations / cases | 0/8; planner evidence requires an approved production ruleset and candidate vocabulary |
 
 The ruleset and parser percentages are corpus/registry measurements, not game
-coverage percentages. The 21.4% rule figure reflects only the rules exercised
-by explicit mutations; it is not a claim that 21.4% of Path of Exile mechanics
+coverage percentages. The 42.9% rule figure reflects only the rules exercised
+by explicit mutations; it is not a claim that 42.9% of Path of Exile mechanics
 are implemented. Recommendation coverage is zero because this laboratory is
 the analysis-engine gate and the approved production Trade vocabulary is not
 yet available.

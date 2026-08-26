@@ -13,9 +13,11 @@ use Lootwright\Domain\Rulesets\GameRuleset;
 use Lootwright\Domain\Rulesets\GameVersion;
 use Lootwright\Domain\Rulesets\ProvenanceStatus;
 use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
+use Lootwright\Domain\Rulesets\RulesetIdentity;
 use Lootwright\Domain\Shared\Error\DomainResult;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use Lootwright\Domain\Shared\Version\RulesetVersion;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
@@ -51,6 +53,37 @@ final class BuildRegressionLaboratoryTest extends TestCase
             self::assertSame($case['ascendancy'], $build->ascendancyId, $id);
             self::assertSame($case['main_skill'], $build->skills[0]['gems'][0]['id'] ?? null, $id);
             self::assertNotSame('', (string) $case['defence_profile'], $id.' defence profile metadata is required');
+            self::assertIsArray($case['resource_profile'] ?? null, $id.' resource profile metadata is required');
+            self::assertIsArray($case['known_weaknesses'] ?? null, $id.' weakness metadata is required');
+            self::assertIsArray($case['known_incompatibilities'] ?? null, $id.' incompatibility metadata is required');
+            self::assertIsArray($case['expected_findings'] ?? null, $id.' expected findings metadata is required');
+            self::assertIsArray($case['forbidden_findings'] ?? null, $id.' forbidden findings metadata is required');
+            $expectedDefence = $case['expected_defence'] ?? [];
+            if (($expectedDefence['armour'] ?? null) !== null) {
+                self::assertSame($expectedDefence['armour'], (int) $build->armour, $id.' armour profile changed');
+            }
+            if (($expectedDefence['evasion'] ?? null) !== null) {
+                self::assertSame($expectedDefence['evasion'], (int) $build->evasion, $id.' evasion profile changed');
+            }
+            if (($expectedDefence['energy_shield'] ?? null) !== null) {
+                self::assertSame($expectedDefence['energy_shield'], (int) $build->energyShield, $id.' energy-shield profile changed');
+            }
+            if (($expectedDefence['life'] ?? null) !== null) {
+                self::assertSame($expectedDefence['life'], (int) $build->life, $id.' life profile changed');
+            }
+            $resource = $case['resource_profile'];
+            if (($resource['resource'] ?? null) === 'mana') {
+                self::assertSame($resource['total'], (int) ($build->summaryValues['TotalMana'] ?? 0), $id.' total mana changed');
+                self::assertSame($resource['reserved'], (int) ($build->summaryValues['ReservedMana'] ?? 0), $id.' reserved mana changed');
+                self::assertSame($resource['unreserved'], (int) ($build->summaryValues['UnreservedMana'] ?? 0), $id.' unreserved mana changed');
+            }
+            foreach ($case['known_weaknesses'] as $weakness) {
+                if ($weakness === 'chaos_resistance') {
+                    self::assertArrayHasKey('chaos', $build->resistances, $id.' declared weakness lacks normalized evidence');
+                    self::assertLessThanOrEqual(10, (int) $build->resistances['chaos'], $id.' chaos-resistance weakness no longer matches the fixture fact');
+                }
+            }
+            $this->assertImportTrace($imported, GameEdition::Poe1, $id);
             $unsupportedElements = array_map(static fn ($feature): string => $feature->element, $build->unsupportedFields);
             self::assertContains('ItemSet', $unsupportedElements, $id.' should expose the unconsumed ItemSet shape');
 
@@ -59,14 +92,19 @@ final class BuildRegressionLaboratoryTest extends TestCase
             self::assertSame(CanonicalJson::encode($findings), CanonicalJson::encode($replay), $id.' deterministic replay changed bytes');
             $codes = array_map(static fn ($finding): string => $finding->code, $findings);
             self::assertSame($golden['cases'][$id]['finding_codes'], $codes, $id.' golden finding set changed');
+            self::assertSame([], array_values(array_diff($case['expected_findings'], $codes)), $id.' expected finding missing');
             self::assertSame([], array_values(array_intersect($case['forbidden_findings'], $codes)), $id.' emitted a forbidden finding');
 
             $snapshot = $this->projection(new AnalysisResult(GameEdition::Poe1, $ruleset, Poe1DeterministicAnalysisEngine::ENGINE_VERSION, AnalysisStatus::Complete, $findings));
             self::assertSame($golden['engine_version'], $snapshot['engine_version'], $id);
+            self::assertSame('poe1', $snapshot['game_edition'], $id.' edition changed');
+            self::assertSame('complete', $snapshot['status'], $id.' analysis status changed');
             self::assertSame($golden['ruleset_version'], $snapshot['ruleset_version'], $id);
+            self::assertSame($golden['ruleset_checksum'], $snapshot['ruleset_checksum'], $id.' ruleset checksum changed');
             self::assertSame($golden['cases'][$id]['unsupported_data'], $snapshot['unsupported_data'], $id);
             self::assertSame($golden['cases'][$id]['finding_severities'] ?? [], $snapshot['finding_severities'], $id.' finding severity changed');
-            self::assertSame($golden['cases'][$id]['recommendation_priorities'] ?? [], $snapshot['recommendation_priorities'], $id.' recommendation priority changed');
+            self::assertSame($golden['cases'][$id]['recommendation_order'] ?? [], $snapshot['recommendation_order'], $id.' recommendation order changed');
+            self::assertSame($golden['cases'][$id]['finding_snapshots'] ?? [], $snapshot['finding_snapshots'], $id.' finding evidence snapshot changed');
         }
 
         self::assertGreaterThanOrEqual(8, count($manifest['cases']));
@@ -91,16 +129,25 @@ final class BuildRegressionLaboratoryTest extends TestCase
         foreach ($manifest['cases'] as $case) {
             $id = $case['id'];
             $imported = $this->success($this->poe2()->import($this->xml('Poe2/'.$case['file'])));
-            self::assertSame(GameEdition::Poe2, $imported->canonicalBuild->edition, $id);
-            self::assertStringStartsWith('poe2.', (string) $imported->canonicalBuild->characterClassId, $id);
-            self::assertStringStartsWith('poe2.', (string) ($imported->canonicalBuild->skills[0]['gems'][0]['id'] ?? ''), $id);
-            $result = $engine->analyze($imported->canonicalBuild, DomainFixtures::intent(GameEdition::Poe2), $ruleset);
+            $build = $imported->canonicalBuild;
+            self::assertSame(GameEdition::Poe2, $build->edition, $id);
+            self::assertSame($case['class'], $build->characterClassId, $id);
+            self::assertSame($case['ascendancy'], $build->ascendancyId, $id);
+            self::assertSame($case['main_skill'], $build->skills[0]['gems'][0]['id'] ?? null, $id);
+            self::assertIsArray($case['expected_defence'] ?? null, $id.' defence metadata is required');
+            self::assertIsArray($case['resource_profile'] ?? null, $id.' resource metadata is required');
+            self::assertIsArray($case['known_weaknesses'] ?? null, $id.' weakness metadata is required');
+            self::assertIsArray($case['known_incompatibilities'] ?? null, $id.' incompatibility metadata is required');
+            $this->assertImportTrace($imported, GameEdition::Poe2, $id);
+            $result = $engine->analyze($build, DomainFixtures::intent(GameEdition::Poe2), $ruleset);
             self::assertTrue($result->isSuccess(), $id);
             $analysis = $result->value();
             self::assertInstanceOf(AnalysisResult::class, $analysis, $id);
             self::assertSame($golden['cases'][$id]['status'], $analysis->status->value, $id);
             self::assertSame($golden['cases'][$id]['unsupported_data'], $analysis->unsupportedData, $id);
             self::assertSame([], $analysis->findings, $id.' leaked PoE1 findings into PoE2');
+            self::assertSame($case['expected_findings'], $this->codes($analysis->findings), $id);
+            self::assertSame([], array_values(array_intersect($case['forbidden_findings'], $this->codes($analysis->findings))), $id.' emitted a forbidden PoE1 finding');
         }
     }
 
@@ -139,6 +186,29 @@ final class BuildRegressionLaboratoryTest extends TestCase
         self::assertNotContains('skills.support_incompatible', $this->codes($engine->analyze($compatibility, DomainFixtures::analysisId(GameEdition::Poe1), $ruleset, Poe1AnalysisRuleset::publishedV1(), [], ['mutation' => 'break_support_compatibility'])));
     }
 
+    public function test_ruleset_identity_change_is_a_reviewed_golden_break_not_an_automatic_update(): void
+    {
+        $golden = $this->manifest('Poe1/golden.json');
+        $baseline = DomainFixtures::ruleset(GameEdition::Poe1);
+        $changed = DomainFixtures::value(
+            RulesetIdentity::create(
+                GameEdition::Poe1,
+                $baseline->id,
+                DomainFixtures::value(RulesetVersion::from(GameEdition::Poe1, '1.0.1'), RulesetVersion::class),
+                $baseline->patch,
+                $baseline->league,
+                $baseline->parserVersion,
+                str_repeat('c', 64),
+                $baseline->provenance,
+            ),
+            RulesetIdentity::class,
+        );
+
+        self::assertNotSame($golden['ruleset_version'], $changed->version->value);
+        self::assertNotSame($golden['ruleset_checksum'], $changed->checksumSha256);
+        self::assertSame('1.0.0', $baseline->version->value, 'The active fixture identity must remain unchanged.');
+    }
+
     /** @return list<string> */
     /** @param list<Finding> $findings
      * @return list<string>
@@ -151,7 +221,7 @@ final class BuildRegressionLaboratoryTest extends TestCase
     /** @return array<string, mixed> */
     private function projection(AnalysisResult $result): array
     {
-        return ['game_edition' => $result->gameEdition->value, 'engine_version' => $result->engineVersion, 'ruleset_version' => $result->ruleset->version->value, 'status' => $result->status->value, 'finding_codes' => $this->codes($result->findings), 'finding_severities' => array_map(static fn (Finding $finding): string => (string) $finding->severity->value, $result->findings), 'recommendation_priorities' => array_map(static fn (RecommendationCandidate $recommendation): string => $recommendation->id, $result->recommendations), 'unsupported_data' => $result->unsupportedData];
+        return ['game_edition' => $result->gameEdition->value, 'engine_version' => $result->engineVersion, 'ruleset_version' => $result->ruleset->version->value, 'ruleset_checksum' => $result->ruleset->checksumSha256, 'status' => $result->status->value, 'finding_codes' => $this->codes($result->findings), 'finding_severities' => array_map(static fn (Finding $finding): string => (string) $finding->severity->value, $result->findings), 'finding_snapshots' => array_map(static fn (Finding $finding): array => ['finding_id' => $finding->findingId, 'code' => $finding->code, 'severity' => $finding->severity->value, 'evidence' => $finding->evidence, 'rule_id' => $finding->ruleId, 'affected_entity' => $finding->affectedEntity, 'observed_value' => $finding->observedValue, 'expected_value' => $finding->expectedValue, 'dependencies' => $finding->dependencies, 'source_provenance' => $finding->sourceProvenance], $result->findings), 'recommendation_order' => array_map(static fn (RecommendationCandidate $recommendation): string => $recommendation->id, $result->recommendations), 'recommendations' => array_map(static fn (RecommendationCandidate $recommendation): array => $recommendation->jsonSerialize(), $result->recommendations), 'unsupported_data' => $result->unsupportedData];
     }
 
     /** @param list<string>|null $passives
@@ -195,5 +265,15 @@ final class BuildRegressionLaboratoryTest extends TestCase
         }
 
         return $result->value();
+    }
+
+    private function assertImportTrace(PobImportResult $imported, GameEdition $edition, string $id): void
+    {
+        $metadata = $imported->canonicalBuild->sourceMetadata;
+        self::assertNotNull($metadata, $id.' source metadata is required');
+        self::assertSame($edition, $metadata->detectedEdition, $id.' source edition changed');
+        self::assertSame($imported->provenance->sourceId, $metadata->sourceId, $id.' source provenance changed');
+        self::assertSame($imported->parserVersion, $metadata->parserVersion, $id.' parser provenance changed');
+        self::assertSame($imported->inputChecksumSha256, $metadata->inputChecksumSha256, $id.' input checksum provenance changed');
     }
 }
