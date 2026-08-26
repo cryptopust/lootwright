@@ -31,6 +31,23 @@ final readonly class Poe1DeterministicAnalysisEngine
         'skills.main.insufficient_links',
         'equipment.slot.conflict',
         'passive_tree.node.unknown',
+        'defence.life.below_content_profile',
+        'defence.energy_shield.below_content_profile',
+        'defence.armour.low',
+        'defence.evasion.low',
+        'defence.block.low',
+        'defence.spell_block.low',
+        'defence.suppression.low',
+        'recovery.life.missing',
+        'recovery.life.leech_missing',
+        'recovery.life.regeneration_missing',
+        'skills.support.unknown',
+        'skills.main.unknown',
+        'offence.crit.resolute_technique_conflict',
+        'offence.noncrit.crit_scaling_conflict',
+        'passive_tree.keystone.conflict',
+        'equipment.weapon.skill_incompatible',
+        'skills.aura.conflict',
     ];
 
     /**
@@ -57,6 +74,8 @@ final readonly class Poe1DeterministicAnalysisEngine
         $this->mana($build, $analysisId, $ruleset, $analysisRules, $sourceProvenance, $findings);
         $this->skills($build, $analysisId, $ruleset, $analysisRules, $sourceProvenance, $findings);
         $this->passives($build, $analysisId, $ruleset, $knownPassiveNodeIds, $sourceProvenance, $findings);
+        $this->defensiveProfile($build, $analysisId, $ruleset, $analysisRules, $sourceProvenance, $findings);
+        $this->recoveryAndOffence($build, $analysisId, $ruleset, $sourceProvenance, $findings);
 
         $order = array_flip(self::RULE_CODES);
         usort($findings, static fn (Finding $left, Finding $right): int => ($order[$left->code] ?? 999) <=> ($order[$right->code] ?? 999));
@@ -83,15 +102,25 @@ final readonly class Poe1DeterministicAnalysisEngine
         }
 
         $all = [];
-        match (true) {
-            str_starts_with($ruleId, 'data.') => $this->missingCharacterData($context->build, $context->analysisId, $context->ruleset->identity, $context->sourceProvenance, $all),
-            str_starts_with($ruleId, 'equipment.') => $this->equipment($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
-            str_starts_with($ruleId, 'defence.') => $this->resistances($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
-            str_starts_with($ruleId, 'resources.') => $this->mana($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
-            str_starts_with($ruleId, 'skills.') => $this->skills($context->build, $context->analysisId, $context->ruleset->identity, $analysisRules, $context->sourceProvenance, $all),
-            str_starts_with($ruleId, 'passive_tree.') => $this->passives($context->build, $context->analysisId, $context->ruleset->identity, $knownPassiveNodeIds, $context->sourceProvenance, $all),
-            default => throw new RuntimeException('The PoE1 registry requested an unknown rule.'),
-        };
+        $identity = $context->ruleset->identity;
+        if (str_starts_with($ruleId, 'data.')) {
+            $this->missingCharacterData($context->build, $context->analysisId, $identity, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'equipment.')) {
+            $this->equipment($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'defence.')) {
+            $this->resistances($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+            $this->defensiveProfile($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'resources.')) {
+            $this->mana($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'skills.')) {
+            $this->skills($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'passive_tree.')) {
+            $this->passives($context->build, $context->analysisId, $identity, $knownPassiveNodeIds, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'recovery.') || str_starts_with($ruleId, 'offence.')) {
+            $this->recoveryAndOffence($context->build, $context->analysisId, $identity, $context->sourceProvenance, $all);
+        } else {
+            throw new RuntimeException('The PoE1 registry requested an unknown rule.');
+        }
 
         return array_values(array_filter($all, static fn (Finding $finding): bool => $finding->code === $ruleId));
     }
@@ -240,6 +269,71 @@ final readonly class Poe1DeterministicAnalysisEngine
         if ($unknown !== []) {
             $findings[] = $this->finding($id, $ruleset, 'passive_tree.node.unknown', FindingSeverity::Warning, FindingCategory::PassiveTree, 'Passive nodes are absent from the active snapshot', 'One or more PoB passive node IDs do not exist in the active immutable GGG passive-tree snapshot.', $unknown, 'node present in active snapshot', [], [], $unknown, ['passive_tree:node_ids', 'ruleset:passive_tree_snapshot'], $provenance, 10_000);
         }
+    }
+
+    /**
+     * @param  array<string,mixed>  $provenance
+     * @param  list<Finding>  &$findings
+     */
+    private function defensiveProfile(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, Poe1AnalysisRuleset $rules, array $provenance, array &$findings): void
+    {
+        $stats = (new Poe1PlayerStatAliasRegistry($rules->playerStatAliases))->canonicalize($build->summaryValues);
+        $goal = (string) ($build->configuration['content_goal'] ?? 'progression');
+        $profile = $rules->contentProfiles[$goal] ?? $rules->contentProfiles['progression'];
+        $life = $this->integer($build->life ?? $stats['life'] ?? null);
+        $es = $this->integer($build->energyShield ?? $stats['energy_shield'] ?? null);
+        $checks = [
+            ['life', $life, (int) ($profile['life'] ?? 0), 'defence.life.below_content_profile', 'Life is below the selected content profile'],
+            ['energy shield', $es, (int) ($profile['energy_shield'] ?? 0), 'defence.energy_shield.below_content_profile', 'Energy shield is below the selected content profile'],
+        ];
+        foreach ($checks as [$label, $value, $minimum, $code, $title]) {
+            if ($value !== null && $minimum > 0 && $value < $minimum && ! $this->hasKeystone($build, 'Chaos Inoculation')) {
+                $findings[] = $this->finding($id, $ruleset, $code, FindingSeverity::Warning, FindingCategory::Defence, $title, 'The reported defensive pool is below the versioned threshold for the requested content profile.', $value, $minimum, [], [], [], ['player_stat:'.$label, 'content_profile:'.$goal], $provenance, 9_000);
+            }
+        }
+        foreach ([
+            ['armour', $build->armour ?? $stats['armour'] ?? null, 5000, 'defence.armour.low'],
+            ['evasion', $build->evasion ?? $stats['evasion'] ?? null, 5000, 'defence.evasion.low'],
+            ['block', $stats['block_chance'] ?? null, 20, 'defence.block.low'],
+            ['spell block', $stats['spell_block_chance'] ?? null, 20, 'defence.spell_block.low'],
+            ['suppression', $stats['spell_suppression'] ?? null, 50, 'defence.suppression.low'],
+        ] as [$label, $value, $minimum, $code]) {
+            $numeric = $this->integer($value);
+            if ($numeric !== null && $numeric < $minimum) {
+                $findings[] = $this->finding($id, $ruleset, $code, FindingSeverity::Opportunity, FindingCategory::Defence, ucfirst($label).' is low', 'PoB reports a value below the conservative profile baseline; the exact target depends on content and build mechanics.', $numeric, $minimum, [], [], [], ['player_stat:'.$label], $provenance, 8_000);
+            }
+        }
+    }
+
+    /**
+     * @param  array<string,mixed>  $provenance
+     * @param  list<Finding>  &$findings
+     */
+    private function recoveryAndOffence(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, array $provenance, array &$findings): void
+    {
+        $stats = $build->summaryValues;
+        $recoveryKeys = ['LifeRegen', 'LifeRegenRate', 'LifeLeechRate', 'EnergyShieldRegen'];
+        $recoveryEvidence = array_filter($recoveryKeys, static fn (string $key): bool => array_key_exists($key, $stats));
+        $hasRecovery = array_filter($recoveryEvidence, static fn (string $key): bool => (int) $stats[$key] > 0) !== [];
+        if ($recoveryEvidence !== [] && ! $hasRecovery && $build->life !== null && $this->integer($build->life) !== null && $this->integer($build->life) > 0) {
+            $findings[] = $this->finding($id, $ruleset, 'recovery.life.missing', FindingSeverity::Warning, FindingCategory::Recovery, 'No life recovery was reported', 'The normalized summary contains no positive regeneration, leech, or energy-shield recovery signal.', null, 'one recovery source', [], [], [], ['summary_values:recovery'], $provenance, 7_500);
+        }
+        if ($this->hasKeystone($build, 'Resolute Technique') && ($stats['CriticalStrikeChance'] ?? null) !== null) {
+            $findings[] = $this->finding($id, $ruleset, 'offence.crit.resolute_technique_conflict', FindingSeverity::Warning, FindingCategory::KeystoneConflicts, 'Resolute Technique conflicts with critical-strike scaling', 'The active keystone prevents critical strikes; critical scaling recommendations are suppressed.', true, false, [], [], [], ['keystone:resolute_technique', 'player_stat:CriticalStrikeChance'], $provenance, 10_000);
+        }
+    }
+
+    private function hasKeystone(CanonicalImportedBuild $build, string $name): bool
+    {
+        $needle = strtolower(preg_replace('/[^a-z0-9]+/', '', $name) ?? $name);
+        foreach ($build->keystones as $keystone) {
+            $value = strtolower(preg_replace('/[^a-z0-9]+/', '', (string) $keystone) ?? (string) $keystone);
+            if ($value === $needle || str_contains($value, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

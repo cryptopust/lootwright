@@ -63,6 +63,8 @@ final readonly class Poe1RuleRegistry implements RuleRegistry
             str_starts_with($ruleId, 'resources.') => FindingCategory::AuraReservation,
             str_starts_with($ruleId, 'skills.') => FindingCategory::SkillConfiguration,
             str_starts_with($ruleId, 'passive_tree.') => FindingCategory::PassiveConflicts,
+            str_starts_with($ruleId, 'recovery.') => FindingCategory::Recovery,
+            str_starts_with($ruleId, 'offence.') => FindingCategory::Offence,
             default => throw new RuntimeException('Unclassified PoE1 analysis rule.'),
         };
     }

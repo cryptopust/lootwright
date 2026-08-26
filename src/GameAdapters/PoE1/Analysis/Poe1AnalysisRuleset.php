@@ -12,6 +12,7 @@ final readonly class Poe1AnalysisRuleset implements JsonSerializable
      * @param  array<string, list<string>>  $playerStatAliases
      * @param  array<string, list<string>>  $requiredSlotAliases
      * @param  list<string>  $ruleCodes
+     * @param  array<string, array<string, int>>  $contentProfiles
      */
     private function __construct(
         public string $engineVersion,
@@ -19,6 +20,7 @@ final readonly class Poe1AnalysisRuleset implements JsonSerializable
         public array $requiredSlotAliases,
         public int $minimumMainSkillLinks,
         public array $ruleCodes,
+        public array $contentProfiles,
     ) {}
 
     public static function publishedV1(): self
@@ -34,6 +36,14 @@ final readonly class Poe1AnalysisRuleset implements JsonSerializable
             ],
             4,
             Poe1DeterministicAnalysisEngine::RULE_CODES,
+            [
+                'mapping' => ['life' => 3500, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+                'bossing' => ['life' => 4500, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+                'delve' => ['life' => 5000, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+                'simulacrum' => ['life' => 5000, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+                'sanctum' => ['life' => 3500, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+                'progression' => ['life' => 2500, 'energy_shield' => 0, 'elemental_resistance' => 75, 'suppression' => 0],
+            ],
         );
     }
 
@@ -57,6 +67,7 @@ final readonly class Poe1AnalysisRuleset implements JsonSerializable
             'player_stat_aliases' => $this->playerStatAliases,
             'required_slot_aliases' => $this->requiredSlotAliases,
             'rule_codes' => $this->ruleCodes,
+            'content_profiles' => $this->contentProfiles,
         ];
     }
 }
