@@ -6,6 +6,7 @@ use App\Modules\ExternalSources\DatabaseSourceUpdateObserver;
 use DateTimeImmutable;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Lootwright\Application\GameData\AssembleCanonicalGameData;
 use Lootwright\Application\GameData\DTO\GameDataSourceDocument;
@@ -57,6 +58,11 @@ final class GameDataGovernanceTest extends TestCase
             self::assertNull($entry->expectedRecords);
             self::assertNull($entry->coverageBasisPoints);
             self::assertSame('unavailable', $entry->status);
+            $serialized = $entry->jsonSerialize();
+            foreach (['total_known_source', 'imported', 'normalized', 'validated', 'active', 'missing', 'knowledge_status'] as $field) {
+                self::assertArrayHasKey($field, $serialized);
+            }
+            self::assertSame('unknown', $serialized['knowledge_status']);
         }
     }
 
@@ -115,6 +121,15 @@ final class GameDataGovernanceTest extends TestCase
 
         $this->expectException(DomainException::class);
         $this->app->make(AssembleCanonicalGameData::class)->assemble(GameEdition::Poe1, [$dataset]);
+    }
+
+    public function test_dataset_import_activation_requires_explicit_force_confirmation(): void
+    {
+        self::assertSame(1, Artisan::call('lootwright:dataset:import', [
+            '--file' => base_path('tests/Fixtures/ggg/passive-tree-8bd138b-reduced.json'),
+            '--activate' => true,
+        ]));
+        self::assertStringContainsString('production-affecting', Artisan::output());
     }
 
     private function document(string $sourceCode, string $displayName): GameDataSourceDocument

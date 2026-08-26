@@ -14,13 +14,6 @@ return [
         $defaultPrecedence,
     ),
     'coverage_categories' => [
-        CanonicalEntityType::CharacterClass->value,
-        CanonicalEntityType::Ascendancy->value,
-        CanonicalEntityType::SkillGem->value,
-        CanonicalEntityType::SupportGem->value,
-        CanonicalEntityType::PassiveNode->value,
-        CanonicalEntityType::ItemBase->value,
-        CanonicalEntityType::ModifierDefinition->value,
-        CanonicalEntityType::TradeVocabularyDefinition->value,
+        ...array_map(static fn (CanonicalEntityType $type): string => $type->value, CanonicalEntityType::cases()),
     ],
 ];

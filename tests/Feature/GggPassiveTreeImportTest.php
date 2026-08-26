@@ -64,6 +64,13 @@ final class GggPassiveTreeImportTest extends TestCase
         ]);
     }
 
+    public function test_generic_candidate_command_publishes_without_activation(): void
+    {
+        self::assertSame(0, Artisan::call('lootwright:ruleset:candidate', ['--file' => $this->fixture]), Artisan::output());
+        $this->assertDatabaseCount('ruleset_versions', 1);
+        $this->assertDatabaseCount('ruleset_activations', 0);
+    }
+
     public function test_allowlisted_url_uses_identifying_headers_and_never_follows_redirects(): void
     {
         $url = GggPassiveTreeUrl::forRevision(self::REVISION);

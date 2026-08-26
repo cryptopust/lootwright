@@ -26,7 +26,7 @@ final class PostgresDataCoverageReporter implements DataCoverageReporter
                 0,
                 null,
                 null,
-                'unavailable',
+                'unavailable', null, null, null, null, 0, null, 'unknown',
             ), $categories));
         }
 
@@ -53,6 +53,9 @@ final class PostgresDataCoverageReporter implements DataCoverageReporter
                 default => 'complete',
             };
 
+            $active = $observed;
+            $known = is_int($expected) ? $expected : null;
+
             return new DataCoverageEntry(
                 $edition,
                 $category,
@@ -61,6 +64,13 @@ final class PostgresDataCoverageReporter implements DataCoverageReporter
                 $expected,
                 $basisPoints,
                 $status,
+                $known,
+                $observed,
+                $observed,
+                $observed,
+                $active,
+                $known === null ? null : max(0, $known - $active),
+                $known === null ? 'unknown' : ($observed >= $known ? 'known_complete' : 'known_partial'),
             );
         }, $categories));
     }

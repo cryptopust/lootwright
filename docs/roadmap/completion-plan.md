@@ -26,6 +26,12 @@ Normalize, checksum, conflict-record, validate expected counts, and activate
 atomically beside the official passive tree. Expand rules only from canonical
 facts; unknown mechanics remain unsupported.
 
+Current gate: **BLOCKED**. No approved producer exists for skills, supports,
+items, modifiers, mechanics, or Trade vocabulary. The GGG passive-tree source
+is the only limited approved canonical producer and remains operator-triggered
+and default-off. Do not promote PoB, RePoE, Wiki, PoEDB, or Craft of Exile rows
+without field-level rights and provenance approval.
+
 ## Milestone 3 — PoE1 real-player acceptance
 
 Run consented PoB imports across melee/ranged/spell/minion/DoT/defence/content

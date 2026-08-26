@@ -15,6 +15,13 @@ final readonly class DataCoverageEntry implements JsonSerializable
         public ?int $expectedRecords,
         public ?int $coverageBasisPoints,
         public string $status,
+        public ?int $totalKnownSource = null,
+        public ?int $importedRecords = null,
+        public ?int $normalizedRecords = null,
+        public ?int $validatedRecords = null,
+        public ?int $activeRecords = null,
+        public ?int $missingRecords = null,
+        public string $knowledgeStatus = 'unknown',
     ) {}
 
     /** @return array<string, float|int|string|null> */
@@ -29,6 +36,13 @@ final readonly class DataCoverageEntry implements JsonSerializable
             'coverage_basis_points' => $this->coverageBasisPoints,
             'coverage_percent' => $this->coverageBasisPoints === null ? null : round($this->coverageBasisPoints / 100, 2),
             'status' => $this->status,
+            'total_known_source' => $this->totalKnownSource,
+            'imported' => $this->importedRecords,
+            'normalized' => $this->normalizedRecords,
+            'validated' => $this->validatedRecords,
+            'active' => $this->activeRecords,
+            'missing' => $this->missingRecords,
+            'knowledge_status' => $this->knowledgeStatus,
         ];
     }
 }

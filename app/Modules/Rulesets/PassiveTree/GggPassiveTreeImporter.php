@@ -54,7 +54,7 @@ final readonly class GggPassiveTreeImporter
         private SourceImportStaging $staging,
     ) {}
 
-    public function importFile(string $path, bool $dryRun, bool $activate): GggPassiveTreeImportResult
+    public function importFile(string $path, bool $dryRun, bool $activate, bool $publishCandidate = false): GggPassiveTreeImportResult
     {
         if ($this->remotePath($path) || ! $this->absolutePath($path)) {
             throw new RuntimeException('The file option must be an absolute local path.');
@@ -82,10 +82,10 @@ final readonly class GggPassiveTreeImporter
         $sourceChecksum = hash('sha256', $contents);
         $revision = $this->revisionForChecksum($sourceChecksum);
 
-        return $this->process($contents, GggPassiveTreeUrl::forRevision($revision), $revision, $dryRun, $activate);
+        return $this->process($contents, GggPassiveTreeUrl::forRevision($revision), $revision, $dryRun, $activate, $publishCandidate);
     }
 
-    public function importUrl(string $url, bool $dryRun, bool $activate): GggPassiveTreeImportResult
+    public function importUrl(string $url, bool $dryRun, bool $activate, bool $publishCandidate = false): GggPassiveTreeImportResult
     {
         $revision = GggPassiveTreeUrl::revision($url);
         $approved = $this->approvedRevision($revision);
@@ -103,16 +103,16 @@ final readonly class GggPassiveTreeImporter
                 : $this->quarantine($revision, $url, $sourceChecksum, 'source_checksum_mismatch');
         }
 
-        return $this->process($contents, $url, $revision, $dryRun, $activate);
+        return $this->process($contents, $url, $revision, $dryRun, $activate, $publishCandidate);
     }
 
-    private function process(string $contents, string $sourceUrl, string $revision, bool $dryRun, bool $activate): GggPassiveTreeImportResult
+    private function process(string $contents, string $sourceUrl, string $revision, bool $dryRun, bool $activate, bool $publishCandidate): GggPassiveTreeImportResult
     {
         if (! (bool) config('source-governance.ggg_passive_tree.enabled', false)) {
             throw new DomainException('The GGG passive-tree importer is disabled.');
         }
-        if ($dryRun && $activate) {
-            throw new DomainException('--dry-run and --activate cannot be used together.');
+        if ($dryRun && ($activate || $publishCandidate)) {
+            throw new DomainException('Dry-run cannot publish or activate a ruleset candidate.');
         }
         $sourceChecksum = hash('sha256', $contents);
         $approved = $this->approvedRevision($revision);
@@ -194,7 +194,7 @@ final readonly class GggPassiveTreeImporter
         }
 
         $rulesetId = null;
-        if ($activate) {
+        if ($activate || $publishCandidate) {
             $rulesetPayload = [...$payload, 'deterministic_analysis' => Poe1AnalysisRuleset::publishedV1()->jsonSerialize()];
             $rulesetChecksum = hash('sha256', CanonicalJson::encode($rulesetPayload));
             $rulesetId = (string) Str::uuid7();
@@ -216,7 +216,9 @@ final readonly class GggPassiveTreeImporter
                 compatibilityStatus: RulesetCompatibilityStatus::Compatible,
                 canonicalData: $canonicalData,
             ));
-            $this->lifecycle->activate($rulesetId, 'operator');
+            if ($activate) {
+                $this->lifecycle->activate($rulesetId, 'operator');
+            }
         }
 
         return new GggPassiveTreeImportResult($record->status, $revision, $sourceChecksum, $snapshotChecksum, $record->snapshotId, $rulesetId, $record->replayed, count($tree['classes']), count($tree['nodes']));

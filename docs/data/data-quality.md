@@ -1,6 +1,6 @@
 # Canonical game-data quality
 
-Status date: 2026-08-25. This report describes data that a clean production
+Status date: 2026-08-26. This report describes data that a clean production
 installation can resolve from an active, approved ruleset. Test fixtures,
 hard-coded presentation catalogs, parser aliases, and candidate repositories
 are deliberately excluded.
@@ -23,6 +23,10 @@ ruleset and `canonical_game_data`. An imported ruleset may declare verified
 `data_quality.expected_counts`; only then does the UI calculate completeness.
 Observed records without a verified denominator are shown as
 `unknown_completeness`, not 100%.
+
+The expanded category-by-category ledger, including imported, normalized,
+validated, active, missing, and unknown-source fields, is maintained in
+[data-coverage.md](data-coverage.md).
 
 ## Operationally importable data
 
