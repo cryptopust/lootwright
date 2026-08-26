@@ -15,12 +15,12 @@ inspectable.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-Lootwright is currently a **pre-production project**, not a completed public
-service. The repository contains substantial working foundations and a narrow
-PoE1 deterministic engine, but the complete product experience described below
-is not yet available. PoE1 is the active release track. PoE2 has isolated domain
-and adapter foundations and will ship independently when its data, rules, and
-end-to-end behavior are verified.
+Lootwright is currently deployed on Laravel Cloud, but it is not yet a
+complete public beta. The repository contains substantial working foundations
+and a narrow PoE1 deterministic engine; Cloud runtime, data coverage, and
+real-player acceptance still have open gates. PoE1 is the active release track.
+PoE2 remains isolated and unavailable until its independent data, rules, and
+end-to-end gates pass.
 
 ## Capability status
 
@@ -30,30 +30,30 @@ The labels in this README have precise meanings:
   still require operator configuration.
 - **EXPERIMENTAL** — implemented in a limited, fixture-backed, or pre-release
   form and not a production-readiness claim.
-- **CONDITIONAL** — implemented or designed behind source, policy, provenance,
-  configuration, or operational gates.
+- **BETA** — deployed or usable for a limited audience, with explicit runtime
+  or coverage limitations.
 - **PLANNED** — product direction with no claim that an end-to-end capability
   currently works.
 
 | Area | Status | Current repository evidence |
 | --- | --- | --- |
-| Laravel application, authentication, member ownership, admin RBAC, audit log | **AVAILABLE** | Fortify-backed auth, verified member routes, owner policies, admin/super-admin controls, 2FA and recent-password gates are implemented and feature-tested. Production mail and staging operations still require configuration. |
+| Laravel application, authentication, member ownership, admin RBAC, audit log | **AVAILABLE** | Fortify-backed auth, verified member routes, owner policies, admin/super-admin controls, 2FA and recent-password gates are implemented and feature-tested. Cloud mail and runtime smoke evidence remain operator gates. |
 | Source Registry, Policy and Provenance Gate, immutable snapshots, staging, import reports, versioned rulesets | **AVAILABLE** | PostgreSQL-oriented persistence and deny-by-default capability decisions exist, with idempotency, quarantine, approval, activation history, and isolation tests. |
 | Safe PoB1 parsing and normalization | **AVAILABLE** | User-supplied PoB1 XML/share-code input has bounded decoding, decompression and XML parsing, edition detection, typed unsupported fields, and no remote-resource resolution. It is not full Path of Building calculation parity. |
 | PoE1 character catalog and analysis intake | **AVAILABLE** | The public catalog and wizard currently expose PoE1. Class/Ascendancy relationships are validated server-side. |
-| PoE1 deterministic findings | **CONDITIONAL** | A real, narrow engine is production-bound and uses an exact approved immutable ruleset and passive-tree snapshot. It fails closed when that data is absent or incompatible. Its rule coverage is intentionally incomplete. |
+| PoE1 deterministic findings | **BETA** | A real, narrow engine is production-bound and uses an exact approved immutable ruleset and passive-tree snapshot. It fails closed when that data is absent or incompatible. Its rule coverage is intentionally incomplete. |
 | Upgrade graph and manual Trade recipe engine | **EXPERIMENTAL** | Edition-scoped deterministic contracts, ordering, constraints, dependency handling, and human-readable recipe generation are tested. Production output still needs approved canonical modifier and Trade vocabulary data and full workflow/UI binding. |
 | PoE2 format and domain adapters | **EXPERIMENTAL** | Separate PoB2-shaped parsing, catalog/domain contracts, rule registry, item-text and Trade vocabulary boundaries exist with cross-edition tests. There is no approved PoE2 production ruleset or analyzer, and PoE2 is not a public release surface today. |
-| GGG PoE1 passive-tree import | **CONDITIONAL** | An operator-only, commit-pinned, allowlisted importer stages and validates the official export before atomic activation. It is disabled by default and never runs in a player request. |
-| poe.ninja economy observations | **CONDITIONAL** | A documented-economy adapter, bounded client, normalization, caching, freshness, and policy tests exist. It is disabled by default and is not canonical game truth. |
-| PoE Wiki ingestion | **CONDITIONAL** | A disabled adapter boundary exists. Activation requires a reviewed capability, terms/attribution decision, exact schema, and current provenance evidence. |
+| GGG PoE1 passive-tree import | **EXPERIMENTAL** | An operator-only, commit-pinned, allowlisted importer stages and validates the official export before atomic activation. It is disabled by default and never runs in a player request. |
+| poe.ninja economy observations | **EXPERIMENTAL** | A documented-economy adapter, bounded client, normalization, caching, freshness, and policy tests exist. It is disabled by default and is not canonical game truth. |
+| PoE Wiki ingestion | **PLANNED** | A disabled adapter boundary exists. Activation requires a reviewed capability, terms/attribution decision, exact schema, and current provenance evidence. |
 | Remote build links such as `pobb.in` or future PoB2-compatible providers | **PLANNED** | Locally supplied content remains the supported intake path. Remote retrieval requires a separately approved, allowlisted adapter; arbitrary user-controlled URL fetching is not implemented. |
-| Optional AI intent/explanations | **CONDITIONAL** | A provider-neutral gateway and default-off OpenAI Responses adapter implement schemas, quotas, budgets, caching, timeout/retry limits, a circuit breaker, and deterministic fallback. Normal CI uses fakes. |
-| Live Trade/market intelligence and price-aware planning | **PLANNED / CONDITIONAL** | Capability levels are defined below. No current production flow promises live listings or exact prices. |
+| Optional AI intent/explanations | **EXPERIMENTAL** | A provider-neutral gateway and default-off OpenAI Responses adapter implement schemas, quotas, budgets, caching, timeout/retry limits, a circuit breaker, and deterministic fallback. Normal CI uses fakes. |
+| Live Trade/market intelligence and price-aware planning | **EXPERIMENTAL** | Capability contracts, contextual observations, TTLs and fake-provider tests exist; no live provider is enabled and no exact price is promised. |
 
-For the strict release verdict, see [MVP readiness](docs/release/mvp-readiness.md).
-For implementation history and limitations, see [progress](docs/progress.md) and
-the [current-state audit](docs/audits/current-state.md).
+For the strict release verdict, see [MVP release gate](docs/release/mvp-release-gate.md).
+For the current evidence classification, see the [2026 production-reality audit](docs/audits/production-reality-2026.md)
+and [dependency-ordered completion plan](docs/roadmap/completion-plan.md).
 
 ## Target player experience
 
@@ -180,9 +180,9 @@ Trade support progresses by independently reviewed capability:
 | Level | Capability | Current status |
 | --- | --- | --- |
 | 0 | Human-readable manual Trade recipe | **EXPERIMENTAL** — engine and fixture UI exist; production vocabulary/data approval remains gated. |
-| 1 | Validated edition-specific Trade filters | **PLANNED / CONDITIONAL** — requires approved canonical modifier and filter vocabulary. |
-| 2 | Official Trade deep-link or search generation | **PLANNED / CONDITIONAL** — only through a reliable, provider-permitted mechanism; no availability promise. |
-| 3 | Market observations | **CONDITIONAL** — the poe.ninja economy adapter is default-off; other providers require separate review. |
+| 1 | Validated edition-specific Trade filters | **PLANNED** — requires approved canonical modifier and filter vocabulary. |
+| 2 | Official Trade deep-link or search generation | **PLANNED** — only through a reliable, provider-permitted mechanism; no availability promise. |
+| 3 | Market observations | **EXPERIMENTAL** — the poe.ninja economy adapter is default-off; other providers require separate review. |
 | 4 | Price-aware upgrade planning | **PLANNED** — requires suitable timestamped observations and uncertainty-aware planning. |
 
 No level implies purchasing, whispering, inviting, or acting for the player.
@@ -233,19 +233,20 @@ See the [threat model](docs/security/threat-model.md), [security baseline](docs/
 - Composer and npm lockfiles; Node.js 24 and npm 11 baseline
 
 Deployment assets include a local Docker Compose stack, a production container
-definition, and Laravel Cloud documentation. This repository does not claim a
-production deployment has occurred.
+definition, and Laravel Cloud documentation. The application is deployed on
+Laravel Cloud; this repository does not include independent Cloud dashboard,
+runtime-health, backup or mail-delivery evidence.
 
 ## Roadmap
 
 | Phase | Status | Evidence and next gate |
 | --- | --- | --- |
-| Phase A — Platform Foundation | **AVAILABLE / ongoing** | Modular boundaries, identity, ownership, admin, policy/provenance, source lifecycle, security controls, CI and deployment foundations exist. Real PostgreSQL CI/staging and operational evidence remain release gates. |
-| Phase B — PoE1 Functional Engine | **EXPERIMENTAL / CONDITIONAL** | Safe PoB1 intake, official passive-tree import, exact ruleset resolution, and a narrow deterministic finding set exist. Broader canonical data, rules, production upgrades/recipes, and result UX remain incomplete. |
+| Phase A — Platform Foundation | **AVAILABLE** | Modular boundaries, identity, ownership, admin, policy/provenance, source lifecycle, security controls, CI and deployment foundations exist. Cloud operational evidence remains a release gate. |
+| Phase B — PoE1 Functional Engine | **BETA** | Safe PoB1 intake, official passive-tree import, exact ruleset resolution, and a narrow deterministic finding set exist. Broader canonical data, rules, production upgrades/recipes, and result UX remain incomplete. |
 | Phase C — PoE2 Functional Engine | **PLANNED** | Edition-isolated contracts and beta structural adapters exist; approved canonical data, ruleset, analyzer, public flow, and production tests do not. |
-| Phase D — Trade & Market Intelligence | **EXPERIMENTAL / CONDITIONAL** | Level 0 contracts and a default-off poe.ninja economy adapter exist. Higher levels depend on provider capability, policy, provenance, and data quality. |
+| Phase D — Trade & Market Intelligence | **EXPERIMENTAL** | Capability contracts, contextual observations and a default-off poe.ninja economy adapter exist. Higher levels depend on provider capability, policy, provenance, and data quality. |
 | Phase E — Advanced Build Intelligence | **PLANNED** | Build comparison, gear what-if simulation, passive-tree comparison, upgrade ROI, league analysis, meta statistics, build-guide ingestion, community discovery, historical markets, feedback loops, and recommendation evaluation remain future capabilities. |
-| Phase F — Production Hardening | **IN PROGRESS** | Parser, auth, authorization, queue, logging, outbound, AI, and migration controls have broad tests. PostgreSQL/staging, mail, proxy/TLS, backup restore, and aggregate browser gates still require evidence. |
+| Phase F — Production Hardening | **BETA** | Parser, auth, authorization, queue, logging, outbound, AI, and migration controls have broad tests. PostgreSQL/staging, mail, proxy/TLS, backup restore, and aggregate browser gates still require evidence. |
 
 Roadmap items are architectural room, not delivery promises. A future provider
 or workflow becomes available only after its own implementation and review.

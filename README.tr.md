@@ -15,12 +15,12 @@ incelenebilir olmalıdır.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-Lootwright şu anda tamamlanmış halka açık bir servis değil, **production öncesi
-bir projedir**. Repoda güçlü bir platform temeli ve dar kapsamlı gerçek bir PoE1
-deterministik motoru bulunur; ancak aşağıdaki ürün deneyiminin tamamı henüz
-kullanılabilir değildir. Aktif release hattı PoE1'dir. PoE2 için yalıtılmış
-domain ve adapter temelleri vardır; PoE2 verileri, kuralları ve uçtan uca
-davranışı doğrulandığında bağımsız olarak yayınlanacaktır.
+Lootwright şu anda Laravel Cloud üzerinde deploy edilmiştir; ancak tamamlanmış
+halka açık bir beta değildir. Repoda güçlü bir platform temeli ve dar kapsamlı
+gerçek bir PoE1 deterministik motoru bulunur; Cloud çalışma zamanı, veri kapsamı
+ve gerçek oyuncu kabul kanıtları hâlâ açık kapılardır. PoE1 aktif hattır. PoE2,
+bağımsız veri, kural ve uçtan uca kapıları geçene kadar yalıtılmış ve kullanıma
+kapalıdır.
 
 ## Yetenek durumları
 
@@ -30,8 +30,8 @@ Bu README'deki etiketlerin anlamı nettir:
   operatör yapılandırması yine de gerekebilir.
 - **EXPERIMENTAL** — sınırlı, fixture-backed veya release öncesi uygulamadır;
   production hazırlığı iddiası değildir.
-- **CONDITIONAL** — kaynak, politika, provenance, config veya operasyon
-  kapılarının arkasında uygulanmış ya da tasarlanmıştır.
+- **BETA** — sınırlı kitle için kullanılabilir; çalışma zamanı veya kapsam
+  sınırlamaları açıkça belirtilmiştir.
 - **PLANNED** — ürün yönüdür; uçtan uca çalıştığı iddia edilmez.
 
 | Alan | Durum | Mevcut repo kanıtı |
@@ -40,19 +40,19 @@ Bu README'deki etiketlerin anlamı nettir:
 | Source Registry, Policy and Provenance Gate, immutable snapshot, staging, import raporu ve versioned ruleset | **AVAILABLE** | PostgreSQL hedefli persistence; idempotency, quarantine, approval, activation history ve edition isolation testleriyle uygulanmıştır. |
 | Güvenli PoB1 parse ve normalization | **AVAILABLE** | Kullanıcının sağladığı PoB1 XML/share code için boyutlu decode, decompression ve XML sınırları, edition detection ve tipli unsupported alanlar vardır. Uzak XML kaynağı çözülmez. Bu, Path of Building hesaplamalarıyla tam parity anlamına gelmez. |
 | PoE1 karakter kataloğu ve analiz girişi | **AVAILABLE** | Public katalog ve wizard şu anda PoE1'i sunar. Class/Ascendancy ilişkisi backend tarafından tekrar doğrulanır. |
-| PoE1 deterministik bulguları | **CONDITIONAL** | Gerçek fakat dar kapsamlı motor production container'a bağlıdır; tam eşleşen onaylı immutable ruleset ve passive-tree snapshot kullanır. Veri yoksa veya uyumsuzsa fail closed davranır. Kural kapsamı bilinçli olarak sınırlıdır. |
+| PoE1 deterministik bulguları | **BETA** | Gerçek fakat dar kapsamlı motor exact onaylı immutable ruleset ve passive-tree snapshot kullanır. Veri yoksa veya uyumsuzsa fail closed davranır. Kural kapsamı bilinçli olarak sınırlıdır. |
 | Upgrade grafiği ve manuel Trade recipe motoru | **EXPERIMENTAL** | Edition-scoped deterministik contract'lar, sıralama, constraint, dependency ve human-readable recipe üretimi testlidir. Production çıktısı için onaylı canonical modifier/Trade vocabulary ve tam workflow/UI bağlantısı gerekir. |
 | PoE2 format ve domain adapterları | **EXPERIMENTAL** | Ayrı PoB2-shaped parser, katalog/domain contract'ları, rule registry, item-text ve Trade vocabulary sınırları cross-edition testlerle bulunur. Onaylı PoE2 production ruleset/analyzer yoktur ve PoE2 bugün public release yüzeyi değildir. |
-| GGG PoE1 passive-tree import | **CONDITIONAL** | Operatör kontrollü, commit-pinned ve allowlist'li importer resmî export'u atomic activation öncesinde stage edip doğrular. Varsayılan kapalıdır ve oyuncu isteği sırasında çalışmaz. |
-| poe.ninja ekonomi gözlemleri | **CONDITIONAL** | Dokümante economy adapterı, bounded client, normalization, cache, freshness ve policy testleri vardır. Varsayılan kapalıdır; canonical oyun gerçeği değildir. |
-| PoE Wiki ingestion | **CONDITIONAL** | Devre dışı adapter sınırı vardır. Etkinleştirme için capability, lisans/atıf, şema ve güncel provenance incelemesi gerekir. |
+| GGG PoE1 passive-tree import | **EXPERIMENTAL** | Operatör kontrollü, commit-pinned ve allowlist'li importer resmî export'u atomic activation öncesinde stage edip doğrular. Varsayılan kapalıdır ve oyuncu isteği sırasında çalışmaz. |
+| poe.ninja ekonomi gözlemleri | **EXPERIMENTAL** | Dokümante economy adapterı, bounded client, normalization, cache, freshness ve policy testleri vardır. Varsayılan kapalıdır; canonical oyun gerçeği değildir. |
+| PoE Wiki ingestion | **PLANNED** | Devre dışı adapter sınırı vardır. Etkinleştirme için capability, lisans/atıf, şema ve güncel provenance incelemesi gerekir. |
 | `pobb.in`, PoB linkleri ve gelecekteki PoB2-compatible providerlar | **PLANNED** | Bugün desteklenen giriş, kullanıcının doğrudan sağladığı içeriktir. Remote retrieval ayrı, allowlist'li ve onaylı adapter gerektirir; keyfî kullanıcı URL'si fetch edilmez. |
-| İsteğe bağlı AI intent/explanation | **CONDITIONAL** | Provider-neutral gateway ve varsayılan kapalı OpenAI Responses adapterı; schema, kota, bütçe, cache, timeout/retry, circuit breaker ve deterministik fallback uygular. Normal CI fake kullanır. |
-| Canlı Trade/piyasa intelligence ve price-aware planlama | **PLANNED / CONDITIONAL** | Capability seviyeleri aşağıda tanımlıdır. Bugünkü production akışı canlı listing veya kesin fiyat vadetmez. |
+| İsteğe bağlı AI intent/explanation | **EXPERIMENTAL** | Provider-neutral gateway ve varsayılan kapalı OpenAI Responses adapterı; schema, kota, bütçe, cache, timeout/retry, circuit breaker ve deterministik fallback uygular. Normal CI fake kullanır. |
+| Canlı Trade/piyasa intelligence ve price-aware planlama | **EXPERIMENTAL** | Capability contract'ları, bağlamlı gözlemler ve TTL/fake-provider testleri vardır; canlı provider etkin değildir ve kesin fiyat vadetmez. |
 
-Kesin release kararı için [MVP readiness](docs/release/mvp-readiness.md), uygulama
-tarihi ve sınırlamalar için [progress](docs/progress.md) ile
-[current-state audit](docs/audits/current-state.md) belgelerine bakın.
+Kesin release kararı için [MVP release gate](docs/release/mvp-release-gate.md),
+güncel kanıt sınıflandırması için [2026 production reality audit](docs/audits/production-reality-2026.md)
+ve [dependency sıralı completion plan](docs/roadmap/completion-plan.md) belgelerine bakın.
 
 ## Hedef oyuncu deneyimi
 
@@ -174,9 +174,9 @@ Trade desteği bağımsız incelemelerden geçen seviyelerle ilerler:
 | Seviye | Capability | Bugünkü durum |
 | --- | --- | --- |
 | 0 | Human-readable manuel Trade recipe | **EXPERIMENTAL** — motor ve fixture UI vardır; production vocabulary/data onayı gated durumdadır. |
-| 1 | Doğrulanmış edition-specific Trade filter'ları | **PLANNED / CONDITIONAL** — canonical modifier ve filter vocabulary onayı gerekir. |
-| 2 | Resmî Trade deep link veya search generation | **PLANNED / CONDITIONAL** — yalnız güvenilir ve provider tarafından izin verilen yöntemle; availability sözü verilmez. |
-| 3 | Market observation | **CONDITIONAL** — poe.ninja economy adapterı varsayılan kapalıdır; diğer providerlar ayrı review gerektirir. |
+| 1 | Doğrulanmış edition-specific Trade filter'ları | **PLANNED** — canonical modifier ve filter vocabulary onayı gerekir. |
+| 2 | Resmî Trade deep link veya search generation | **PLANNED** — yalnız güvenilir ve provider tarafından izin verilen yöntemle; availability sözü verilmez. |
+| 3 | Market observation | **EXPERIMENTAL** — poe.ninja economy adapterı varsayılan kapalıdır; diğer providerlar ayrı review gerektirir. |
 | 4 | Price-aware upgrade planning | **PLANNED** — uygun timestamped observation ve uncertainty-aware planlama gerekir. |
 
 Hiçbir seviye oyuncu adına satın alma, whisper, invite veya başka bir işlem
@@ -227,18 +227,19 @@ session secret log veya analytics'e yazılmamalıdır.
 - Composer/npm lockfile'ları; Node.js 24 ve npm 11 baseline
 
 Repo; local Docker Compose stack'i, production container tanımı ve Laravel Cloud
-dokümantasyonu içerir. Production deployment yapılmış olduğu iddia edilmez.
+dokümantasyonu içerir. Uygulama Laravel Cloud'da deploy edilmiştir; bu repoda
+bağımsız Cloud dashboard, çalışma zamanı, yedekleme veya mail teslim kanıtı yoktur.
 
 ## Yol haritası
 
 | Faz | Durum | Kanıt ve sonraki kapı |
 | --- | --- | --- |
-| Phase A — Platform Foundation | **AVAILABLE / devam ediyor** | Module boundary, identity, ownership, admin, policy/provenance, source lifecycle, security, CI ve deployment temelleri vardır. Gerçek PostgreSQL CI/staging ve operasyon kanıtları release gate olmaya devam eder. |
-| Phase B — PoE1 Functional Engine | **EXPERIMENTAL / CONDITIONAL** | Güvenli PoB1 intake, resmî passive-tree import, exact ruleset resolution ve dar deterministik finding seti vardır. Daha geniş canonical data/rule, production upgrade/recipe ve result UX eksiktir. |
+| Phase A — Platform Foundation | **AVAILABLE** | Module boundary, identity, ownership, admin, policy/provenance, source lifecycle, security, CI ve deployment temelleri vardır. Cloud operasyon kanıtları release gate olmaya devam eder. |
+| Phase B — PoE1 Functional Engine | **BETA** | Güvenli PoB1 intake, resmî passive-tree import, exact ruleset resolution ve dar deterministik finding seti vardır. Daha geniş canonical data/rule, production upgrade/recipe ve result UX eksiktir. |
 | Phase C — PoE2 Functional Engine | **PLANNED** | Edition-isolated contract ve beta structural adapter vardır; onaylı canonical data, ruleset, analyzer, public akış ve production test yoktur. |
-| Phase D — Trade & Market Intelligence | **EXPERIMENTAL / CONDITIONAL** | Level 0 contract'ları ve default-off poe.ninja economy adapterı vardır. Üst seviyeler provider capability, policy, provenance ve data quality'ye bağlıdır. |
+| Phase D — Trade & Market Intelligence | **EXPERIMENTAL** | Capability contract'ları, bağlamlı gözlemler ve default-off poe.ninja economy adapterı vardır. Üst seviyeler provider capability, policy, provenance ve data quality'ye bağlıdır. |
 | Phase E — Advanced Build Intelligence | **PLANNED** | Build comparison, gear what-if simulation, passive-tree comparison, upgrade ROI, league analysis, meta statistics, build-guide ingestion, community discovery, historical market, feedback loop ve recommendation evaluation gelecekteki capability'lerdir. |
-| Phase F — Production Hardening | **DEVAM EDİYOR** | Parser, auth, authorization, queue, logging, outbound, AI ve migration kontrolleri geniş test kapsamına sahiptir. PostgreSQL/staging, mail, proxy/TLS, backup restore ve aggregate browser kapıları için ek kanıt gerekir. |
+| Phase F — Production Hardening | **BETA** | Parser, auth, authorization, queue, logging, outbound, AI ve migration kontrolleri geniş test kapsamına sahiptir. PostgreSQL/staging, mail, proxy/TLS, backup restore ve aggregate browser kapıları için ek kanıt gerekir. |
 
 Roadmap maddeleri mimari alan bırakır; teslimat sözü değildir. Yeni provider veya
 workflow ancak kendi implementasyon ve review süreci tamamlandığında available
