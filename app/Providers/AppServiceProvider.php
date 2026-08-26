@@ -125,6 +125,7 @@ use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
 use Lootwright\GameAdapters\PoE1\Recommendations\Poe1UpgradeCandidateFactory;
+use Lootwright\GameAdapters\PoE1\Rulesets\Poe1RulesetLoader;
 use Lootwright\GameAdapters\PoE2\BuildImport\Poe2BuildImporter;
 use Lootwright\GameAdapters\PoE2\ItemText\Poe2ItemTextImporter;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
@@ -171,6 +172,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
         $this->app->bind(ArtifactParser::class, PolicyGatedArtifactParser::class);
         $this->app->singleton(Poe1CoreAnalysisEngine::class);
+        $this->app->singleton(Poe1RulesetLoader::class);
         $this->app->bind(DeterministicAnalysisEngine::class, ProductionPoe1DeterministicAnalysisEngine::class);
         $this->app->singleton(UpgradePlanner::class, static fn (): UpgradePlanner => new DeterministicUpgradePlanner([
             new Poe1UpgradeCandidateFactory(new UpgradePriorityScorer),

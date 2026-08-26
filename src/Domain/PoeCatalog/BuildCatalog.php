@@ -179,6 +179,23 @@ final readonly class BuildCatalog implements JsonSerializable
         ));
     }
 
+    /** Construct a build shell from an already-resolved immutable ruleset. */
+    public static function fromCanonical(
+        GameEdition $edition,
+        CharacterClassId $characterClass,
+        ?AscendancyId $ascendancy,
+    ): DomainResult {
+        if (! $characterClass->belongsTo($edition)
+            || ($ascendancy !== null && ! $ascendancy->belongsTo($edition))) {
+            return DomainResult::failure(DomainError::because(
+                DomainErrorCode::EditionMismatch,
+                'Canonical build values must belong to the selected edition.',
+            ));
+        }
+
+        return DomainResult::success(new self($edition, $characterClass, $ascendancy, [], [], [], [], []));
+    }
+
     /** @return array<string, mixed> */
     public function jsonSerialize(): array
     {

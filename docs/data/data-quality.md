@@ -57,6 +57,16 @@ These gaps are visible and block dependent deterministic rules.
 - Update observations are append-only and checksum based. Importing or staging
   a change never activates it automatically.
 
+## PoE1 runtime resolution
+
+When a PoE1 ruleset is active, the production analyzer loads its immutable
+canonical records through `Poe1RulesetLoader`. `Poe1CanonicalResolver` maps
+PoB identifiers to those records using stable external IDs and source-provided
+aliases; it does not consult the presentation character catalog. Class and
+Ascendancy relationships are checked against the same ruleset before analysis
+continues. Missing skills, supports, items, modifiers, or mechanics remain
+explicitly unsupported until an approved canonical producer supplies them.
+
 ## Source assessment
 
 | Source/capability | Technical access | License/terms, redistribution, commercial use, cache | Rate/auth | Quality/version/update | Edition and provenance | Classification |

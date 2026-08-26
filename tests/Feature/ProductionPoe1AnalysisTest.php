@@ -51,7 +51,7 @@ final class ProductionPoe1AnalysisTest extends TestCase
         $user = User::factory()->create();
         $xml = file_get_contents(base_path('tests/Fixtures/Pob/poe1-minimal.xml'));
         self::assertIsString($xml);
-        $xml = str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml);
+        $xml = $this->canonicalPoe1Xml(str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml));
         $ruleset = DB::table('ruleset_versions')->sole();
         $response = $this->actingAs($user)->postJson('/api/analyses', [
             'game' => 'poe1',
@@ -106,7 +106,7 @@ final class ProductionPoe1AnalysisTest extends TestCase
     {
         $xml = file_get_contents(base_path('tests/Fixtures/Pob/poe1-minimal.xml'));
         self::assertIsString($xml);
-        $xml = str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml);
+        $xml = $this->canonicalPoe1Xml(str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml));
         $result = app(PolicyGatedPobImporter::class)->handle($xml, false)->result;
         $normalized = CanonicalJson::encode($result);
 
@@ -119,6 +119,15 @@ final class ProductionPoe1AnalysisTest extends TestCase
     {
         return new AnalysisRecord(
             '01890f47-0f7d-7a2b-9c3d-1234567890ab', '01890f47-0f7d-7a2b-8c3d-1234567890ac', 'owner', GameEdition::Poe1, 1, AnalysisState::Processing, '{}', hash('sha256', '{}'),
+        );
+    }
+
+    private function canonicalPoe1Xml(string $xml): string
+    {
+        return str_replace(
+            ['classId="1" ascendClassId="2"', 'className="Fixture Class" ascendClassName="Fixture Ascendancy"'],
+            ['classId="2" ascendClassId="Deadeye"', 'className="Ranger" ascendClassName="Deadeye"'],
+            $xml,
         );
     }
 }

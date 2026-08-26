@@ -74,7 +74,11 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         $user = User::factory()->create(['email_verified_at' => now()]);
         $xml = file_get_contents(base_path('tests/Fixtures/Pob/poe1-minimal.xml'));
         self::assertIsString($xml);
-        $xml = str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml);
+        $xml = str_replace(
+            ['targetVersion="3_0"', 'classId="1" ascendClassId="2"', 'className="Fixture Class" ascendClassName="Fixture Ascendancy"'],
+            ['targetVersion="3.29.1"', 'classId="2" ascendClassId="Deadeye"', 'className="Ranger" ascendClassName="Deadeye"'],
+            $xml,
+        );
         $ruleset = DB::table('ruleset_versions')->sole();
         $response = $this->actingAs($user)->postJson('/api/analyses', [
             'game' => 'poe1',

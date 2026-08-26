@@ -683,6 +683,10 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
             $key = $recipe instanceof DomainManualTradeRecipe
                 ? $recipe->recommendationCode
                 : ($recipe instanceof DomainTradeRecipe ? $recipe->slot : $recipe->slot);
+            $key = $key === '' ? 'recipe' : $key;
+            if (DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->where('recipe_key', $key)->exists()) {
+                $key .= ':'.$sequence;
+            }
             DB::table('manual_trade_recipes')->insert([
                 'id' => (string) Str::uuid7(),
                 'analysis_id' => $analysisId,

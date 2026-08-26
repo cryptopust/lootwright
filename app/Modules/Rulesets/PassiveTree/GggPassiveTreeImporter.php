@@ -270,7 +270,10 @@ final readonly class GggPassiveTreeImporter
                 $classId,
                 (string) $class['name'],
                 $provenance,
-                ['upstream_index' => $class['index']],
+                [
+                    'upstream_index' => $class['index'],
+                    'aliases' => [(string) $class['index'], $this->identifierAlias((string) $class['name'])],
+                ],
             );
             foreach ($class['ascendancies'] as $ascendancy) {
                 $entities[] = new Ascendancy(
@@ -280,6 +283,10 @@ final readonly class GggPassiveTreeImporter
                     (string) $ascendancy['name'],
                     $provenance,
                     $classId,
+                    attributes: [
+                        'upstream_id' => (string) $ascendancy['upstream_id'],
+                        'aliases' => [(string) $ascendancy['upstream_id'], $this->identifierAlias((string) $ascendancy['name'])],
+                    ],
                 );
             }
         }
@@ -358,6 +365,11 @@ final readonly class GggPassiveTreeImporter
     private function remotePath(string $path): bool
     {
         return preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $path) === 1 || str_starts_with($path, '\\\\') || str_starts_with($path, '//');
+    }
+
+    private function identifierAlias(string $value): string
+    {
+        return strtolower(trim((string) preg_replace('/[^A-Za-z0-9._-]+/', '-', $value), '-_.'));
     }
 
     private function absolutePath(string $path): bool

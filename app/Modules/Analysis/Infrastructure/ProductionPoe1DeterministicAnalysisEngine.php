@@ -59,6 +59,9 @@ use Lootwright\Domain\TradePlanning\TradeVocabularyEntry;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisEngine;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1AnalysisRuleset;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine as CoreEngine;
+use Lootwright\GameAdapters\PoE1\Rulesets\Poe1CanonicalResolver;
+use Lootwright\GameAdapters\PoE1\Rulesets\Poe1Ruleset;
+use Lootwright\GameAdapters\PoE1\Rulesets\Poe1RulesetLoader;
 use Lootwright\GameAdapters\PoE1\TradePlanning\Poe1TradeVocabulary;
 use RuntimeException;
 use Throwable;
@@ -71,6 +74,7 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         private UpgradePlanner $planner,
         private TradeRecipeBuilder $tradeRecipeBuilder,
         private GameDataRepository $gameData,
+        private Poe1RulesetLoader $rulesetLoader,
     ) {}
 
     public function resolve(AnalysisRecord $analysis, ArtifactRecord $artifact): ResolvedAnalysisContext
@@ -100,8 +104,9 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             if ($identity->id->value !== $context->rulesetId || $identity->version->value !== $context->rulesetVersion || $identity->checksumSha256 !== $context->rulesetChecksumSha256) {
                 throw new TerminalWorkflowFailure('ruleset_changed_after_resolution', 'The active ruleset identity changed before deterministic execution.');
             }
-            [$analysisRules, $knownNodes, $snapshotProvenance] = $this->loadAndVerifyRuleset($identity);
+            [$analysisRules, $knownNodes, $snapshotProvenance, $canonicalRuleset] = $this->loadAndVerifyRuleset($identity);
             $build = $this->hydrateBuild($artifact->normalizedSnapshot ?? '');
+            $this->validateCanonicalBuildReferences($build, $canonicalRuleset);
             $analysisId = AnalysisId::from(GameEdition::Poe1, $analysis->id);
             if ($analysisId->isFailure() || ! $analysisId->value() instanceof AnalysisId) {
                 throw new TerminalWorkflowFailure('invalid_analysis_identity', 'The analysis identity is not a canonical PoE1 UUIDv7.');
@@ -314,7 +319,7 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         if ($ascendancy !== null && $ascendancy->isFailure()) {
             $ascendancy = null;
         }
-        $catalog = BuildCatalog::create(GameEdition::Poe1, $class->value(), $ascendancy?->value());
+        $catalog = BuildCatalog::fromCanonical(GameEdition::Poe1, $class->value(), $ascendancy?->value());
         $scope = GameScope::create(GameEdition::Poe1, PlatformRealm::Pc);
         $buildId = BuildId::from(GameEdition::Poe1, $artifact->id);
         $patch = PatchVersion::from(GameEdition::Poe1, $identity->patch->value);
@@ -440,7 +445,7 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         return $resolved->value();
     }
 
-    /** @return array{Poe1AnalysisRuleset, array<string, true>, array<string, string>} */
+    /** @return array{Poe1AnalysisRuleset, array<string, true>, array<string, string>, Poe1Ruleset} */
     private function loadAndVerifyRuleset(RulesetIdentity $identity): array
     {
         $ruleset = DB::table('ruleset_versions')->where('id', $identity->id->value)->where('status', 'published')->first();
@@ -483,12 +488,30 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             $known[$node['id']] = true;
         }
 
+        $canonicalRuleset = $this->rulesetLoader->load($identity);
+
         return [$analysisRules, $known, [
             'source_code' => (string) $snapshot->source_code,
             'source_version' => (string) $snapshot->source_version,
             'upstream_revision' => (string) $snapshot->upstream_revision,
             'checksum_sha256' => $checksum,
-        ]];
+        ], $canonicalRuleset];
+    }
+
+    private function validateCanonicalBuildReferences(CanonicalImportedBuild $build, Poe1Ruleset $ruleset): void
+    {
+        $resolver = new Poe1CanonicalResolver($ruleset);
+        $class = $build->characterClassId === null ? null : $resolver->characterClass($build->characterClassId);
+        if ($build->characterClassId !== null && $class === null) {
+            throw new TerminalWorkflowFailure('unknown_canonical_class', 'The PoE1 character class is not present in the active canonical ruleset.');
+        }
+        $ascendancy = $build->ascendancyId === null ? null : $resolver->ascendancy($build->ascendancyId);
+        if ($build->ascendancyId !== null && $ascendancy === null) {
+            throw new TerminalWorkflowFailure('unknown_canonical_ascendancy', 'The PoE1 ascendancy is not present in the active canonical ruleset.');
+        }
+        if ($class !== null && $ascendancy !== null && $ascendancy->characterClassExternalId !== $class->externalId) {
+            throw new TerminalWorkflowFailure('canonical_ascendancy_class_mismatch', 'The PoE1 ascendancy does not belong to the resolved canonical character class.');
+        }
     }
 
     private function hydrateBuild(string $snapshot): CanonicalImportedBuild
