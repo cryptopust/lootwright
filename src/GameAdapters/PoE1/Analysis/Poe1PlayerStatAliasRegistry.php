@@ -41,5 +41,13 @@ final readonly class Poe1PlayerStatAliasRegistry
         'maximum_cold_resistance' => ['ColdResistCap', 'MaxColdResist', 'MaximumColdResistance'],
         'maximum_fire_resistance' => ['FireResistCap', 'MaxFireResist', 'MaximumFireResistance'],
         'maximum_lightning_resistance' => ['LightningResistCap', 'MaxLightningResist', 'MaximumLightningResistance'],
+        'strength' => ['Str', 'Strength', 'TotalStrength'],
+        'dexterity' => ['Dex', 'Dexterity', 'TotalDexterity'],
+        'intelligence' => ['Int', 'Intelligence', 'TotalIntelligence'],
+        'strength_requirement' => ['StrengthRequirement', 'RequiredStrength'],
+        'dexterity_requirement' => ['DexterityRequirement', 'RequiredDexterity'],
+        'intelligence_requirement' => ['IntelligenceRequirement', 'RequiredIntelligence'],
+        'mana_cost' => ['ManaCost', 'MainSkillManaCost'],
+        'mana_regeneration' => ['ManaRegen', 'ManaRegeneration'],
     ];
 }

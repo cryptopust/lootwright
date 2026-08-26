@@ -48,6 +48,8 @@ final readonly class Poe1DeterministicAnalysisEngine
         'passive_tree.keystone.conflict',
         'equipment.weapon.skill_incompatible',
         'skills.aura.conflict',
+        'attributes.requirement.missing',
+        'resources.mana.cost_unsustainable',
     ];
 
     /**
@@ -76,6 +78,7 @@ final readonly class Poe1DeterministicAnalysisEngine
         $this->passives($build, $analysisId, $ruleset, $knownPassiveNodeIds, $sourceProvenance, $findings);
         $this->defensiveProfile($build, $analysisId, $ruleset, $analysisRules, $sourceProvenance, $findings);
         $this->recoveryAndOffence($build, $analysisId, $ruleset, $sourceProvenance, $findings);
+        $this->attributesAndSustainability($build, $analysisId, $ruleset, $analysisRules, $sourceProvenance, $findings);
 
         $order = array_flip(self::RULE_CODES);
         usort($findings, static fn (Finding $left, Finding $right): int => ($order[$left->code] ?? 999) <=> ($order[$right->code] ?? 999));
@@ -118,6 +121,8 @@ final readonly class Poe1DeterministicAnalysisEngine
             $this->passives($context->build, $context->analysisId, $identity, $knownPassiveNodeIds, $context->sourceProvenance, $all);
         } elseif (str_starts_with($ruleId, 'recovery.') || str_starts_with($ruleId, 'offence.')) {
             $this->recoveryAndOffence($context->build, $context->analysisId, $identity, $context->sourceProvenance, $all);
+        } elseif (str_starts_with($ruleId, 'attributes.') || str_starts_with($ruleId, 'resources.mana.cost_')) {
+            $this->attributesAndSustainability($context->build, $context->analysisId, $identity, $analysisRules, $context->sourceProvenance, $all);
         } else {
             throw new RuntimeException('The PoE1 registry requested an unknown rule.');
         }
@@ -323,12 +328,39 @@ final readonly class Poe1DeterministicAnalysisEngine
         }
     }
 
+    /**
+     * Evaluate only explicitly reported requirements and costs. Missing
+     * fields remain unknown; the analyzer never invents gem/item metadata.
+     *
+     * @param  array<string,mixed>  $provenance
+     * @param  list<Finding>  &$findings
+     */
+    private function attributesAndSustainability(CanonicalImportedBuild $build, AnalysisId $id, RulesetIdentity $ruleset, Poe1AnalysisRuleset $rules, array $provenance, array &$findings): void
+    {
+        $stats = (new Poe1PlayerStatAliasRegistry($rules->playerStatAliases))->canonicalize([...$build->summaryValues, ...$build->attributes]);
+        foreach ([['strength', 'strength_requirement'], ['dexterity', 'dexterity_requirement'], ['intelligence', 'intelligence_requirement']] as [$attribute, $requirement]) {
+            $value = $this->integer($stats[$attribute] ?? null);
+            $needed = $this->integer($stats[$requirement] ?? null);
+            if ($value !== null && $needed !== null && $value < $needed) {
+                $findings[] = $this->finding($id, $ruleset, 'attributes.requirement.missing', FindingSeverity::Critical, FindingCategory::Attributes, 'Attribute requirement is not met', 'The reported attribute total is below an explicit requirement in the normalized build.', ['attribute' => $attribute, 'value' => $value], ['minimum' => $needed], [], [], [], ['player_stat:'.$attribute, 'player_stat:'.$requirement], $provenance, 10_000);
+            }
+        }
+        $cost = $this->integer($stats['mana_cost'] ?? null);
+        $available = $this->integer($stats['mana_unreserved'] ?? null);
+        if ($cost !== null && $available !== null && $cost > $available) {
+            $findings[] = $this->finding($id, $ruleset, 'resources.mana.cost_unsustainable', FindingSeverity::Warning, FindingCategory::Resources, 'Main skill mana cost exceeds unreserved mana', 'The explicit reported mana cost cannot be paid from the available unreserved mana pool.', $cost, $available, [], [], [], ['player_stat:mana_cost', 'player_stat:mana_unreserved'], $provenance, 10_000);
+        }
+    }
+
     private function hasKeystone(CanonicalImportedBuild $build, string $name): bool
     {
-        $needle = strtolower(preg_replace('/[^a-z0-9]+/', '', $name) ?? $name);
+        $needle = strtolower(preg_replace('/[^a-z0-9]+/', '_', $name) ?? $name);
         foreach ($build->keystones as $keystone) {
-            $value = strtolower(preg_replace('/[^a-z0-9]+/', '', (string) $keystone) ?? (string) $keystone);
-            if ($value === $needle || str_contains($value, $needle)) {
+            $value = strtolower(trim((string) $keystone));
+            $value = preg_replace('/^poe1\\.pob\\.(?:keystone|node)\\./', '', $value) ?? $value;
+            $value = preg_replace('/^keystone:/', '', $value) ?? $value;
+            $value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? $value;
+            if ($value === $needle) {
                 return true;
             }
         }
