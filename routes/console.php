@@ -10,11 +10,11 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('pob:prune-imports')->hourly()->withoutOverlapping();
-Schedule::command('analysis:prune-artifacts')->hourly()->withoutOverlapping();
-Schedule::command('security:prune-retained-data')->dailyAt('03:15')->withoutOverlapping();
-Schedule::command('workflow:dispatch-outbox')->everyMinute()->withoutOverlapping();
-Schedule::command('lootwright:sources:sync-poe-ninja')->everyThirtyMinutes()->withoutOverlapping();
+Schedule::command('pob:prune-imports')->hourly()->onOneServer()->withoutOverlapping();
+Schedule::command('analysis:prune-artifacts')->hourly()->onOneServer()->withoutOverlapping();
+Schedule::command('security:prune-retained-data')->dailyAt('03:15')->onOneServer()->withoutOverlapping();
+Schedule::command('workflow:dispatch-outbox')->everyMinute()->onOneServer()->withoutOverlapping();
+Schedule::command('lootwright:sources:sync-poe-ninja')->everyThirtyMinutes()->onOneServer()->withoutOverlapping();
 
 Artisan::command('lootwright:sources:sync-poe-ninja {--league=}', function (PoeNinjaSyncService $sync): int {
     $league = $this->option('league');

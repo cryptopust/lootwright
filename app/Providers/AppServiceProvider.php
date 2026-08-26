@@ -57,8 +57,11 @@ use App\Security\RateLimitKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -290,6 +293,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Queue::failing(static function (JobFailed $event): void {
+            // Emit a provider-neutral, secret-free operational signal. Cloud
+            // log routing can alert on this event without coupling the domain
+            // to a commercial monitoring service.
+            Log::error('queue_job_failed', [
+                'connection' => $event->connectionName,
+                'queue' => $event->job->getQueue(),
+                'job_hash' => hash('sha256', $event->job->resolveName()),
+                'exception_type' => $event->exception::class,
+            ]);
+        });
+
         if (app()->isProduction() && config('external-sources.poe_ninja.enabled') && trim((string) config('external-sources.poe_ninja.contact')) === '') {
             throw new \RuntimeException('POE_NINJA_CONTACT is required when both poe.ninja source switches are enabled in production.');
         }

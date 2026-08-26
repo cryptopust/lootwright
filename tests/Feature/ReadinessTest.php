@@ -129,6 +129,39 @@ class ReadinessTest extends TestCase
             ->assertDontSee('sensitive redis detail');
     }
 
+    public function test_authenticated_detailed_readiness_exposes_only_bounded_component_statuses(): void
+    {
+        config([
+            'app.env' => 'production',
+            'app.debug' => false,
+            'filesystems.default' => 'local',
+            'external-sources.poe_ninja.enabled' => false,
+            'ai.enabled' => false,
+        ]);
+
+        $response = $this->withHeader('X-Lootwright-Readiness-Token', self::TOKEN)
+            ->getJson(route('readiness', ['detail' => 1]));
+        $response
+            ->assertOk()
+            ->assertJsonPath('status', 'ready')
+            ->assertJsonPath('checks.database', 'ok')
+            ->assertJsonPath('components.APP', 'HEALTHY')
+            ->assertJsonPath('components.DATABASE', 'HEALTHY')
+            ->assertJsonPath('components.CACHE', 'HEALTHY')
+            ->assertJsonPath('components.QUEUE', 'HEALTHY')
+            ->assertJsonPath('components.STORAGE', 'DEGRADED')
+            ->assertJsonPath('components.ACTIVE_POE1_RULESET', 'DISABLED')
+            ->assertJsonPath('components.ACTIVE_POE2_RULESET', 'DISABLED')
+            ->assertJsonPath('components.MARKET_PROVIDER', 'DISABLED')
+            ->assertJsonPath('components.AI_PROVIDER', 'DISABLED');
+        self::assertEmpty(array_diff(
+            array_values(array_unique($response->json('components'))),
+            ['HEALTHY', 'DEGRADED', 'DISABLED', 'FAILED'],
+        ));
+
+        $response->assertDontSee('password')->assertDontSee('connection');
+    }
+
     public function test_missing_or_invalid_readiness_token_remains_inaccessible(): void
     {
         Redis::shouldReceive('command')->never();
