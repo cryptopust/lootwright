@@ -58,9 +58,11 @@ they must never manufacture a result with the other game's rules.
 
 The bounded PoB2 format reader may decode explicitly supplied input. A successful
 PoE2 analysis additionally requires an approved parser/ruleset provenance record,
-separate fixtures and deterministic conformance tests. Catalog/intake support
-therefore remains useful even when a specific ruleset-backed operation is
-unavailable.
+separate fixtures and deterministic conformance tests. The production PoE2
+binding now routes to its own ruleset loader and resolver, validates every
+edition-scoped reference, and fails closed when the ruleset is absent, stale, or
+unapproved. Public exposure remains disabled until that independent release gate
+passes; PoE1 status is evaluated separately.
 
 ## Compatibility testing
 

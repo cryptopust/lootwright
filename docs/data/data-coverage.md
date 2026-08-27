@@ -36,6 +36,8 @@ The PoE1 passive tree is a bounded approved vertical slice when the operator
 imports the exact pinned GGG snapshot and passes validation. It does not make
 skills, supports, items, modifiers, mechanics, or Trade vocabulary complete.
 PoE2 remains independently unavailable until its own approved source, ruleset,
-and staging acceptance exist.
+and staging acceptance exist. The PoE2 adapter can execute only against an
+approved immutable candidate and otherwise returns explicit unavailable or
+unsupported statuses; no fixture data is promoted by this implementation.
 
 See [data quality](data-quality.md) and the [source catalog](source-catalog.md).

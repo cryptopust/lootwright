@@ -9,14 +9,24 @@ use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\TradePlanning\TradeVocabulary;
 use Lootwright\Domain\TradePlanning\TradeVocabularyEntry;
 
-/** Dormant fail-closed vocabulary contract for the phase-two adapter. */
+/** PoE2 vocabulary remains data-driven and enabled only with explicit entries. */
 final readonly class Poe2TradeVocabulary implements TradeVocabulary
 {
-    public function __construct(private RulesetIdentity $identity)
+    /**
+     * @param  list<TradeVocabularyEntry>  $modifiers
+     * @param  array<string, string>  $itemClasses
+     */
+    public function __construct(private RulesetIdentity $identity, array $modifiers = [], private array $itemClasses = [], private bool $isEnabled = false)
     {
         if ($identity->edition !== GameEdition::Poe2) {
             throw new InvalidArgumentException('The PoE2 Trade vocabulary requires a PoE2 ruleset.');
         }
+        foreach ($modifiers as $modifier) {
+            if ($modifier->edition !== GameEdition::Poe2) {
+                throw new InvalidArgumentException('PoE2 Trade entries must be edition scoped.');
+            }
+        }
+        $this->modifiers = $modifiers;
     }
 
     public function edition(): GameEdition
@@ -36,16 +46,25 @@ final readonly class Poe2TradeVocabulary implements TradeVocabulary
 
     public function enabled(): bool
     {
-        return false;
+        return $this->isEnabled;
     }
 
     public function modifier(string $canonicalModifierId): ?TradeVocabularyEntry
     {
+        foreach ($this->modifiers as $modifier) {
+            if ($modifier->canonicalModifierId === $canonicalModifierId) {
+                return $modifier;
+            }
+        }
+
         return null;
     }
 
     public function itemClass(string $slot): ?string
     {
-        return null;
+        return $this->itemClasses[$slot] ?? null;
     }
+
+    /** @var list<TradeVocabularyEntry> */
+    private array $modifiers;
 }

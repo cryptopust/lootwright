@@ -2,6 +2,7 @@
 
 namespace App\Modules\Analysis\Jobs;
 
+use App\Modules\Analysis\Infrastructure\ProductionPoe2DeterministicAnalysisEngine;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -59,7 +60,7 @@ final class RunDeterministicAnalysisJob implements ShouldBeUnique, ShouldQueue
             'ruleset_checksum_sha256' => $this->rulesetChecksumSha256,
             'engine_version' => $this->edition === GameEdition::Poe1
                 ? Poe1DeterministicAnalysisEngine::ENGINE_VERSION
-                : 'unavailable',
+                : ProductionPoe2DeterministicAnalysisEngine::ENGINE_VERSION,
             'workflow_stage' => 'deterministic_analysis',
         ]);
     }

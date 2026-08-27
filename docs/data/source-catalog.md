@@ -29,7 +29,10 @@ No skills, supports, item bases, uniques, modifiers, stats, mechanics, jewels,
 clusters, or Trade vocabulary source is approved for canonical production use.
 The only approved canonical producer is the operator-controlled PoE1 passive
 tree export, and it remains default-off. PoE2 has no approved canonical data
-producer. Unsupported facts must remain explicit.
+producer. Unsupported facts must remain explicit. The PoE2 deterministic
+adapter, resolver, and production binding are implemented for gate-controlled
+operation only; they must not be interpreted as approval of an underlying game
+dataset or as public PoE2 availability.
 
 Required notice: This product isn't affiliated with or endorsed by Grinding
 Gear Games in any way.

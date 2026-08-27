@@ -49,12 +49,18 @@ final class DeterministicAnalysisEngineContractTest extends TestCase
         }
     }
 
-    public function test_poe2_golden_result_is_explicitly_unavailable_without_borrowing_poe1_rules(): void
+    public function test_poe2_golden_result_is_deterministic_and_does_not_borrow_poe1_rules(): void
     {
         $result = (new Poe2AnalysisEngine)->analyze($this->poe2Build(), DomainFixtures::intent(GameEdition::Poe2), $this->ruleset(GameEdition::Poe2));
         self::assertTrue($result->isSuccess());
-        self::assertSame(AnalysisStatus::Unavailable, $result->value()->status);
-        self::assertSame([], $result->value()->findings);
+        self::assertSame(AnalysisStatus::Complete, $result->value()->status);
+        self::assertSame([
+            'poe2.data.character.level.missing',
+            'poe2.data.character.class.missing',
+            'poe2.data.character.ascendancy.missing',
+            'poe2.skills.main.missing',
+            'poe2.data.resistances.unavailable',
+        ], array_map(static fn ($finding): string => $finding->code, $result->value()->findings));
         $payload = json_decode($result->value()->canonicalJson(), true, 64, JSON_THROW_ON_ERROR);
         $golden = json_decode((string) file_get_contents(__DIR__.'/../../Fixtures/Analysis/poe2-unavailable-golden.json'), true, 64, JSON_THROW_ON_ERROR);
         self::assertSame($golden, [
@@ -73,6 +79,30 @@ final class DeterministicAnalysisEngineContractTest extends TestCase
 
         self::assertSame(DomainErrorCode::EditionMismatch, $poe1->error()->code);
         self::assertSame(DomainErrorCode::EditionMismatch, $poe2->error()->code);
+    }
+
+    public function test_poe2_rejects_foreign_poe1_identifiers_even_when_the_container_is_approved(): void
+    {
+        $identity = DomainFixtures::ruleset(GameEdition::Poe2);
+        $approved = new GameRuleset(
+            $identity,
+            new GameVersion(GameEdition::Poe2, $identity->patch),
+            DatasetClassification::ApprovedImport,
+            ProvenanceStatus::Approved,
+            RulesetCompatibilityStatus::Compatible,
+        );
+        $foreignBuilds = [
+            'passive' => new CanonicalImportedBuild(GameEdition::Poe2, '2.3.4', 70, 'poe2.pob.class.warrior', 'poe2.pob.ascendancy.warbringer', [], ['poe1.pob.node.101'], [], [], [], [], '', true),
+            'ascendancy' => new CanonicalImportedBuild(GameEdition::Poe2, '2.3.4', 70, 'poe2.pob.class.warrior', 'poe1.pob.ascendancy.champion', [], [], [], [], [], [], '', true),
+            'skill' => new CanonicalImportedBuild(GameEdition::Poe2, '2.3.4', 70, 'poe2.pob.class.warrior', 'poe2.pob.ascendancy.warbringer', [], [], [['id' => 'poe2.pob.skill_group.1', 'gems' => [['id' => 'poe1.pob.gem.fireball']]]], [], [], [], '', true),
+            'modifier' => new CanonicalImportedBuild(GameEdition::Poe2, '2.3.4', 70, 'poe2.pob.class.warrior', 'poe2.pob.ascendancy.warbringer', [], [], [], [], [], [], '', true, itemModifiers: [['id' => 'poe1.mod.maximum_life']]),
+        ];
+
+        foreach ($foreignBuilds as $label => $foreign) {
+            $result = (new Poe2AnalysisEngine)->analyze($foreign, DomainFixtures::intent(GameEdition::Poe2), $approved);
+            self::assertTrue($result->isFailure(), $label);
+            self::assertSame(DomainErrorCode::InvalidValue, $result->error()->code, $label);
+        }
     }
 
     public function test_explicitly_unsupported_input_suppresses_dependent_rule_and_is_disclosed(): void
@@ -103,8 +133,8 @@ final class DeterministicAnalysisEngineContractTest extends TestCase
     {
         $poe1Goals = new Poe1ContentGoalRegistry;
         self::assertSame(['mapping', 'bossing', 'delve', 'simulacrum', 'sanctum', 'progression'], $poe1Goals->identifiers());
-        self::assertSame([], (new Poe2ContentGoalRegistry)->identifiers());
-        self::assertSame([], (new Poe2RuleRegistry(DomainFixtures::ruleset(GameEdition::Poe2)->version))->rules());
+        self::assertSame(['progression', 'mapping', 'bossing'], (new Poe2ContentGoalRegistry)->identifiers());
+        self::assertCount(5, (new Poe2RuleRegistry(DomainFixtures::ruleset(GameEdition::Poe2)->version))->rules());
 
         $this->expectException(\InvalidArgumentException::class);
         new Poe2RuleRegistry(DomainFixtures::ruleset(GameEdition::Poe1)->version);

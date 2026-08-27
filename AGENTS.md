@@ -15,11 +15,12 @@ This file is binding for every contributor and coding agent. Product and policy 
 
 ## Active release scope
 
-- The active product and production-release scope is **Path of Exile 1 only**.
-  Existing PoE2 namespaces, parsers, catalogs, fixtures, migrations, and
-  isolation tests are preserved for future work, but PoE2 must not be exposed,
-  accepted, advertised, scheduled, or enabled as a public feature. Removing the
-  dormant PoE2 code is not part of PoE1 MVP work.
+- PoE1 and PoE2 are independent product targets. PoE1 remains the currently
+  released public scope. PoE2 may be exposed only after its own approved
+  canonical ruleset, deterministic analysis, data-quality, security, and
+  staging gates pass; architecture or parser support alone never enables it.
+  Public edition configuration is therefore gate-controlled per edition, and
+  PoE2 incompleteness must not block an otherwise passing PoE1 release.
 - Preserve the repository's current Laravel 13 line, PHP `^8.4` baseline, and
   PostgreSQL deployment target. The current verified versions are Laravel
   `13.25.x`, PHP 8.4, and the PostgreSQL 18 local development image. A major

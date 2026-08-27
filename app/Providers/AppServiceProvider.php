@@ -21,7 +21,7 @@ use App\Modules\Analysis\Infrastructure\LaravelIdentifierGenerator;
 use App\Modules\Analysis\Infrastructure\LaravelTransactionManager;
 use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
 use App\Modules\Analysis\Infrastructure\PolicyGatedArtifactParser;
-use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
+use App\Modules\Analysis\Infrastructure\ProductionEditionDeterministicAnalysisEngine;
 use App\Modules\Analysis\Persistence\PostgresWorkflowRepository;
 use App\Modules\BuildIntake\PolicyGatedItemTextImporter;
 use App\Modules\ExternalSources\DatabaseSourceImportStaging;
@@ -130,6 +130,7 @@ use Lootwright\GameAdapters\PoE2\BuildImport\Poe2BuildImporter;
 use Lootwright\GameAdapters\PoE2\ItemText\Poe2ItemTextImporter;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Normalizer;
 use Lootwright\GameAdapters\PoE2\Pob\Pob2Parser;
+use Lootwright\GameAdapters\PoE2\Rulesets\Poe2RulesetLoader;
 use Lootwright\GameAdapters\Shared\BuildImport\BuildImportCoordinator;
 use Lootwright\GameAdapters\Shared\Pob\PobEnvelopeDecoder;
 use Lootwright\GameAdapters\Shared\Pob\PobImportCoordinator;
@@ -173,7 +174,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ArtifactParser::class, PolicyGatedArtifactParser::class);
         $this->app->singleton(Poe1CoreAnalysisEngine::class);
         $this->app->singleton(Poe1RulesetLoader::class);
-        $this->app->bind(DeterministicAnalysisEngine::class, ProductionPoe1DeterministicAnalysisEngine::class);
+        $this->app->singleton(Poe2RulesetLoader::class);
+        $this->app->bind(DeterministicAnalysisEngine::class, ProductionEditionDeterministicAnalysisEngine::class);
         $this->app->singleton(UpgradePlanner::class, static fn (): UpgradePlanner => new DeterministicUpgradePlanner([
             new Poe1UpgradeCandidateFactory(new UpgradePriorityScorer),
         ]));

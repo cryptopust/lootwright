@@ -6,10 +6,7 @@ use Lootwright\Domain\Analysis\RuleRegistry;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Version\RulesetVersion;
 
-/**
- * Deliberately empty until an approved PoE2 canonical ruleset independently
- * validates PoE2 mechanics. It can never fall back to PoE1 rules.
- */
+/** Edition-scoped PoE2 rule catalogue. It never imports PoE1 rules. */
 final readonly class Poe2RuleRegistry implements RuleRegistry
 {
     public function __construct(private RulesetVersion $rulesetVersion)
@@ -31,6 +28,12 @@ final readonly class Poe2RuleRegistry implements RuleRegistry
 
     public function rules(): array
     {
-        return [];
+        $configuration = Poe2AnalysisRuleset::publishedV1();
+        $rules = [];
+        foreach ($configuration->ruleCodes as $ruleId) {
+            $rules[] = new Poe2RegisteredRule($ruleId);
+        }
+
+        return $rules;
     }
 }

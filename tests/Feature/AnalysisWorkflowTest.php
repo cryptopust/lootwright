@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Analysis\Infrastructure\LaravelWorkflowDispatcher;
-use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
+use App\Modules\Analysis\Infrastructure\ProductionEditionDeterministicAnalysisEngine;
 use App\Modules\Analysis\Jobs\ParseBuildArtifactJob;
 use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use Database\Seeders\PolicyDefaultsSeeder;
@@ -207,10 +207,7 @@ class AnalysisWorkflowTest extends TestCase
     public function test_production_analysis_binding_is_the_real_poe1_engine_and_fails_closed_without_a_ruleset(): void
     {
         $engine = $this->app->make(DeterministicAnalysisEngine::class);
-        self::assertSame(
-            ProductionPoe1DeterministicAnalysisEngine::class,
-            $engine::class,
-        );
+        self::assertInstanceOf(ProductionEditionDeterministicAnalysisEngine::class, $engine);
 
         $this->expectException(TerminalWorkflowFailure::class);
         $this->expectExceptionMessage('No approved immutable ruleset exactly matches');

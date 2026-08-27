@@ -2,6 +2,7 @@
 
 namespace App\Modules\Release;
 
+use App\Modules\Analysis\Infrastructure\ProductionEditionDeterministicAnalysisEngine;
 use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
@@ -413,7 +414,8 @@ final readonly class MvpReleaseDashboard
 
     private function isProductionEngine(object $engine): bool
     {
-        return $engine::class === ProductionPoe1DeterministicAnalysisEngine::class;
+        return $engine instanceof ProductionPoe1DeterministicAnalysisEngine
+            || $engine instanceof ProductionEditionDeterministicAnalysisEngine;
     }
 
     private function evidenceId(mixed $value): ?string

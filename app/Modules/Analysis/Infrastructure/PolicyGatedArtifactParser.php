@@ -92,13 +92,6 @@ final readonly class PolicyGatedArtifactParser implements ArtifactParser
             ];
         }
 
-        if ($expectedEdition === GameEdition::Poe2) {
-            $clarifications[] = [
-                'code' => 'poe2_ruleset_required',
-                'question' => 'This PoE2 format was imported, but deterministic findings require an approved PoE2 ruleset.',
-            ];
-        }
-
         return new ParsedArtifact(
             $expectedEdition,
             $expectedEdition === GameEdition::Poe1 ? 'pob1' : 'pob2-beta',

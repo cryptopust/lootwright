@@ -1,7 +1,7 @@
 {
   "schema": "lootwright.analysis-golden.v1",
   "edition": "poe2",
-  "engine_version": "0.0.0",
+  "engine_version": "1.0.0",
   "ruleset_status": "unavailable",
   "cases": {
     "warrior-melee": {"status": "unavailable", "unsupported_data": ["poe2_ruleset_unavailable", "poe2_rules_not_approved"]},
