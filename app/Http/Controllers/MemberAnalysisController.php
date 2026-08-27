@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\WorkflowAnalysisResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lootwright\Application\Workflow\Ports\ArtifactStorage;
+use Lootwright\Application\Workflow\UseCases\RetrieveAnalysis;
 
 final class MemberAnalysisController extends Controller
 {
@@ -32,12 +34,27 @@ final class MemberAnalysisController extends Controller
         return Inertia::render('Member/Analyses', ['analyses' => $query->latest()->paginate(20)->withQueryString(), 'filters' => $filters]);
     }
 
-    public function show(Request $request, string $analysis): Response
+    public function show(Request $request, string $analysis, RetrieveAnalysis $retrieve): Response
     {
         $row = DB::table('analyses')->where('id', $analysis)->where('user_id', $request->user()->id)->first(['id', 'state', 'game_edition', 'version', 'failure_code', 'created_at', 'updated_at']);
         abort_if($row === null, 404);
 
-        return Inertia::render('Member/AnalysisShow', ['analysis' => $row]);
+        $record = $retrieve->handle((string) $request->user()->id, $analysis);
+        $resource = WorkflowAnalysisResource::make($record);
+
+        return Inertia::render('Member/AnalysisShow', [
+            'analysis' => [
+                'id' => $row->id,
+                'state' => $row->state,
+                'game_edition' => $row->game_edition,
+                'version' => $row->version,
+                'failure_code' => $row->failure_code,
+                'created_at' => $row->created_at,
+                'updated_at' => $row->updated_at,
+                'output' => $resource['output'],
+                'ruleset' => $resource['ruleset'],
+            ],
+        ]);
     }
 
     public function destroy(Request $request, string $analysis, ArtifactStorage $storage): RedirectResponse

@@ -83,6 +83,7 @@ final readonly class CreateAnalysis
                 is_string($selection['ruleset_checksum_sha256'] ?? null) ? $selection['ruleset_checksum_sha256'] : null,
                 ($selection['ai_explanation_opt_in'] ?? false) === true,
             ),
+            $parameters->lockedItems,
         );
     }
 }

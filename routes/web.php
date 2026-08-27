@@ -32,18 +32,22 @@ use Inertia\Inertia;
 
 Route::inertia('/', 'Landing')->name('home');
 Route::inertia('/analyses/new', 'Analysis/New')->name('analyses.new');
-Route::inertia('/style-guide', 'StyleGuide')->name('style-guide');
+if (app()->environment(['local', 'testing'])) {
+    Route::inertia('/style-guide', 'StyleGuide')->name('style-guide');
+}
 Route::get('/api/catalog/{game}/character-options', CharacterOptionsController::class)
     ->where('game', 'poe1')
     ->middleware('throttle:60,1')
     ->name('catalog.characters');
-Route::inertia('/analyses/demo/import', 'Analysis/ImportReview')->name('analyses.demo.import');
-Route::get('/analyses/demo/{section}', static fn (string $section) => Inertia::render('Analysis/Workspace', [
-    'section' => $section,
-    'externalLinksEnabled' => (bool) config('security.emergency.external_links'),
-]))
-    ->where('section', 'overview|findings|upgrades|trade|provenance|states')
-    ->name('analyses.demo.workspace');
+if (app()->environment(['local', 'testing'])) {
+    Route::inertia('/analyses/demo/import', 'Analysis/ImportReview')->name('analyses.demo.import');
+    Route::get('/analyses/demo/{section}', static fn (string $section) => Inertia::render('Analysis/Workspace', [
+        'section' => $section,
+        'externalLinksEnabled' => (bool) config('security.emergency.external_links'),
+    ]))
+        ->where('section', 'overview|findings|upgrades|trade|provenance|states')
+        ->name('analyses.demo.workspace');
+}
 
 Route::inertia('/privacy', 'Information', ['page' => 'privacy'])->name('privacy');
 Route::inertia('/data-deletion', 'Information', ['page' => 'deletion'])->name('data-deletion');

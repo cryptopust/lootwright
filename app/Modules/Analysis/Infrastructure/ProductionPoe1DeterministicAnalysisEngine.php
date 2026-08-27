@@ -156,12 +156,17 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             ]);
             $output = CanonicalJson::encode([
                 'analysis_result' => $result,
+                'build_summary' => $this->safeBuildProjection($build),
                 'engine_version' => $result->engineVersion,
                 'findings' => $result->findings,
                 'recommendations' => $recommendations,
                 'manual_trade_recipes' => $recipes,
                 'upgrade_graph' => $graph,
                 'intent' => $intent,
+                'constraints' => [
+                    'locked_items' => array_values(array_filter($this->parameters($analysis)['locked_items'] ?? [], 'is_string')),
+                ],
+                'budget' => $this->parameters($analysis)['budget'] ?? null,
                 'latencies_ms' => [
                     'planner' => $plannerLatencyMs,
                     'trade_recipe' => $recipeLatencyMs,
@@ -236,6 +241,11 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         $parameters = $this->parameters($analysis);
         $text = strtolower(implode(' ', array_values(array_filter($parameters['goals'] ?? [], 'is_string'))));
         $values = [];
+        foreach ($this->parameters($analysis)['locked_items'] ?? [] as $lockedItem) {
+            if (is_string($lockedItem) && $lockedItem !== '') {
+                $values[] = UserConstraint::keepItem($lockedItem);
+            }
+        }
         foreach ($build->items as $item) {
             $name = strtolower((string) ($item['name'] ?? $item['id'] ?? ''));
             if (str_contains($name, 'mageblood') && (str_contains($text, 'keep') || str_contains($text, 'without replacing'))) {
@@ -254,7 +264,12 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             }
         }
 
-        return new UserConstraints($values);
+        $unique = [];
+        foreach ($values as $constraint) {
+            $unique[$constraint->key] = $constraint;
+        }
+
+        return new UserConstraints(array_values($unique));
     }
 
     /**

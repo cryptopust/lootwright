@@ -48,12 +48,6 @@ const navigation = [
     },
     { key: 'account', href: '/login', tr: 'Hesap', en: 'Account' },
     {
-        key: 'demo',
-        href: '/analyses/demo/overview',
-        tr: 'Demo çalışma alanı',
-        en: 'Demo workspace',
-    },
-    {
         key: 'methodology',
         href: '/methodology',
         tr: 'Metodoloji',

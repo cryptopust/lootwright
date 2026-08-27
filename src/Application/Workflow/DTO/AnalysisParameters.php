@@ -7,12 +7,15 @@ use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 
 final readonly class AnalysisParameters
 {
-    /** @param list<string> $goals */
+    /** @param list<string> $goals
+     * @param  list<string>  $lockedItems
+     */
     public function __construct(
         public array $goals,
         public ?string $budgetAmount,
         public ?string $budgetCurrency,
         public ?AnalysisSelection $selection = null,
+        public array $lockedItems = [],
     ) {}
 
     public function canonicalJson(): string
@@ -27,6 +30,7 @@ final readonly class AnalysisParameters
                 'currency' => $this->budgetCurrency,
             ],
             'goals' => $this->goals,
+            'locked_items' => $this->lockedItems,
             'selection' => $this->selection,
         ]);
     }
@@ -48,6 +52,12 @@ final readonly class AnalysisParameters
                 || mb_strlen($goal) > 500
                 || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $goal) === 1
             ) {
+                return false;
+            }
+        }
+
+        foreach ($this->lockedItems as $item) {
+            if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,190}$/D', $item) !== 1) {
                 return false;
             }
         }

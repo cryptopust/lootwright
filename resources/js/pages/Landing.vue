@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/vue3';
 
 import AppShell from '@/components/app/AppShell.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
-import ItemCard from '@/components/arpg/ItemCard.vue';
 import ScopePanel from '@/components/arpg/ScopePanel.vue';
 import { useLocale } from '@/composables/useLocale';
 
@@ -29,32 +28,6 @@ const workflow = [
         meta: 'PLAYER ACTS MANUALLY',
     },
 ];
-const showcaseItem = {
-    slot: 'HELMET · FIXTURE',
-    name: 'Ember Ledger',
-    baseName: 'Neutral Test Base',
-    rarity: 'rare' as const,
-    ilvl: 84,
-    fixture: true,
-    affixes: [
-        {
-            text: '+# to maximum Life',
-            value: '+92',
-            minimum: 80,
-            maximum: 99,
-            roll: 92,
-            tier: 'T1',
-        },
-        {
-            text: '+#% to Cold Resistance',
-            value: '+41%',
-            minimum: 36,
-            maximum: 41,
-            roll: 41,
-            tier: 'T2',
-        },
-    ],
-};
 </script>
 
 <template>
@@ -112,14 +85,6 @@ const showcaseItem = {
                             })
                         }}
                     </a>
-                    <a class="text-link" href="/analyses/demo/overview">
-                        {{
-                            tx({
-                                tr: 'Fixture demosunu incele',
-                                en: 'Explore the fixture demo',
-                            })
-                        }}
-                    </a>
                 </div>
                 <div class="edition-line">
                     <EditionBadge edition="poe1" />
@@ -167,19 +132,6 @@ const showcaseItem = {
                     }),
                 ]"
             />
-        </section>
-
-        <section class="landing-showcase" aria-labelledby="showcase-title">
-            <div class="section-intro">
-                <p class="kicker">ITEM / EVIDENCE</p>
-                <h2 id="showcase-title">Roll, tier ve kanıt aynı yüzeyde.</h2>
-                <p>
-                    Bu örnek yalnız özgün fixture verisidir. Nadirlik hem renk
-                    hem metinle belirtilir; elde olmayan fiyat açıkça bilinmiyor
-                    kalır.
-                </p>
-            </div>
-            <ItemCard v-bind="showcaseItem" />
         </section>
 
         <section class="landing-workflow" aria-labelledby="workflow-title">
