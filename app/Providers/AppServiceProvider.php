@@ -82,6 +82,7 @@ use Lootwright\Application\AIGateway\Ports\RecommendationExplainer;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
 use Lootwright\Application\AIGateway\Services\ProviderNeutralAiGateway;
+use Lootwright\Application\Analysis\UseCases\MarketAwareUpgradePlanner;
 use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
 use Lootwright\Application\ExternalSources\Ports\OfficialTradeSearchProvider;
 use Lootwright\Application\ExternalSources\Ports\SourceImportStaging;
@@ -94,8 +95,11 @@ use Lootwright\Application\GameData\Ports\SourceAuthorityRegistry;
 use Lootwright\Application\GameData\SourceAuthorityResolver;
 use Lootwright\Application\Identity\Ports\PrivacySessionRepository;
 use Lootwright\Application\Identity\Ports\SecretGenerator;
+use Lootwright\Application\Market\CachedMarketProvider;
+use Lootwright\Application\Market\MarketEvidenceResolver;
 use Lootwright\Application\Market\Ports\MarketEstimateCache;
 use Lootwright\Application\Market\Ports\MarketObservationRepository;
+use Lootwright\Application\Market\RepositoryMarketEvidenceResolver;
 use Lootwright\Application\PolicyProvenance\DecideCapability;
 use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
@@ -126,6 +130,7 @@ use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\GameAdapters\PoE1\Analysis\Poe1DeterministicAnalysisEngine as Poe1CoreAnalysisEngine;
 use Lootwright\GameAdapters\PoE1\BuildImport\Poe1BuildImporter;
 use Lootwright\GameAdapters\PoE1\ItemText\Poe1ItemTextImporter;
+use Lootwright\GameAdapters\PoE1\Market\PoeNinjaTradeProvider;
 use Lootwright\GameAdapters\PoE1\PassiveTree\PassiveTreeNormalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Normalizer;
 use Lootwright\GameAdapters\PoE1\Pob\Pob1Parser;
@@ -182,10 +187,18 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Poe1RulesetLoader::class);
         $this->app->singleton(Poe2RulesetLoader::class);
         $this->app->bind(DeterministicAnalysisEngine::class, ProductionEditionDeterministicAnalysisEngine::class);
-        $this->app->singleton(UpgradePlanner::class, static fn (): UpgradePlanner => new DeterministicUpgradePlanner([
-            new Poe1UpgradeCandidateFactory(new UpgradePriorityScorer),
-            new Poe2UpgradeCandidateFactory(new UpgradePriorityScorer),
-        ]));
+        $this->app->singleton(RepositoryMarketEvidenceResolver::class, static fn ($app): RepositoryMarketEvidenceResolver => new RepositoryMarketEvidenceResolver(
+            new CachedMarketProvider($app->make(PoeNinjaTradeProvider::class), $app->make(MarketEstimateCache::class)),
+        ));
+        $this->app->singleton(PoeNinjaTradeProvider::class);
+        $this->app->singleton(UpgradePlanner::class, static fn ($app): UpgradePlanner => new MarketAwareUpgradePlanner(
+            new DeterministicUpgradePlanner([
+                new Poe1UpgradeCandidateFactory(new UpgradePriorityScorer),
+                new Poe2UpgradeCandidateFactory(new UpgradePriorityScorer),
+            ]),
+            $app->make(RepositoryMarketEvidenceResolver::class),
+        ));
+        $this->app->alias(RepositoryMarketEvidenceResolver::class, MarketEvidenceResolver::class);
         $this->app->bind(AnalysisPolicyGate::class, DatabaseAnalysisPolicyGate::class);
         $this->app->bind(ManualTradeRecipeGenerator::class, EditionManualTradeRecipeGenerator::class);
         $this->app->bind(ManualTradeRecipePolicy::class, DatabaseManualTradeRecipePolicy::class);
