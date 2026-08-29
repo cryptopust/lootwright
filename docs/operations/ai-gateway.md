@@ -12,6 +12,7 @@ The deterministic intent parser runs before every provider decision. A provider 
 - `OPENAI_ENABLED=true`, the matching task switch, and a configured secret;
 - matching global and task database runtime switches;
 - an exact Policy Gate `allow` for `openai.responses.intent` or `openai.responses.explanation`;
+- follow-up questions use the explanation capability and are limited to a closed action schema. They can queue deterministic reanalysis for budget/item constraints; comparison and explanation actions never mutate canonical data.
 - a closed persistent provider circuit;
 - request token ceilings and all user, IP, daily, global, and monthly budgets;
 - `OUTBOUND_NETWORK_ENABLED=true` plus the exact Responses API egress target

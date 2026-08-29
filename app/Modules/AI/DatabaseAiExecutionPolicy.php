@@ -27,7 +27,7 @@ final readonly class DatabaseAiExecutionPolicy implements AiExecutionPolicy
 
         $operation = match ($task) {
             'intent', 'clarification' => 'openai.responses.intent',
-            'explanation' => 'openai.responses.explanation',
+            'explanation', 'follow_up' => 'openai.responses.explanation',
             default => null,
         };
 

@@ -11,6 +11,9 @@ use Lootwright\Application\AIGateway\DTO\AiRequestContext;
 use Lootwright\Application\AIGateway\DTO\BuildIntentCandidate;
 use Lootwright\Application\AIGateway\DTO\ClarificationSet;
 use Lootwright\Application\AIGateway\DTO\ExplanationBundle;
+use Lootwright\Application\AIGateway\DTO\FollowUpAction;
+use Lootwright\Application\AIGateway\DTO\FollowUpOutcome;
+use Lootwright\Application\AIGateway\DTO\FollowUpQuestionRequest;
 use Lootwright\Application\AIGateway\DTO\GatewayExplanationRequest;
 use Lootwright\Application\AIGateway\DTO\IntentVocabulary;
 use Lootwright\Application\AIGateway\DTO\NaturalLanguageIntentRequest;
@@ -24,6 +27,7 @@ use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\AiResponseCache;
 use Lootwright\Application\AIGateway\Ports\AiRuntimePolicy;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
+use Lootwright\Application\AIGateway\Ports\FollowUpInterpreter;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
 use Lootwright\Application\AIGateway\Schema\StructuredSchemas;
@@ -32,7 +36,7 @@ use Lootwright\Domain\Recommendations\Recommendation;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Throwable;
 
-final readonly class ProviderNeutralAiGateway implements AiGateway
+final readonly class ProviderNeutralAiGateway implements AiGateway, FollowUpInterpreter
 {
     private const array NEUTRAL_EXPLANATION_WORDS = [
         'a', 'an', 'analysis', 'and', 'are', 'as', 'at', 'because', 'by', 'can', 'comes', 'current',
@@ -176,6 +180,55 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
             $data['recommendations'],
             $request->edition,
         ), $call['metadata']);
+    }
+
+    public function interpretFollowUp(FollowUpQuestionRequest $request): FollowUpOutcome
+    {
+        $fallback = new FollowUpOutcome('fallback', null, 'This question is outside the supported deterministic assistant actions.', ['provider_called' => false]);
+        if ($this->looksLikePromptInjection($request->question)) {
+            return new FollowUpOutcome('fallback', null, 'The assistant cannot process instruction-like requests.', ['provider_called' => false, 'validation_outcome' => 'prompt_injection']);
+        }
+
+        $schema = StructuredSchemas::followUp($request->edition, $request->actionReferences);
+        $call = $this->call(
+            'follow_up',
+            $this->config->explanationModel,
+            $this->config->explanationMaxOutputTokens,
+            $request->context,
+            'Classify the question only. Select one supported action and a reference from the supplied deterministic context. Never answer, calculate, invent IDs, prices, mechanics, or facts. Unsupported questions must use unsupported.',
+            [
+                'question' => $request->question,
+                'edition' => $request->edition->value,
+                'ruleset_version' => $request->rulesetVersion,
+                'context' => $request->deterministicContext,
+            ],
+            'follow_up_action',
+            $schema,
+            fn (array $data): bool => $this->followUpReferencesResolve($data, $request),
+        );
+
+        if ($call['data'] === null) {
+            return $fallback;
+        }
+
+        $data = $call['data'];
+
+        return new FollowUpOutcome(
+            $call['status'],
+            new FollowUpAction($data['action'], $data['reference_id'], $data['value'], $data['confidence_basis_points']),
+            'The question was classified for deterministic recalculation.',
+            $call['metadata'],
+        );
+    }
+
+    /** @param array<string,mixed> $data */
+    private function followUpReferencesResolve(array $data, FollowUpQuestionRequest $request): bool
+    {
+        if ($data['action'] === 'unsupported') {
+            return true;
+        }
+
+        return in_array($data['reference_id'], $request->actionReferences, true);
     }
 
     /** @param array<string, bool|int|string> $priorMetadata */

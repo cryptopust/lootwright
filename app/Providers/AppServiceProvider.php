@@ -77,10 +77,12 @@ use Lootwright\Application\AIGateway\Ports\AiResponseCache;
 use Lootwright\Application\AIGateway\Ports\AiRuntimePolicy;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
 use Lootwright\Application\AIGateway\Ports\AnalysisExplanationRepository;
+use Lootwright\Application\AIGateway\Ports\FollowUpInterpreter;
 use Lootwright\Application\AIGateway\Ports\IntentInterpreter;
 use Lootwright\Application\AIGateway\Ports\RecommendationExplainer;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
+use Lootwright\Application\AIGateway\Services\ProcessFollowUpQuestion;
 use Lootwright\Application\AIGateway\Services\ProviderNeutralAiGateway;
 use Lootwright\Application\Analysis\UseCases\MarketAwareUpgradePlanner;
 use Lootwright\Application\ExternalSources\Ports\ExternalSourceAdapterCatalog;
@@ -296,6 +298,8 @@ class AppServiceProvider extends ServiceProvider
         ));
         $this->app->alias(AiGateway::class, IntentInterpreter::class);
         $this->app->alias(AiGateway::class, RecommendationExplainer::class);
+        $this->app->alias(AiGateway::class, FollowUpInterpreter::class);
+        $this->app->singleton(ProcessFollowUpQuestion::class);
         $this->app->singleton(PobImportCoordinator::class, static fn (): PobImportCoordinator => new PobImportCoordinator(
             new PobEnvelopeDecoder,
             new SafeXmlParser,

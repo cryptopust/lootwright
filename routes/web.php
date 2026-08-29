@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AdminSourceImportController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\PolicyEvidenceController;
 use App\Http\Controllers\Admin\PolicyKillSwitchController;
+use App\Http\Controllers\AiFollowUpController;
 use App\Http\Controllers\AnalysisDraftController;
 use App\Http\Controllers\AnalysisProvenanceController;
 use App\Http\Controllers\Catalog\CharacterOptionsController;
@@ -89,6 +90,8 @@ Route::middleware('verified.optional')->group(function (): void {
         ->whereUuid('analysisId')
         ->middleware(['emergency:rulesets', 'throttle:analysis-submit'])
         ->name('analyses.reanalyze');
+    Route::post('/api/analyses/{analysisId}/ai-follow-up', AiFollowUpController::class)
+        ->whereUuid('analysisId')->middleware('throttle:analysis-submit')->name('analyses.ai-follow-up');
     Route::get('/api/analyses/{analysisId}/provenance', AnalysisProvenanceController::class)
         ->whereUuid('analysisId')
         ->middleware('throttle:analysis-read')

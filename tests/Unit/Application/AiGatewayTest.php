@@ -10,6 +10,7 @@ use Lootwright\Application\AIGateway\DTO\AiRequestContext;
 use Lootwright\Application\AIGateway\DTO\BuildIntentCandidate;
 use Lootwright\Application\AIGateway\DTO\ClarificationSet;
 use Lootwright\Application\AIGateway\DTO\ExplanationBundle;
+use Lootwright\Application\AIGateway\DTO\FollowUpQuestionRequest;
 use Lootwright\Application\AIGateway\DTO\GatewayExplanationRequest;
 use Lootwright\Application\AIGateway\DTO\IntentVocabulary;
 use Lootwright\Application\AIGateway\DTO\NaturalLanguageIntentRequest;
@@ -55,6 +56,35 @@ final class AiGatewayTest extends TestCase
         self::assertSame('mapping', $outcome->value->contentGoal);
         self::assertSame(1, $provider->calls);
         self::assertFalse($provider->requests[0]->repair);
+    }
+
+    public function test_follow_up_only_selects_closed_actions_and_supplied_references(): void
+    {
+        $json = '{"edition":"poe1","action":"keep_item","reference_id":"item.mageblood","value":"","confidence_basis_points":9000}';
+        $provider = new FakeStructuredProvider([$this->response($json)]);
+        $outcome = $this->gateway($provider)->interpretFollowUp(new FollowUpQuestionRequest(
+            'Can I keep this item?', GameEdition::Poe1, '3.28.0', ['item.mageblood'],
+            ['recommendations' => [['code' => 'upgrade.belt']]], $this->context(),
+        ));
+
+        self::assertSame('provider', $outcome->status);
+        self::assertNotNull($outcome->action);
+        self::assertSame('keep_item', $outcome->action->action);
+        self::assertSame('item.mageblood', $outcome->action->referenceId);
+        self::assertSame('follow_up_action', $provider->requests[0]->schemaName);
+    }
+
+    public function test_follow_up_rejects_unknown_canonical_reference(): void
+    {
+        $json = '{"edition":"poe1","action":"explain_support","reference_id":"poe2.support.fake","value":"","confidence_basis_points":9000}';
+        $provider = new FakeStructuredProvider([$this->response($json)]);
+        $outcome = $this->gateway($provider)->interpretFollowUp(new FollowUpQuestionRequest(
+            'Why is this support bad?', GameEdition::Poe1, '3.28.0', ['support.known'],
+            ['recommendations' => []], $this->context(),
+        ));
+
+        self::assertSame('fallback', $outcome->status);
+        self::assertNull($outcome->action);
     }
 
     public function test_strict_schema_rejects_extra_properties_and_invalid_enums(): void

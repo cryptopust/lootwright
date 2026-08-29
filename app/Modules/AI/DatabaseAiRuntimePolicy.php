@@ -20,7 +20,7 @@ final readonly class DatabaseAiRuntimePolicy implements AiRuntimePolicy
 
         return match ($task) {
             'intent', 'clarification' => (bool) config('ai.intent_enabled') && (bool) $control->intent_enabled,
-            'explanation' => (bool) config('ai.explanation_enabled') && (bool) $control->explanation_enabled,
+            'explanation', 'follow_up' => (bool) config('ai.explanation_enabled') && (bool) $control->explanation_enabled,
             default => false,
         };
     }

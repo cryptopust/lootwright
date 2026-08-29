@@ -83,6 +83,20 @@ final class StructuredSchemas
         return self::object($properties);
     }
 
+    /** @param list<string> $references
+     * @return array<string,mixed>
+     */
+    public static function followUp(GameEdition $edition, array $references): array
+    {
+        return self::object([
+            'edition' => ['type' => 'string', 'enum' => [$edition->value]],
+            'action' => ['type' => 'string', 'enum' => ['change_budget', 'keep_item', 'remove_item', 'compare_upgrades', 'remove_aura', 'explain_support', 'unsupported']],
+            'reference_id' => ['type' => 'string', 'enum' => ['', ...$references]],
+            'value' => ['type' => 'string', 'maxLength' => 128],
+            'confidence_basis_points' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 10_000],
+        ]);
+    }
+
     /** @param array<string, array<string, mixed>> $properties
      * @return array<string, mixed>
      */
