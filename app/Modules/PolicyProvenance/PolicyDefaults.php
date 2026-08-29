@@ -178,6 +178,7 @@ final class PolicyDefaults
         $rules[] = self::rule('REPOE-CANDIDATE', 'unreviewed-2026-08-14', Capability::Import, 'source.import.rollback', PolicyDecision::Deny, PolicyDecisionReason::ExplicitDenial, [], 'The prohibited RePoE source has no executable import lifecycle.');
         $rules[] = self::rule('GGG-POE1-SKILLTREE-001', '8bd138b32ea2631455cac5935bfab089f826094f', Capability::Import, 'source.import.approve', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $approvalConditions, 'Approval only links a valid same-edition immutable snapshot to staged records.');
         $rules[] = self::rule('POENINJA-ECONOMY-001', 'economy-v1', Capability::Import, 'source.import.approve', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $approvalConditions, 'Approval only links a valid same-edition immutable snapshot to staged market records.');
+        $rules[] = self::rule('POE2-DATASET-CANDIDATE', 'poe2-0.3.0', Capability::Import, 'source.import.approve', PolicyDecision::Allow, PolicyDecisionReason::ActiveEvidence, $approvalConditions, 'Approval only links a valid same-edition immutable PoE2 snapshot to staged records.');
         $rules[] = self::rule('POEWIKI-CARGO-001', 'candidate-2026-08-20', Capability::Import, 'source.import.approve', PolicyDecision::RequireReview, PolicyDecisionReason::ReviewRequired, $approvalConditions, 'The disabled Cargo source has no executable approval workflow.');
 
         foreach (['USER-POB-001', 'USER-ITEM-TEXT-001'] as $source) {

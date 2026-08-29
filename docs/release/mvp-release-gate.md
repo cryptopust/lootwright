@@ -13,7 +13,7 @@ are evaluated independently.
 | Edition | Status | Evidence-based conclusion |
 | --- | --- | --- |
 | PoE1 | **FAIL** | Production PoE1 now maps immutable goals/budget into typed intent, runs the deterministic planner, persists ranked recommendations and decision traces, and records manual recipes as validated filters or explicit unsupported results. Signed staging, PostgreSQL proof, and approved market/vocabulary evidence are still absent. |
-| PoE2 | **FAIL** | Separate hostile-input parsing and edition-isolation architecture exist, but PoE2 is outside the public edition allowlist and has no approved active canonical ruleset, validated deterministic rule registry, upgrade candidate factory, or production Trade vocabulary. The application correctly fails closed instead of claiming player analysis support. |
+| PoE2 | **FAIL** | Independent PoB2 parsing, canonical 0.3.0 dataset, deterministic rule registry, upgrade factory, and Trade vocabulary now exist. The operator import and activation workflow is implemented, but immutable staging/activation and real-player acceptance evidence are still required before a PoE2 PASS. |
 
 PoE2's failure does not prevent PoE1 from receiving a future independent PASS.
 The aggregate status follows the active PoE1 release scope; it does not require
@@ -23,10 +23,10 @@ the dormant phase-two PoE2 adapter to pass.
 
 | Critical path | PoE1 | PoE2 | Evidence |
 | --- | --- | --- | --- |
-| Real build import | BLOCKED | FAIL | PoE1 production importer handles supported PoB1 input with hostile-input bounds, but no signed real-player staging run exists. Fixture-backed execution is parser evidence, not real-build acceptance. PoE2 has no public production path. |
+| Real build import | BLOCKED | FAIL | PoE1 production importer handles supported PoB1 input with hostile-input bounds, but no signed real-player staging run exists. Fixture-backed execution is parser evidence, not real-build acceptance. PoE2's operator-controlled dataset/import path exists, but no signed player acceptance run is recorded. |
 | Edition identification/isolation | PASS | PASS | Parser/domain isolation exists; the public endpoint rejects PoE2 instead of routing it through PoE1. This is safe isolation, not PoE2 feature availability. |
-| Exact ruleset resolution | PASS_WITH_LIMITATIONS | FAIL | PoE1 resolves only an operator-activated approved immutable ruleset matching patch/parser. Fixture imports are rejected as production authority. No approved PoE2 ruleset exists. |
-| Deterministic findings | PASS_WITH_LIMITATIONS | FAIL | PoE1 production engine persists traceable findings for supported evidence. Rule coverage is intentionally narrow and missing mechanics remain unsupported. |
+| Exact ruleset resolution | PASS_WITH_LIMITATIONS | FAIL | PoE1 resolves only an operator-activated approved immutable ruleset matching patch/parser. PoE2 resolves only its checksum-gated 0.3.0 ruleset; activation evidence is not yet recorded for this release. |
+| Deterministic findings | PASS_WITH_LIMITATIONS | FAIL | PoE1 production engine persists traceable findings for supported evidence. PoE2's independent engine covers only canonical 0.3.0 facts; missing mechanics remain unsupported pending acceptance evidence. |
 | Upgrade planner in production journey | PASS_WITH_LIMITATIONS | FAIL | Production analysis runs the edition-scoped planner with typed intent, budget, hard item-preservation constraints, dependency ordering, and persisted candidates. Market-dependent candidates remain uncertain without approved observations. |
 | Manual Trade recipes in production journey | PASS_WITH_LIMITATIONS | FAIL | Production persists a recipe per candidate. Exact approved vocabulary produces manual filters; missing vocabulary produces an explicit unsupported recipe and never a guessed modifier or ID. |
 | Market-aware budget handling | FAIL | FAIL | Governed poe.ninja economy ingestion exists behind policy/config, but approved observations are not connected to production upgrade planning. No current price is invented. |
@@ -106,7 +106,8 @@ php artisan release:check-mvp --json --write
 3. Execute and sign the real PoE1 staging checklist with representative builds
    and player questions, including locked equipment and AI red-team attempts.
 4. Run `migrate:fresh`, rollback/reapply, and the full suite against PostgreSQL.
-5. For PoE2, independently provide an approved canonical dataset/ruleset,
+5. For PoE2, independently provide staging/acceptance evidence for the approved
+   canonical dataset/ruleset,
    verified build representation, deterministic rules, candidate factory,
    Trade vocabulary, production binding, and staging acceptance before adding
    it to the public edition allowlist.

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\ExternalSources\Poe2\Poe2DatasetImporter;
 use App\Modules\ExternalSources\Jobs\RunExternalSourceImportJob;
 use App\Security\OutboundRequestGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +31,7 @@ final class ExternalSourceArchitectureTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        Config::set('source-governance.poe2_dataset.enabled', true);
         Http::preventStrayRequests();
     }
 
@@ -60,6 +62,53 @@ final class ExternalSourceArchitectureTest extends TestCase
             }
         }
         Http::assertNothingSent();
+    }
+
+    public function test_poe2_dataset_import_is_checksum_bound_and_rejects_tampering(): void
+    {
+        $importer = $this->app->make(Poe2DatasetImporter::class);
+        $fixture = base_path('src/GameAdapters/PoE2/Rulesets/poe2-0.3.0.dataset.json');
+        $validated = $importer->validateFile($fixture);
+        self::assertSame('validated', $validated->status);
+        self::assertSame(14, $validated->recordCount);
+        self::assertSame('21c382a99ab3fd634546efb32951468e4343404a06e061c86e1925873f2ac8f', $validated->sourceChecksumSha256);
+
+        $tampered = tempnam(sys_get_temp_dir(), 'lw-poe2-');
+        self::assertIsString($tampered);
+        try {
+            $contents = file_get_contents($fixture);
+            self::assertIsString($contents);
+            file_put_contents($tampered, $contents."\n");
+            $this->expectException(\DomainException::class);
+            $importer->validateFile($tampered);
+        } finally {
+            @unlink($tampered);
+        }
+    }
+
+    public function test_poe2_dataset_policy_denial_happens_before_staging(): void
+    {
+        config(['source-governance.poe2_dataset.enabled' => false]);
+        $importer = $this->app->make(Poe2DatasetImporter::class);
+        try {
+            $importer->importFile(base_path('src/GameAdapters/PoE2/Rulesets/poe2-0.3.0.dataset.json'));
+            self::fail('Expected Policy Gate denial.');
+        } catch (\DomainException) {
+            self::assertSame(0, DB::table('source_import_reports')->count());
+        }
+    }
+
+    public function test_poe2_dataset_import_replays_immutable_snapshot_without_duplicates(): void
+    {
+        $importer = $this->app->make(Poe2DatasetImporter::class);
+        $fixture = base_path('src/GameAdapters/PoE2/Rulesets/poe2-0.3.0.dataset.json');
+        $first = $importer->importFile($fixture);
+        $second = $importer->importFile($fixture);
+        self::assertFalse($first->replayed);
+        self::assertTrue($second->replayed);
+        self::assertSame($first->snapshotId, $second->snapshotId);
+        $this->assertDatabaseCount('source_import_reports', 1);
+        $this->assertDatabaseCount('source_snapshots', 1);
     }
 
     public function test_passive_tree_import_stages_before_immutable_snapshot_approval(): void

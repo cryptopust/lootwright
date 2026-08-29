@@ -24,8 +24,8 @@ The framework-independent core also exposes the canonical analysis contracts:
 - `AnalysisEngine` accepts an edition-scoped normalized build, `BuildIntent`,
   and `GameRuleset`, and returns an immutable `AnalysisResult`.
 - `RuleRegistry` and `AnalysisRule` make the rule catalogue explicit and
-  versioned. `Poe1RuleRegistry` delegates to the reviewed PoE1 rules; the PoE2
-  registry is intentionally empty until an approved PoE2 ruleset exists.
+  versioned. `Poe1RuleRegistry` and the independent `Poe2RuleRegistry` each
+  expose only their edition's reviewed rules.
 - `Finding` carries stable finding identity, edition/ruleset aliases,
   unsupported data, dependencies, evidence, provenance, and explanation trace.
   The legacy persistence projection remains byte-compatible; the richer
@@ -50,8 +50,8 @@ edition-scoped `TradeVocabulary`. `ModifierMatcher` verifies every filter
 against both that vocabulary and the canonical modifier registry for the exact
 ruleset. `ConstraintCompiler` emits human-readable broad and strict text only;
 `RecipeValidator` rejects API paths and request-like output. Unknown mappings
-remain typed `unsupported_filters`. PoE2 vocabulary is disabled and cannot
-borrow PoE1 identifiers.
+remain typed `unsupported_filters`. PoE2 vocabulary is independently versioned
+and cannot borrow PoE1 identifiers.
 
 Laravel infrastructure resolves encrypted persisted inputs and immutable local
 rulesets, then calls a pure game adapter. Pure rules never import Laravel,
@@ -124,8 +124,9 @@ provenance to the pure engine.
 `Poe1AnalysisEngine` is the provider-neutral orchestration facade used by the
 core contract. It rejects cross-edition inputs, refuses non-approved rulesets,
 and discloses unsupported or unknown properties instead of converting them
-into facts. `Poe2AnalysisEngine` fails closed with an explicit unavailable
-result; it never borrows PoE1 rules or identifiers.
+into facts. `Poe2AnalysisEngine` executes only against an approved immutable
+PoE2 0.3.0 ruleset and its independent canonical dataset; it fails closed
+when that ruleset is unavailable and never borrows PoE1 rules or identifiers.
 
 ## Current limitations
 
@@ -134,12 +135,10 @@ result; it never borrows PoE1 rules or identifiers.
   production-domain implementations, but approved production modifier data and
   ruleset-owned Trade vocabulary are still required before they can emit
   actionable filters. Demo screens remain explicitly fixture-backed.
-- There is no PoE2 deterministic engine, PoE2 ruleset, or PoE2 passive-tree
-  source adapter. PoE2 input cannot fall back to PoE1.
-- Canonical contracts exist for skills, support gems, item bases, uniques,
-  modifiers, stats, and content goals, but no approved importer currently
-  supplies those datasets. Production reads return unavailable rather than
-  using UI/test fixtures.
+- PoE2's canonical dataset is intentionally narrow (0.3.0) and independently
+  imported through the operator-only checksum/staging workflow. Mechanics not
+  represented by that dataset remain unsupported; PoE2 input cannot fall back
+  to PoE1.
 - PoB normalization is intentionally structural and does not copy Path of
   Building formulas or bundled data. Unsupported fields remain disclosed.
 - Character catalog facts are version-controlled code metadata rather than

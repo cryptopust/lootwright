@@ -21,7 +21,10 @@ return [
         ],
     ],
     'poe2_dataset' => [
-        'enabled' => (bool) env('POE2_DATASET_IMPORT_ENABLED', true),
-        'approved_revisions' => ['poe2-0.3.0' => ['patch' => '0.3.0']],
+        'enabled' => (bool) env('POE2_DATASET_IMPORT_ENABLED', false),
+        'approved_revisions' => ['poe2-0.3.0' => [
+            'patch' => '0.3.0',
+            'source_checksum_sha256' => '21c382a99ab3fd634546efb32951468e4343404a06e061c86e1925873f2ac8f3',
+        ]],
     ],
 ];

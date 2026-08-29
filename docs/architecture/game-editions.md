@@ -15,10 +15,10 @@ would create an ambiguous parallel identity and is prohibited.
 ## Architecture support versus release activation
 
 The architecture recognizes both editions so stored identities, parsers,
-future adapters, and negative tests can remain explicit. This does not mean
-both editions are approved public features. The current governing release order
-in `AGENTS.md` is PoE1 first; PoE2 code remains isolated and inactive until its
-own source, ruleset, parser, engine, policy, and release gates are approved.
+future adapters, and negative tests can remain explicit. PoE2 now has an
+independent source, ruleset, parser, engine, policy path, and release gates;
+public availability remains independently controlled until those gates are
+evidenced.
 
 Any public route or UI that accepts PoE2 before that approval is a release-scope
 defect, not proof that PoE2 analysis is implemented.
@@ -103,7 +103,7 @@ games use the same display name.
 
 PoE1 has a bounded PoB reader, official passive-tree importer, exact ruleset
 resolver, and narrow production deterministic finding engine. PoE2 has an
-independent versioned PoB2 reader, canonical dataset/ruleset, deterministic
+independent versioned PoB2 reader, checksum-gated canonical dataset/ruleset, deterministic
 finding engine, upgrade factory, and manual recipe adapter. Unsupported
 mechanics fail closed rather than borrowing PoE1 behavior.
 

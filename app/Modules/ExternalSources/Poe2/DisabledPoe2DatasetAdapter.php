@@ -11,7 +11,7 @@ use Lootwright\Domain\Shared\Game\GameEdition;
 /** Local, immutable PoE2 dataset adapter. The legacy class name is retained for container compatibility. */
 final class DisabledPoe2DatasetAdapter extends DisabledSourceAdapter implements ApprovedPoe2DatasetAdapter
 {
-    public function __construct()
+    public function __construct(private readonly Poe2DatasetImporter $importer)
     {
         parent::__construct(
             'POE2-DATASET-CANDIDATE',
@@ -24,11 +24,22 @@ final class DisabledPoe2DatasetAdapter extends DisabledSourceAdapter implements 
 
     public function status(): SourceAdapterStatus
     {
-        return new SourceAdapterStatus('POE2-DATASET-CANDIDATE', 'poe2-0.3.0', [GameEdition::Poe2], ['approved_dataset_contract', 'canonical_ruleset'], true, null);
+        $enabled = (bool) config('source-governance.poe2_dataset.enabled', false);
+
+        return new SourceAdapterStatus(
+            'POE2-DATASET-CANDIDATE',
+            'poe2-0.3.0',
+            [GameEdition::Poe2],
+            ['approved_dataset_contract', 'canonical_ruleset'],
+            $enabled,
+            $enabled ? null : 'configuration_disabled',
+        );
     }
 
     public function import(): SourceAdapterRunResult
     {
-        return new SourceAdapterRunResult(true, 14);
+        $result = $this->importer->importFile(base_path('src/GameAdapters/PoE2/Rulesets/poe2-0.3.0.dataset.json'));
+
+        return new SourceAdapterRunResult($result->status === 'succeeded', $result->recordCount, $result->failureCode);
     }
 }

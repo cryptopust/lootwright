@@ -32,6 +32,7 @@ use App\Modules\ExternalSources\FixedExternalSourceAdapterCatalog;
 use App\Modules\ExternalSources\Ggg\DisabledOfficialGggApiSourceAdapter;
 use App\Modules\ExternalSources\Ggg\GggPassiveTreeSourceAdapter;
 use App\Modules\ExternalSources\Poe2\DisabledPoe2DatasetAdapter;
+use App\Modules\ExternalSources\Poe2\Poe2DatasetImporter;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaEconomyClient;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaNormalizer;
 use App\Modules\ExternalSources\PoeNinja\PoeNinjaPolicyGate;
@@ -203,6 +204,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PoeNinjaSourceAdapter::class);
         $this->app->singleton(DisabledOfficialGggApiSourceAdapter::class);
         $this->app->singleton(DisabledPoe2DatasetAdapter::class);
+        $this->app->singleton(Poe2DatasetImporter::class);
         $this->app->singleton(DisabledPoeWikiCargoAdapter::class);
         $this->app->bind(OfficialTradeSearchProvider::class, DisabledOfficialTradeSearchProvider::class);
         $this->app->singleton(AiGatewayConfiguration::class, static function (): AiGatewayConfiguration {

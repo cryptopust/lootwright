@@ -77,7 +77,7 @@ release commit.
 | --- | --- | --- |
 | Anonymous PoE1 pasted structural PoB, AI disabled, deterministic result and Manual Trade Recipe | **PASS in local harness; FAIL in production** | `AnalysisWorkflowTest::test_release_harness_runs_real_poe1_import_for_anonymous_user_with_ai_off_and_complete_deletion` uses the real bounded parser, real policy-gated intake, persistence, queues/use cases, and deletion with an explicitly fake deterministic engine/ruleset. It verifies strict/broad numeric filters and trace codes. `test_production_analysis_binding_fails_closed_without_an_approved_ruleset_or_analyzer` proves the shipping binding is unavailable. |
 | Authenticated flow with constrained AI explanation and identical deterministic recommendation | **PASS with fake AI** | `AnalysisWorkflowTest::test_constrained_explanation_persists_only_codes_from_completed_deterministic_products` now compares the encrypted recommendation record and canonical hash before and after explanation. Normal CI uses no key or live provider. |
-| PoE2 input cannot use PoE1 rules | **PASS** | Edition-isolation domain tests, PoB adapter tests, stale/mismatched queue identity tests, and Manual Trade adapter denial tests pass. PoE2 remains beta format-only. |
+| PoE2 input cannot use PoE1 rules | **PASS** | Edition-isolation domain tests, PoB adapter tests, stale/mismatched queue identity tests, and independent PoE2 resolver/engine tests pass. PoE2 remains separately gate-controlled. |
 | Malicious PoB/XML and prompt injection are contained | **PASS** | Parser-security suite covers malformed Base64/zlib/XML, XXE/DTD, invalid UTF-8, depth/count/ratio/time limits, hostile notes, and URL refusal. AI tests reject prompt injection before transport and reject unknown canonical IDs. |
 | Denied integrations cannot be invoked by HTTP, job, CLI, or admin surface | **PASS** | Repository guardrails, architecture tests, emergency-switch tests, malformed/stale job tests, CLI local-only path tests, Policy Gate exact-operation denials, and absence of connector/admin UI routes pass. No live Trade or GGG connector exists. |
 | Export and deletion complete correctly | **PASS in primary store** | Owner-scoped export hash/timestamp tests and account/anonymous deletion cascade tests pass. Backup expiry and restore-time deletion replay remain deployment blockers. |
@@ -180,14 +180,19 @@ the critical ruleset/analyzer blockers are resolved.
 
 ### PoE2 supported and unsupported
 
-PoE2 supports only a separately namespaced beta, format-only PoB2 intake and
-structural compatibility review from explicit user input. It is visibly labelled
-inactive for analysis.
+PoE2 supports a separately namespaced PoB2 intake, independently versioned
+canonical 0.3.0 dataset, deterministic engine, upgrade factory, and manual
+Trade vocabulary. The dataset is operator-imported and checksum-gated; only
+mechanics represented in canonical data are analysed.
 
-PoE2 rulesets, game datasets, canonical mappings, deterministic findings,
-recommendations, Manual Trade Recipes, parity claims, production persistence
-claims, and cross-edition comparison are unsupported. PoE1 rules and identifiers
-cannot be used as fallback.
+PoE2 remains independently gate-controlled for public release. Until its
+staging, acceptance, and immutable activation evidence is recorded, UI and
+production routes must continue to label the edition unavailable even though
+the local operator import and deterministic analysis path are implemented.
+
+PoE2 parity claims, broad mechanic coverage, and production readiness remain
+unsupported until the independent release gates pass. PoE1 rules and
+identifiers cannot be used as fallback.
 
 ## Deployment prerequisites
 
