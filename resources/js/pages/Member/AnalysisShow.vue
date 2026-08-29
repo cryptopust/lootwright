@@ -143,6 +143,7 @@ async function recalculate(): Promise<void> {
 return;
 }
 
+/* assistant follow-up is available through the API endpoint */
 async function askAssistant(): Promise<void> {
     if (!followUpQuestion.value.trim() || followUpBusy.value) return;
     followUpBusy.value = true;
