@@ -9,9 +9,9 @@ use Inertia\Response;
 
 final class ProfileController extends Controller
 {
-    public function profile(): Response
+    public function profile(Request $request): Response
     {
-        return Inertia::render('Profile/Edit');
+        return Inertia::render('Profile/Edit', ['user' => $request->user()->only(['name', 'email', 'locale'])]);
     }
 
     public function security(Request $request): Response
