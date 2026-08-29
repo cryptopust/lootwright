@@ -10,6 +10,8 @@ use Lootwright\Domain\Shared\Game\GameEdition;
 /** Reads only approved, fresh normalized poe.ninja snapshot rows. */
 final class PostgresPoeNinjaObservationRepository implements MarketObservationRepository
 {
+    /** @param array<string,mixed> $filters
+     *  @return list<array{price:string,currency:string,source:string,source_version:string,observed_at:\DateTimeImmutable,expires_at:\DateTimeImmutable,listing_count:int}> */
     public function prices(GameEdition $edition, string $league, array $filters): array
     {
         if ($edition !== GameEdition::Poe1 || ! (bool) config('external-sources.poe_ninja.enabled')) {
@@ -21,7 +23,9 @@ final class PostgresPoeNinjaObservationRepository implements MarketObservationRe
             return [];
         }
         foreach ($externalIds as $externalId) {
-            if (! is_string($externalId) || trim($externalId) === '' || mb_strlen($externalId) > 255) return [];
+            if (! is_string($externalId) || trim($externalId) === '' || mb_strlen($externalId) > 255) {
+                return [];
+            }
         }
         $now = CarbonImmutable::now('UTC');
         $rows = DB::table('economy_quotes as q')

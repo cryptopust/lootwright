@@ -13,14 +13,45 @@ readonly class RepositoryMarketProvider implements TradeProvider
 {
     public function __construct(private GameEdition $providerEdition, private MarketObservationRepository $repository, private TradeProviderCapabilities $capabilities = new TradeProviderCapabilities(priceStats: true)) {}
 
-    public function edition(): GameEdition { return $this->providerEdition; }
-    public function capabilities(): TradeProviderCapabilities { return $this->capabilities; }
-    public function supportsSearch(): bool { return $this->capabilities->supportsSearch(); }
-    public function supportsListings(): bool { return $this->capabilities->supportsListings(); }
-    public function supportsPriceStats(): bool { return $this->capabilities->supportsPriceStats(); }
-    public function supportsHistoricalStats(): bool { return $this->capabilities->supportsHistoricalStats(); }
-    public function supportsEncodedSearch(): bool { return $this->capabilities->supportsEncodedSearch(); }
-    public function supportsDeepLinks(): bool { return $this->capabilities->supportsDeepLinks(); }
+    public function edition(): GameEdition
+    {
+        return $this->providerEdition;
+    }
+
+    public function capabilities(): TradeProviderCapabilities
+    {
+        return $this->capabilities;
+    }
+
+    public function supportsSearch(): bool
+    {
+        return $this->capabilities->supportsSearch();
+    }
+
+    public function supportsListings(): bool
+    {
+        return $this->capabilities->supportsListings();
+    }
+
+    public function supportsPriceStats(): bool
+    {
+        return $this->capabilities->supportsPriceStats();
+    }
+
+    public function supportsHistoricalStats(): bool
+    {
+        return $this->capabilities->supportsHistoricalStats();
+    }
+
+    public function supportsEncodedSearch(): bool
+    {
+        return $this->capabilities->supportsEncodedSearch();
+    }
+
+    public function supportsDeepLinks(): bool
+    {
+        return $this->capabilities->supportsDeepLinks();
+    }
 
     public function marketEstimate(TradeSearchRequest $request): MarketEstimate
     {

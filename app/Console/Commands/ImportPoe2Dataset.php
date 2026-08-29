@@ -44,8 +44,12 @@ final class ImportPoe2Dataset extends Command
         $this->components->twoColumnDetail('Records', (string) $result->recordCount);
         $this->components->twoColumnDetail('Source SHA-256', $result->sourceChecksumSha256);
         $this->components->twoColumnDetail('Normalized SHA-256', $result->normalizedChecksumSha256);
-        if ($result->snapshotId !== null) $this->components->twoColumnDetail('Snapshot ID', $result->snapshotId);
-        if ($result->rulesetId !== null) $this->components->twoColumnDetail('Ruleset ID', $result->rulesetId);
+        if ($result->snapshotId !== null) {
+            $this->components->twoColumnDetail('Snapshot ID', $result->snapshotId);
+        }
+        if ($result->rulesetId !== null) {
+            $this->components->twoColumnDetail('Ruleset ID', $result->rulesetId);
+        }
 
         return in_array($result->status, ['validated', 'succeeded'], true) ? self::SUCCESS : self::FAILURE;
     }

@@ -16,7 +16,7 @@ final readonly class Poe2TradeVocabulary implements TradeVocabulary
      * @param  list<TradeVocabularyEntry>  $modifiers
      * @param  array<string, string>  $itemClasses
      */
-    public function __construct(private RulesetIdentity $identity, array $modifiers = [], private array $itemClasses = [], private bool $isEnabled = true)
+    public function __construct(private RulesetIdentity $identity, array $modifiers = [], private array $itemClasses = [], private bool $isEnabled = false)
     {
         if ($identity->edition !== GameEdition::Poe2) {
             throw new InvalidArgumentException('The PoE2 Trade vocabulary requires a PoE2 ruleset.');

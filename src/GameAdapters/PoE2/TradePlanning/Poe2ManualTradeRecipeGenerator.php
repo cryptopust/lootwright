@@ -4,13 +4,13 @@ namespace Lootwright\GameAdapters\PoE2\TradePlanning;
 
 use Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe;
 use Lootwright\Application\TradePlanning\DTO\ManualTradeRecipeRequest;
+use Lootwright\Application\TradePlanning\DTO\RecipeDependency;
 use Lootwright\Application\TradePlanning\DTO\RecipeVariant;
 use Lootwright\Application\TradePlanning\DTO\UnresolvedRequirement;
-use Lootwright\Application\TradePlanning\DTO\RecipeDependency;
+use Lootwright\Application\TradePlanning\Exception\ManualRecipeGenerationFailed;
 use Lootwright\Domain\PolicyProvenance\CommercialUseStatus;
 use Lootwright\Domain\PolicyProvenance\PermissionStatus;
 use Lootwright\Domain\Shared\Game\GameEdition;
-use Lootwright\Application\TradePlanning\Exception\ManualRecipeGenerationFailed;
 
 final class Poe2ManualTradeRecipeGenerator
 {
@@ -25,6 +25,7 @@ final class Poe2ManualTradeRecipeGenerator
         }
         $finding = $request->plan->recommendation->findings[0];
         $unresolved = array_map(fn ($intent): UnresolvedRequirement => new UnresolvedRequirement('modifier', $intent->modifierId->value, 'The active PoE2 ruleset does not prove a Trade filter mapping for this modifier.', 'Which exact in-game PoE2 filter label should represent '.$intent->modifierId->value.' for this patch?', $finding->code, $finding->trace), $request->plan->filters);
+
         return new ManualTradeRecipe(
             'poe2', $request->scope->realm->value, $request->league?->value, $request->plan->slot->value,
             $request->budget?->jsonSerialize(), null, new RecipeVariant('Broad fallback recipe', [], [], []),

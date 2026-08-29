@@ -4,7 +4,6 @@ namespace Lootwright\GameAdapters\PoE2\Recommendations;
 
 use InvalidArgumentException;
 use Lootwright\Domain\Analysis\AnalysisResult;
-use Lootwright\Domain\Analysis\Finding;
 use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
 use Lootwright\Domain\Recommendations\BudgetUncertainty;
 use Lootwright\Domain\Recommendations\MarketDataRequirement;
@@ -59,7 +58,7 @@ final readonly class Poe2UpgradeCandidateFactory implements UpgradeCandidateFact
                 [],
                 [$finding->findingId],
                 $effects,
-                $market === MarketDataRequirement::Required ? BudgetUncertainty::MarketPriceUnknown : BudgetUncertainty::NotApplicable,
+                BudgetUncertainty::NotApplicable,
                 $market,
                 $this->scorer->score($finding, $classification, $intent),
             );

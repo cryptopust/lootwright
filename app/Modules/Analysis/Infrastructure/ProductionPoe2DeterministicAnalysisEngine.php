@@ -10,10 +10,6 @@ use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\DeterministicAnalysisEngine;
 use Lootwright\Domain\Analysis\AnalysisResult;
-use Lootwright\Domain\Recommendations\BudgetConstraint;
-use Lootwright\Domain\Recommendations\Ports\UpgradePlanner;
-use Lootwright\Domain\Recommendations\UpgradeGraph;
-use Lootwright\Domain\Recommendations\UserConstraints;
 use Lootwright\Domain\BuildIntake\Import\BuildInputType;
 use Lootwright\Domain\BuildIntake\Import\BuildSourceMetadata;
 use Lootwright\Domain\BuildIntake\Import\CanonicalImportedBuild;
@@ -24,6 +20,10 @@ use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
 use Lootwright\Domain\BuildIntake\Intent\ContentGoal;
 use Lootwright\Domain\BuildIntake\Intent\PlayerGoal;
 use Lootwright\Domain\BuildIntake\Intent\PlayStyle;
+use Lootwright\Domain\Recommendations\BudgetConstraint;
+use Lootwright\Domain\Recommendations\Ports\UpgradePlanner;
+use Lootwright\Domain\Recommendations\UpgradeGraph;
+use Lootwright\Domain\Recommendations\UserConstraints;
 use Lootwright\Domain\Rulesets\DatasetClassification;
 use Lootwright\Domain\Rulesets\GameRuleset;
 use Lootwright\Domain\Rulesets\GameVersion;
@@ -152,7 +152,9 @@ final readonly class ProductionPoe2DeterministicAnalysisEngine implements Determ
         $graphResult = $this->planner->plan($result, $intent, BudgetConstraint::unknown(), new UserConstraints);
         $graph = $graphResult->isSuccess() && $graphResult->value() instanceof UpgradeGraph ? $graphResult->value() : null;
         $input = CanonicalJson::encode(['build' => $build, 'ruleset' => $identity]);
-        $recommendations = $graph?->ordered() ?? [];
+        // UpgradeGraph nodes are candidate products; recommendation projection
+        // is persisted by the application planner boundary, not this engine.
+        $recommendations = [];
         $output = CanonicalJson::encode(['analysis_result' => $result, 'build_summary' => $build, 'findings' => $result->findings, 'recommendations' => $recommendations, 'manual_trade_recipes' => [], 'intent' => $intent, 'upgrade_graph' => $graph]);
 
         return new DeterministicAnalysisSnapshot('pob2-beta', $artifact->parserVersion ?? '', $context->rulesetId, $context->rulesetVersion, $context->rulesetChecksumSha256, $input, hash('sha256', $input), $output, hash('sha256', $output), $result->findings, $recommendations, []);

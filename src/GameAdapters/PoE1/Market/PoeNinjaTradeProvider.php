@@ -2,8 +2,8 @@
 
 namespace Lootwright\GameAdapters\PoE1\Market;
 
-use Lootwright\Application\Market\RepositoryMarketProvider;
 use Lootwright\Application\Market\Ports\MarketObservationRepository;
+use Lootwright\Application\Market\RepositoryMarketProvider;
 use Lootwright\Domain\Shared\Game\GameEdition;
 
 /** PoE1-only adapter for operator-approved, locally cached poe.ninja economy snapshots. */

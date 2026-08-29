@@ -24,7 +24,7 @@ final readonly class ManualTradeSearchGenerator implements TradeSearchGenerator
             $text .= "\nAlternative path: review dependencies and excluded modifiers before applying.";
         }
 
-        return new TradeSearchPlan($recipe->gameEdition, $league, $mode, array_values($filters), $text);
+        return new TradeSearchPlan($recipe->gameEdition, $league, $mode, $filters, $text);
     }
 
     /** @param list<array<string,mixed>> $filters */

@@ -6,17 +6,16 @@ use DateTimeImmutable;
 use DomainException;
 use Illuminate\Support\Str;
 use Lootwright\Application\ExternalSources\DTO\StagedSourceRecord;
+use Lootwright\Application\ExternalSources\Ports\SourceImportStaging;
 use Lootwright\Application\GameData\DTO\GameDataSourceDocument;
 use Lootwright\Application\Rulesets\DTO\RulesetPublication;
 use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
 use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
-use Lootwright\Application\ExternalSources\Ports\SourceImportStaging;
 use Lootwright\Application\Rulesets\Services\GovernedRulesetLifecycle;
 use Lootwright\Domain\Rulesets\DatasetClassification;
 use Lootwright\Domain\Rulesets\ProvenanceStatus;
 use Lootwright\Domain\Rulesets\RulesetCompatibilityStatus;
 use Lootwright\Domain\Shared\Game\GameEdition;
-use Lootwright\Domain\Shared\Provenance\SourceProvenanceReference;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Lootwright\GameAdapters\PoE2\Analysis\Poe2AnalysisRuleset;
 use Lootwright\GameAdapters\PoE2\GameData\Poe2GameDataNormalizer;
@@ -26,12 +25,16 @@ use RuntimeException;
 final readonly class Poe2DatasetImporter
 {
     public const SOURCE_CODE = 'POE2-DATASET-CANDIDATE';
+
     public const SOURCE_VERSION = 'poe2-0.3.0';
+
     public const SCHEMA_VERSION = 'lootwright.poe2.game-data.v1';
+
     private const OPERATION = 'poe2.dataset.snapshot.import';
+
     private const SOURCE_URL = 'https://lootwright.org/data/poe2/poe2-0.3.0.dataset.json';
+
     private const CONDITIONS = ['approved_source_record', 'poe2_scope', 'checksum_verified'];
-    private const ACTIVATION_CONDITIONS = ['checksum_verified', 'immutable_snapshot', 'operator_workflow', 'poe2_scope'];
 
     public function __construct(
         private SourceImportStaging $staging,

@@ -2,8 +2,8 @@
 
 namespace Lootwright\Application\Market;
 
-use Lootwright\Application\Market\Ports\TradeProvider;
 use Lootwright\Application\Market\Ports\MarketEstimateCache;
+use Lootwright\Application\Market\Ports\TradeProvider;
 
 /** Uses approved local data first, then a non-expired cache, otherwise no-price. */
 final readonly class CachedMarketProvider

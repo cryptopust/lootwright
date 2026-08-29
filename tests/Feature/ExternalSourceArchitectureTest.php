@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Modules\ExternalSources\Poe2\Poe2DatasetImporter;
 use App\Modules\ExternalSources\Jobs\RunExternalSourceImportJob;
+use App\Modules\ExternalSources\Poe2\Poe2DatasetImporter;
 use App\Security\OutboundRequestGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -71,14 +71,15 @@ final class ExternalSourceArchitectureTest extends TestCase
         $validated = $importer->validateFile($fixture);
         self::assertSame('validated', $validated->status);
         self::assertSame(14, $validated->recordCount);
-        self::assertSame('21c382a99ab3fd634546efb32951468e4343404a06e061c86e1925873f2ac8f', $validated->sourceChecksumSha256);
+        self::assertSame('21c382a99ab3fd634546efb32951468e4343404a06e061c86e1925873f2ac8f3', $validated->sourceChecksumSha256);
 
         $tampered = tempnam(sys_get_temp_dir(), 'lw-poe2-');
         self::assertIsString($tampered);
         try {
             $contents = file_get_contents($fixture);
             self::assertIsString($contents);
-            file_put_contents($tampered, $contents."\n");
+            $written = file_put_contents($tampered, str_replace('LOOTWRIGHT-001', 'LOOTWRIGHT-002', $contents));
+            self::assertIsInt($written);
             $this->expectException(\DomainException::class);
             $importer->validateFile($tampered);
         } finally {

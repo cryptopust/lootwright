@@ -4,20 +4,22 @@ namespace Tests\Unit\Application;
 
 use DateTimeImmutable;
 use Lootwright\Application\Market\CachedMarketProvider;
+use Lootwright\Application\Market\ManualTradeSearchGenerator;
 use Lootwright\Application\Market\MarketEstimate;
 use Lootwright\Application\Market\MarketEstimateStatus;
 use Lootwright\Application\Market\Ports\TradeProvider;
 use Lootwright\Application\Market\TradeProviderCapabilities;
-use Lootwright\Application\Market\TradeSearchRequest;
-use Lootwright\Application\Market\ManualTradeSearchGenerator;
 use Lootwright\Application\Market\TradeSearchMode;
-use Lootwright\Domain\Recommendations\UpgradeMarketValueScorer;
-use Lootwright\Domain\Shared\Value\Budget;
-use Lootwright\Domain\Shared\Evidence\RulesetReference;
+use Lootwright\Application\Market\TradeSearchRequest;
 use Lootwright\Domain\Market\MarketObservationBuilder;
+use Lootwright\Domain\Recommendations\UpgradeMarketValueScorer;
+use Lootwright\Domain\Shared\Evidence\RulesetReference;
 use Lootwright\Domain\Shared\Game\GameEdition;
+use Lootwright\Domain\Shared\Value\Budget;
 use Lootwright\Domain\Shared\Value\CurrencyCode;
+use Lootwright\Domain\TradePlanning\TradeRecipe;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\DomainFixtures;
 
 final class MarketIntelligenceTest extends TestCase
 {
@@ -56,9 +58,9 @@ final class MarketIntelligenceTest extends TestCase
 
     public function test_search_generator_exposes_all_manual_modes_without_trade_ids_or_urls(): void
     {
-        $rule = new \Lootwright\Domain\TradePlanning\TradeRecipe(
+        $rule = new TradeRecipe(
             GameEdition::Poe1,
-            new RulesetReference(GameEdition::Poe1, \Tests\Support\DomainFixtures::ruleset(GameEdition::Poe1)->id->value, '1.0.0', str_repeat('b', 64)),
+            new RulesetReference(GameEdition::Poe1, DomainFixtures::ruleset(GameEdition::Poe1)->id->value, '1.0.0', str_repeat('b', 64)),
             'ring', 'Ring', [], null, null, null,
             [['canonical_modifier_id' => 'poe1.modifier.life', 'label' => 'Life', 'minimum' => '80']], [], [], [], [], [],
             'Broad', 'Strict', 'fixture', ['source_id' => 'fixture'], [],
