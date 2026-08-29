@@ -58,6 +58,9 @@ const budget = ref('');
 const budgetCurrency = ref('DIVINE');
 const recalculating = ref(false);
 const feedback = ref('');
+const followUpQuestion = ref('');
+const followUpAnswer = ref('');
+const followUpBusy = ref(false);
 const output = computed(() => props.analysis.output);
 const build = computed(() => output.value?.build_summary ?? {});
 const locked = ref<string[]>([]);
@@ -138,6 +141,26 @@ function explain(code: string): void {
 async function recalculate(): Promise<void> {
     if (!budget.value || recalculating.value) {
 return;
+}
+
+async function askAssistant(): Promise<void> {
+    if (!followUpQuestion.value.trim() || followUpBusy.value) return;
+    followUpBusy.value = true;
+    followUpAnswer.value = '';
+    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    try {
+        const response = await fetch(`/api/analyses/${props.analysis.id}/ai-follow-up`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token },
+            body: JSON.stringify({ question: followUpQuestion.value, ai_opt_in: true, cache_permitted: true }),
+        });
+        const data = await response.json() as { message?: string; analysis_id?: string };
+        followUpAnswer.value = data.message ?? 'The deterministic result remains available.';
+        if (data.analysis_id) followUpAnswer.value += ` Queued analysis: ${data.analysis_id}`;
+    } catch {
+        followUpAnswer.value = 'The deterministic result remains available; assistant follow-up is unavailable.';
+    } finally {
+        followUpBusy.value = false;
+    }
 }
 
     recalculating.value = true;
@@ -228,6 +251,7 @@ function deleteAnalysis(id: string): void {
             </section>
             <section class="equipment-section" aria-labelledby="locked-title"><div class="section-title-row"><div><p class="kicker">CONSTRAINTS</p><h2 id="locked-title">Lock equipment</h2></div><span>{{ locked.length }} locked</span></div><ul class="equipment-grid"><li v-for="item in (build.items ?? [])" :key="itemKey(item)" :class="{ 'is-selected': locked.includes(itemKey(item)) }"><span>{{ (item.slots ?? []).join(' · ') || 'Item' }}</span><strong>{{ label(item.id) }}</strong><button type="button" class="button is-secondary" @click="toggleLock(item)">{{ locked.includes(itemKey(item)) ? 'Unlock' : 'Lock this item' }}</button></li></ul></section>
             <section class="recipe-sheet" aria-labelledby="budget-title"><div class="recipe-header"><div><p class="kicker">RECALCULATE</p><h2 id="budget-title">Change budget</h2><p>Simple budget changes reuse the deterministic planner; no AI request is made.</p></div></div><div class="form-grid two-columns"><label class="field"><span>Budget</span><input v-model="budget" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,4})?" /></label><label class="field"><span>Currency</span><select v-model="budgetCurrency"><option>DIVINE</option><option>CHAOS</option></select></label></div><button type="button" class="button is-primary" :disabled="recalculating || !budget" @click="recalculate">{{ recalculating ? 'Recalculating…' : 'Recalculate' }}</button><p v-if="feedback" role="status">{{ feedback }}</p></section>
+            <section class="recipe-sheet" aria-labelledby="assistant-title"><div class="recipe-header"><div><p class="kicker">OPTIONAL AI ASSISTANT</p><h2 id="assistant-title">Ask about this result</h2><p>Questions are classified against this deterministic snapshot. Unsupported mechanics are not guessed.</p></div></div><label class="field"><span>Question</span><textarea v-model="followUpQuestion" maxlength="500" rows="3" placeholder="What if I have 20 more div?" /></label><button type="button" class="button is-secondary" :disabled="followUpBusy || !followUpQuestion.trim()" @click="askAssistant">{{ followUpBusy ? 'Checking…' : 'Ask assistant' }}</button><p v-if="followUpAnswer" role="status">{{ followUpAnswer }}</p></section>
             <section class="provenance-ledger"><div><dt>Ruleset</dt><dd><code>{{ analysis.ruleset?.version ?? '—' }}</code></dd></div><div><dt>Checksum</dt><dd><code>{{ analysis.ruleset?.checksum_sha256 ?? '—' }}</code></dd></div><div><dt>Data freshness</dt><dd>Immutable snapshot at analysis time</dd></div><div v-if="output?.latencies_ms"><dt>Deterministic latency</dt><dd>{{ output.latencies_ms.planner ?? '—' }} ms planner · {{ output.latencies_ms.trade_recipe ?? '—' }} ms recipes</dd></div></section>
         </template>
         <StatusBanner v-else tone="neutral" title="Analysis is processing" body="The deterministic worker has not published a result yet. Refresh this page shortly." />
