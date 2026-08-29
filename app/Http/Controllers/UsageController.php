@@ -11,6 +11,9 @@ final class UsageController extends Controller
 {
     public function __invoke(Request $request): Response
     {
+        if (! $request->user()) {
+            return Inertia::render('Usage', ['usage' => null]);
+        }
         $hash = hash_hmac('sha256', 'user:'.$request->user()->id, (string) config('app.key'));
         $base = DB::table('ai_request_audits')->where('user_hash', $hash);
         $today = (clone $base)->where('created_at', '>=', now()->startOfDay());

@@ -56,7 +56,7 @@ Route::inertia('/data-deletion', 'Information', ['page' => 'deletion'])->name('d
 Route::inertia('/methodology', 'Information', ['page' => 'methodology'])->name('methodology');
 Route::inertia('/limitations', 'Information', ['page' => 'limitations'])->name('limitations');
 Route::inertia('/non-affiliation', 'Information', ['page' => 'affiliation'])->name('non-affiliation');
-Route::get('/usage', UsageController::class)->middleware(['auth', 'active', 'verified'])->name('usage');
+Route::get('/usage', UsageController::class)->name('usage');
 Route::get('/funding', FundingController::class)->name('funding');
 
 Route::get('/policy/sources/{sourceId}', PolicyExplanationController::class)
