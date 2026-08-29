@@ -41,6 +41,7 @@ const props = defineProps<{
         cache_hits_today: number;
         failures_today: number;
     };
+    analysisHealth: { failure_rate_percent: number; unsupported_rate_percent: number; queue_failures: number };
 }>();
 const actor = usePage<{ auth: { user: User } }>().props.auth.user;
 const aiForm = useForm({
@@ -160,6 +161,9 @@ const aiForm = useForm({
                             {{ aiUsage.failures_today }} failed
                         </dd>
                     </div>
+                    <div><dt>Analysis failure rate</dt><dd>{{ analysisHealth.failure_rate_percent }}%</dd></div>
+                    <div><dt>Unsupported mechanic rate</dt><dd>{{ analysisHealth.unsupported_rate_percent }}%</dd></div>
+                    <div><dt>Queue failures</dt><dd>{{ analysisHealth.queue_failures }}</dd></div>
                 </dl>
             </section>
         </div>

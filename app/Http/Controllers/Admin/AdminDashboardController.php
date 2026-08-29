@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +22,11 @@ final class AdminDashboardController extends Controller
         return Inertia::render('Admin/Dashboard', [
             'users' => ['total' => DB::table('users')->count(), 'active' => DB::table('users')->where('status', 'active')->count(), 'suspended' => DB::table('users')->where('status', 'suspended')->count(), 'verified' => DB::table('users')->whereNotNull('email_verified_at')->count()],
             'analyses' => DB::table('analyses')->select('state', DB::raw('count(*) as total'))->groupBy('state')->pluck('total', 'state'),
+            'analysisHealth' => [
+                'failure_rate_percent' => $this->rate('failed'),
+                'unsupported_rate_percent' => $this->unsupportedRate(),
+                'queue_failures' => DB::table('failed_jobs')->count(),
+            ],
             'failedJobs' => DB::table('failed_jobs')->count(),
             'killSwitches' => DB::table('policy_kill_switches')->where('active', true)->count(),
             'catalogs' => [['game' => 'poe1', 'version' => '3.28', 'data_version' => 'poe1-3.28-2026-08-20'], ['game' => 'poe2', 'version' => '0.5', 'data_version' => 'poe2-0.5-2026-08-20']],
@@ -47,5 +53,33 @@ final class AdminDashboardController extends Controller
                 'failures_today' => (int) (clone $today)->where('validation_outcome', '!=', 'valid')->count(),
             ],
         ]);
+    }
+
+    private function rate(string $state): float
+    {
+        $total = (int) DB::table('analyses')->count();
+
+        return $total === 0 ? 0.0 : round(((int) DB::table('analyses')->where('state', $state)->count() / $total) * 100, 2);
+    }
+
+    private function unsupportedRate(): float
+    {
+        $completed = DB::table('analyses')->where('state', 'completed')->pluck('output_snapshot_encrypted');
+        if ($completed->isEmpty()) {
+            return 0.0;
+        }
+        $withUnsupported = 0;
+        foreach ($completed as $snapshot) {
+            try {
+                $payload = json_decode(Crypt::decryptString($snapshot), true, flags: JSON_THROW_ON_ERROR);
+                if (is_array($payload) && (($payload['analysis_result']['unsupported_data'] ?? []) !== [])) {
+                    $withUnsupported++;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return round(($withUnsupported / $completed->count()) * 100, 2);
     }
 }
