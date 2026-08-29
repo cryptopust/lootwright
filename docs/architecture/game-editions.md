@@ -102,10 +102,10 @@ games use the same display name.
 ## Current adapter state
 
 PoE1 has a bounded PoB reader, official passive-tree importer, exact ruleset
-resolver, and narrow production deterministic finding engine. PoE2 has a
-versioned character catalog and beta structural PoB2 reader only. PoE2 has no
-approved canonical dataset, production ruleset or deterministic engine, and its manual recipe
-adapter fails closed.
+resolver, and narrow production deterministic finding engine. PoE2 has an
+independent versioned PoB2 reader, canonical dataset/ruleset, deterministic
+finding engine, upgrade factory, and manual recipe adapter. Unsupported
+mechanics fail closed rather than borrowing PoE1 behavior.
 
 See the [current-state audit](../audits/current-state.md) and the existing
 [PoE1/PoE2 boundary](poe1-poe2-boundary.md).

@@ -20,11 +20,10 @@ php artisan test tests/Feature/BuildRegressionLaboratoryTest.php
 | Edition | Cases | Archetypes represented | Parser result | Analysis result |
 | --- | ---: | --- | --- | --- |
 | PoE1 | 8 | melee, ranged attack, spell, minion, totem, mine, trap, DoT, crit, non-crit, armour, evasion, energy shield, hybrid, aura-heavy, mapping, bossing, Delve, Sanctum | 8/8 accepted | 8/8 complete |
-| PoE2 | 3 | melee, ranged attack, spell (only categories represented by the project-created PoB2 shape) | 3/3 accepted | 3/3 unavailable, fail-closed |
+| PoE2 | 3 | melee, ranged attack, spell (only categories represented by the project-created PoB2 shape) | 3/3 accepted | 3/3 complete, deterministic |
 
-PoE2 does not inherit PoE1 archetypes or findings. Its golden snapshot requires
-`poe2_ruleset_unavailable` and `poe2_rules_not_approved`, and explicitly
-requires an empty finding set.
+PoE2 does not inherit PoE1 archetypes or findings. Its golden snapshot records
+the independent PoE2 engine status and unsupported-input disclosure.
 
 ## Golden regression policy
 
@@ -63,7 +62,7 @@ not a claim that every game mechanic is modelled.
 | Finding precision proxy | healthy cases with zero unexpected findings / healthy cases | 8/8 = **100%** |
 | Regression stability | PoE1 replay byte comparisons that match / comparisons | 8/8 = **100%** |
 | Mutation detection proxy | supported defect mutations detected / supported mutations | 6/6 = **100%** |
-| Unsupported-data rate | PoE2 analyses returning unavailable unsupported codes / PoE2 cases | 3/3 = **100%** (intentional fail-closed state) |
+| Unsupported-data disclosure | PoE2 cases preserving unsupported facts / PoE2 cases | 3/3 = **100%** |
 | PoE1 ruleset coverage | registered PoE1 rule codes exercised by this lab / registered codes | 6/14 = **42.9%** |
 | PoE1 parser corpus coverage | accepted PoE1 corpus cases / PoE1 corpus cases | 8/8 = **100%** for this corpus shape |
 | PoE2 parser corpus coverage | accepted PoE2 corpus cases / PoE2 corpus cases | 3/3 = **100%** for this beta shape |
@@ -80,8 +79,8 @@ yet available.
 
 - PoE1 fixtures are project-created, not downloaded player builds. They prove
   parser and deterministic boundary behavior without redistributing user data.
-- PoE2 has no approved canonical ruleset, so unavailable output is the only
-  valid golden result and no PoE1 rule may appear.
+- PoE2 uses the independent 0.3.0 beta ruleset; unsupported mechanics remain
+  explicit and no PoE1 rule may appear.
 - Current deterministic PoE1 rules cover data quality, equipment slots,
   resistances, mana, skill links/disabled gems, and passive-node membership.
   Damage, recovery, ailment, reservation semantics beyond reported mana,

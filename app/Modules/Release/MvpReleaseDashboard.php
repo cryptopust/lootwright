@@ -4,6 +4,7 @@ namespace App\Modules\Release;
 
 use App\Modules\Analysis\Infrastructure\ProductionEditionDeterministicAnalysisEngine;
 use App\Modules\Analysis\Infrastructure\ProductionPoe1DeterministicAnalysisEngine;
+use App\Modules\Analysis\Infrastructure\ProductionPoe2DeterministicAnalysisEngine;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Crypt;
@@ -86,8 +87,7 @@ final readonly class MvpReleaseDashboard
             && $activeRuleset['dataset_classification'] === 'approved_import'
             && $activeRuleset['provenance_status'] === 'approved'
             && $activeRuleset['compatibility_status'] === 'compatible';
-        $productionEngine = $edition === GameEdition::Poe1
-            && $this->isProductionEngine($this->container->make(DeterministicAnalysisEngine::class));
+        $productionEngine = $this->isProductionEngine($this->container->make(DeterministicAnalysisEngine::class), $edition);
         $public = in_array($edition->value, (array) config('game-editions.public', []), true);
         $parserObserved = is_string($artifactAdapter) && $artifactAdapter !== '';
         $unsupported = $this->unsupportedRate($edition);
@@ -412,10 +412,11 @@ final readonly class MvpReleaseDashboard
         }
     }
 
-    private function isProductionEngine(object $engine): bool
+    private function isProductionEngine(object $engine, GameEdition $edition): bool
     {
-        return $engine instanceof ProductionPoe1DeterministicAnalysisEngine
-            || $engine instanceof ProductionEditionDeterministicAnalysisEngine;
+        return $engine instanceof ProductionEditionDeterministicAnalysisEngine
+            || ($edition === GameEdition::Poe1 && $engine instanceof ProductionPoe1DeterministicAnalysisEngine)
+            || ($edition === GameEdition::Poe2 && $engine instanceof ProductionPoe2DeterministicAnalysisEngine);
     }
 
     private function evidenceId(mixed $value): ?string

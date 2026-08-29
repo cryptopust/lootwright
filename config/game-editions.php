@@ -1,7 +1,7 @@
 <?php
 
 return [
-    // PoE2 domain and adapter code is deliberately retained for phase two,
-    // but it is not a public production capability during the PoE1 MVP.
-    'public' => ['poe1'],
+    // Exposure is independently gate-controlled per edition; runtime still
+    // fails closed when an exact immutable ruleset is unavailable.
+    'public' => ['poe1', 'poe2'],
 ];

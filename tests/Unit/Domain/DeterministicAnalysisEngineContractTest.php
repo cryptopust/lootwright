@@ -62,7 +62,7 @@ final class DeterministicAnalysisEngineContractTest extends TestCase
             'poe2.data.resistances.unavailable',
         ], array_map(static fn ($finding): string => $finding->code, $result->value()->findings));
         $payload = json_decode($result->value()->canonicalJson(), true, 64, JSON_THROW_ON_ERROR);
-        $golden = json_decode((string) file_get_contents(__DIR__.'/../../Fixtures/Analysis/poe2-unavailable-golden.json'), true, 64, JSON_THROW_ON_ERROR);
+        $golden = json_decode((string) file_get_contents(__DIR__.'/../../Fixtures/Analysis/poe2-golden.json'), true, 64, JSON_THROW_ON_ERROR);
         self::assertSame($golden, [
             'game_edition' => $payload['game_edition'],
             'status' => $payload['status'],

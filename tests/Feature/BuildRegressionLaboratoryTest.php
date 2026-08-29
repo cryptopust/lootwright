@@ -118,13 +118,13 @@ final class BuildRegressionLaboratoryTest extends TestCase
         self::assertContains('DoT', $seenArchetypes);
     }
 
-    public function test_poe2_corpus_is_edition_isolated_and_fail_closed(): void
+    public function test_poe2_corpus_is_edition_isolated_and_matches_approved_goldens(): void
     {
         $manifest = $this->manifest('Poe2/manifest.json');
         $golden = $this->manifest('Poe2/golden.json');
         $engine = new Poe2AnalysisEngine;
         $identity = DomainFixtures::ruleset(GameEdition::Poe2);
-        $ruleset = new GameRuleset($identity, new GameVersion(GameEdition::Poe2, $identity->patch), DatasetClassification::Unavailable, ProvenanceStatus::Pending, RulesetCompatibilityStatus::Unavailable);
+        $ruleset = new GameRuleset($identity, new GameVersion(GameEdition::Poe2, $identity->patch), DatasetClassification::ApprovedImport, ProvenanceStatus::Approved, RulesetCompatibilityStatus::Compatible);
 
         foreach ($manifest['cases'] as $case) {
             $id = $case['id'];
@@ -145,7 +145,6 @@ final class BuildRegressionLaboratoryTest extends TestCase
             self::assertInstanceOf(AnalysisResult::class, $analysis, $id);
             self::assertSame($golden['cases'][$id]['status'], $analysis->status->value, $id);
             self::assertSame($golden['cases'][$id]['unsupported_data'], $analysis->unsupportedData, $id);
-            self::assertSame([], $analysis->findings, $id.' leaked PoE1 findings into PoE2');
             self::assertSame($case['expected_findings'], $this->codes($analysis->findings), $id);
             self::assertSame([], array_values(array_intersect($case['forbidden_findings'], $this->codes($analysis->findings))), $id.' emitted a forbidden PoE1 finding');
         }

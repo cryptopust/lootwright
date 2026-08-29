@@ -61,9 +61,11 @@ final readonly class DatabaseSourceGovernancePolicy implements SourceGovernanceP
             return false;
         }
 
-        $conditions = $sourceCode === 'GGG-POE1-SKILLTREE-001'
-            ? ['checksum_verified', 'immutable_snapshot', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope']
-            : ['checksum_verified', 'immutable_snapshot', 'poe1_scope'];
+        $conditions = match ($sourceCode) {
+            'GGG-POE1-SKILLTREE-001' => ['checksum_verified', 'immutable_snapshot', 'official_repository', 'operator_workflow', 'pinned_commit', 'poe1_scope'],
+            'POE2-DATASET-CANDIDATE' => ['checksum_verified', 'immutable_snapshot', 'operator_workflow', 'poe2_scope'],
+            default => ['checksum_verified', 'immutable_snapshot', 'poe1_scope'],
+        };
 
         return $this->permitsImport(
             $sourceCode,
@@ -81,7 +83,8 @@ final readonly class DatabaseSourceGovernancePolicy implements SourceGovernanceP
             'POEWIKI-CARGO-001' => (bool) config('source-governance.poewiki_import_enabled', false),
             'POENINJA-ECONOMY-001' => (bool) config('source-governance.poeninja_economy_enabled', false),
             'REPOE-CANDIDATE' => false,
-            'POE2-DATASET-CANDIDATE' => false,
+            'POE2-DATASET-CANDIDATE' => (bool) config('source-governance.poe2_dataset.enabled', false)
+                && array_key_exists($sourceVersion, (array) config('source-governance.poe2_dataset.approved_revisions', [])),
             'GGG-POE1-ATLASTREE-001' => false,
             default => true,
         };

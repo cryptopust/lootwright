@@ -2,10 +2,10 @@
   "schema": "lootwright.analysis-golden.v1",
   "edition": "poe2",
   "engine_version": "1.0.0",
-  "ruleset_status": "unavailable",
+  "ruleset_status": "approved",
   "cases": {
-    "warrior-melee": {"status": "unavailable", "unsupported_data": ["poe2_ruleset_unavailable", "poe2_rules_not_approved"]},
-    "ranger-ranged": {"status": "unavailable", "unsupported_data": ["poe2_ruleset_unavailable", "poe2_rules_not_approved"]},
-    "sorceress-spell": {"status": "unavailable", "unsupported_data": ["poe2_ruleset_unavailable", "poe2_rules_not_approved"]}
+    "warrior-melee": {"status": "complete", "unsupported_data": ["input:/PathOfBuilding2/Items/ItemSet:ItemSet", "property:armour:unknown", "property:auras:unknown", "property:clusters:unknown", "property:energy_shield:unknown", "property:evasion:unknown", "property:item_modifiers:unknown", "property:jewels:unknown", "property:keystones:unknown", "property:life:unknown", "property:mana:unknown", "property:resistances:unknown", "property:supports:unknown", "property:unsupported_fields:unsupported"]},
+    "ranger-ranged": {"status": "complete", "unsupported_data": ["input:/PathOfBuilding2/Items/ItemSet:ItemSet", "property:armour:unknown", "property:auras:unknown", "property:clusters:unknown", "property:energy_shield:unknown", "property:evasion:unknown", "property:item_modifiers:unknown", "property:jewels:unknown", "property:keystones:unknown", "property:life:unknown", "property:mana:unknown", "property:resistances:unknown", "property:supports:unknown", "property:unsupported_fields:unsupported"]},
+    "sorceress-spell": {"status": "complete", "unsupported_data": ["input:/PathOfBuilding2/Items/ItemSet:ItemSet", "property:armour:unknown", "property:auras:unknown", "property:clusters:unknown", "property:energy_shield:unknown", "property:evasion:unknown", "property:item_modifiers:unknown", "property:jewels:unknown", "property:keystones:unknown", "property:life:unknown", "property:mana:unknown", "property:resistances:unknown", "property:supports:unknown", "property:unsupported_fields:unsupported"]}
   }
 }

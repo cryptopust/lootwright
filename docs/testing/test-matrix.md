@@ -27,7 +27,7 @@ undeclared localhost request.
 | Surface | Test evidence | Current classification |
 | --- | --- | --- |
 | PoB1/XML/decompression | `PobImportTest`, `BuildImportPipelineTest`, `PobImportEndpointTest`, `SecurityHardeningTest` | PASS: strict base64/compression, size/ratio/time/count/depth bounds, UTF-8, DTD/XXE/network denial, duplicate/cross-edition handling |
-| PoB2 | Domain/parser malicious fixtures and cross-edition tests | BLOCKED for production E2E: adapter remains dormant and public HTTP boundaries reject PoE2 during PoE1 MVP |
+| PoB2 | Domain/parser malicious fixtures, golden regressions, and cross-edition tests | ACTIVE beta: public HTTP boundaries accept PoE2 and exact ruleset resolution still fails closed |
 | Authentication/session | `AuthenticationFlowTest`, `CatalogAndMembershipTest`, `SecurityHardeningTest` | PASS in feature tests; staging mail/cookie/proxy exercise remains an operations gate |
 | Authorization/admin/IDOR | Membership, workflow ownership, privacy-session, policy-admin and recent-password/2FA tests | PASS |
 | Source imports/SSRF | `GggPassiveTreeImportTest`, `ExternalSourceArchitectureTest`, Policy Gate tests, source job hardening test | PASS with mocked HTTP: exact allowlists, DNS/private-address/redirect denial, policy gate, uniqueness, overlap, timeout, failure behavior |

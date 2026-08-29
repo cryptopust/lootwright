@@ -58,7 +58,7 @@ Never schedule automatic activation.
 | poe.ninja PoE1 economy | default-off, conditional operational-capable | Documented leagues/exchange/stash overview endpoints only |
 | Official documented GGG APIs | disabled | Registration, credentials, scopes and each exact operation require review |
 | PoE Wiki Cargo | disabled | Permission, underlying rights, commercial use, cache and redistribution review pending |
-| PoE2 canonical datasets | disabled/unavailable | No dataset has passed Policy and Provenance review |
+| PoE2 canonical dataset | local/operator-controlled | Lootwright-authored 0.3.0 dataset; exact checksum, same-edition, and activation gates apply |
 | Official Atlas tree | disabled/outside MVP | Contract recorded; no active importer |
 | RePoE | prohibited | No runtime adapter or HTTP client |
 | Trade search/fetch/data, scraping, POESESSID | prohibited | No adapter and no override |

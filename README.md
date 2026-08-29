@@ -19,8 +19,8 @@ Lootwright is currently deployed on Laravel Cloud, but it is not yet a
 complete public beta. The repository contains substantial working foundations
 and a narrow PoE1 deterministic engine; Cloud runtime, data coverage, and
 real-player acceptance still have open gates. PoE1 is the active release track.
-PoE2 remains isolated and unavailable until its independent data, rules, and
-end-to-end gates pass.
+PoE2 is enabled as an independent beta target with its own data, rules, and
+end-to-end gates; it never falls back to PoE1 mechanics.
 
 ## Capability status
 
@@ -43,7 +43,7 @@ The labels in this README have precise meanings:
 | PoE1 character catalog and analysis intake | **AVAILABLE** | The public catalog and wizard currently expose PoE1. Class/Ascendancy relationships are validated server-side. |
 | PoE1 deterministic findings | **BETA** | A real, narrow engine is production-bound and uses an exact approved immutable ruleset and passive-tree snapshot. It fails closed when that data is absent or incompatible. Its rule coverage is intentionally incomplete. |
 | Upgrade graph and manual Trade recipe engine | **EXPERIMENTAL** | Edition-scoped deterministic contracts, ordering, constraints, dependency handling, and human-readable recipe generation are tested. Production output still needs approved canonical modifier and Trade vocabulary data and full workflow/UI binding. |
-| PoE2 format and domain adapters | **EXPERIMENTAL** | Separate PoB2-shaped parsing, catalog/domain contracts, rule registry, item-text and Trade vocabulary boundaries exist with cross-edition tests. There is no approved PoE2 production ruleset or analyzer, and PoE2 is not a public release surface today. |
+| PoE2 deterministic analysis | **BETA** | Independent PoB2 importer, canonical resolvers, immutable ruleset binding, deterministic findings, upgrade candidates, and manual Trade vocabulary boundaries are enabled with cross-edition tests. |
 | GGG PoE1 passive-tree import | **EXPERIMENTAL** | An operator-only, commit-pinned, allowlisted importer stages and validates the official export before atomic activation. It is disabled by default and never runs in a player request. |
 | poe.ninja economy observations | **EXPERIMENTAL** | A documented-economy adapter, bounded client, normalization, caching, freshness, and policy tests exist. It is disabled by default and is not canonical game truth. |
 | PoE Wiki ingestion | **PLANNED** | A disabled adapter boundary exists. Activation requires a reviewed capability, terms/attribution decision, exact schema, and current provenance evidence. |

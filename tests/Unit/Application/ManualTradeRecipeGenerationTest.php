@@ -162,7 +162,7 @@ class ManualTradeRecipeGenerationTest extends TestCase
         }
     }
 
-    public function test_edition_boundaries_reject_poe2_context_in_poe1_and_keep_poe2_generation_inactive(): void
+    public function test_edition_boundaries_reject_poe2_context_in_poe1_and_keep_unknown_poe2_filters_unresolved(): void
     {
         $poe2Request = $this->poe2Request();
 
@@ -173,12 +173,10 @@ class ManualTradeRecipeGenerationTest extends TestCase
             self::assertSame('recipe_context_mismatch', $exception->failureCode);
         }
 
-        try {
-            (new Poe2ManualTradeRecipeGenerator)->generate($poe2Request);
-            self::fail('Expected PoE2 recipe generation to remain inactive.');
-        } catch (ManualRecipeGenerationFailed $exception) {
-            self::assertSame('poe2_manual_trade_inactive', $exception->failureCode);
-        }
+        $recipe = (new Poe2ManualTradeRecipeGenerator)->generate($poe2Request);
+        self::assertSame('poe2', $recipe->gameEdition);
+        self::assertSame([], $recipe->strict->required);
+        self::assertSame('fixture.modifier.life', $recipe->unresolvedRequirements[0]->canonicalKey);
     }
 
     private function poe1Request(

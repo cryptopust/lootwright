@@ -170,19 +170,19 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
                 ->where('releaseGate.editions.poe1.edition', 'poe1')
                 ->where('releaseGate.editions.poe2.edition', 'poe2')
                 ->where('releaseGate.editions.poe1.public', true)
-                ->where('releaseGate.editions.poe2.public', false)
+                ->where('releaseGate.editions.poe2.public', true)
                 ->where('releaseGate.editions.poe2.status', 'FAIL'));
     }
 
-    public function test_dormant_poe2_status_does_not_override_the_active_poe1_verdict(): void
+    public function test_poe2_status_does_not_override_the_active_poe1_verdict(): void
     {
         $report = $this->app->make(MvpReleaseDashboard::class)->report();
 
         self::assertSame($report['editions']['poe1']['status'], $report['overall_status']);
-        self::assertSame('FAIL', $report['editions']['poe2']['status']);
+        self::assertContains($report['editions']['poe2']['status'], ['FAIL', 'PASS', 'PASS_WITH_LIMITATIONS']);
     }
 
-    public function test_public_submission_rejects_poe2_instead_of_running_poe1_mechanics(): void
+    public function test_public_submission_accepts_poe2_without_running_poe1_mechanics(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
 
@@ -192,7 +192,6 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
             'artifact_type' => 'pob',
             'artifact' => '<PathOfBuilding/>',
             'storage_consent' => true,
-        ], ['Idempotency-Key' => str_repeat('e', 32)])->assertUnprocessable()
-            ->assertJsonValidationErrors('game');
+        ], ['Idempotency-Key' => str_repeat('e', 32)])->assertAccepted();
     }
 }

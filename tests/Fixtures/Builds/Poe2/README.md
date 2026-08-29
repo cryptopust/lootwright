@@ -1,6 +1,6 @@
 # PoE2 regression corpus
 
-These files are original Lootwright test inputs shaped like PoB2 XML. They
-cover only edition detection, class/ascendancy fields, skills, equipment and
-unsupported-feature reporting. The PoE2 analysis adapter is unavailable until
-an approved PoE2 ruleset exists, so no PoE1 findings are expected or accepted.
+These files are original Lootwright regression inputs shaped like PoB2 XML.
+They cover edition detection, class/ascendancy fields, skills, equipment and
+unsupported-feature reporting against the independently versioned PoE2 0.3.0
+ruleset. No PoE1 findings or identifiers are expected or accepted.

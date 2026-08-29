@@ -20,4 +20,8 @@ return [
             ],
         ],
     ],
+    'poe2_dataset' => [
+        'enabled' => (bool) env('POE2_DATASET_IMPORT_ENABLED', true),
+        'approved_revisions' => ['poe2-0.3.0' => ['patch' => '0.3.0']],
+    ],
 ];

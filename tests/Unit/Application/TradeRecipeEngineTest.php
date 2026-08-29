@@ -154,7 +154,7 @@ final class TradeRecipeEngineTest extends TestCase
         );
     }
 
-    public function test_poe1_and_poe2_vocabularies_are_isolated_and_poe2_remains_fail_closed(): void
+    public function test_poe1_and_poe2_vocabularies_are_isolated_and_poe2_requires_exact_vocabulary(): void
     {
         $poe1 = $this->ruleset(GameEdition::Poe1);
         $poe2 = $this->ruleset(GameEdition::Poe2);

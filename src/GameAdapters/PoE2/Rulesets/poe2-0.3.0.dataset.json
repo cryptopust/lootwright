@@ -1,0 +1,22 @@
+{
+  "schema_version": "lootwright.poe2.game-data.v1",
+  "edition": "poe2",
+  "game_version": "0.3.0",
+  "source": "LOOTWRIGHT-001",
+  "records": [
+    {"category":"character_class","external_id":"poe2.pob.class.warrior","display_name":"Warrior","attributes":{"game_version":"0.3.0"}},
+    {"category":"character_class","external_id":"poe2.pob.class.ranger","display_name":"Ranger","attributes":{"game_version":"0.3.0"}},
+    {"category":"character_class","external_id":"poe2.pob.class.sorceress","display_name":"Sorceress","attributes":{"game_version":"0.3.0"}},
+    {"category":"ascendancy","external_id":"poe2.pob.ascendancy.warbringer","display_name":"Warbringer","attributes":{"character_class_external_id":"poe2.pob.class.warrior","progression_type":"regular"}},
+    {"category":"ascendancy","external_id":"poe2.pob.ascendancy.deadeye","display_name":"Deadeye","attributes":{"character_class_external_id":"poe2.pob.class.ranger","progression_type":"regular"}},
+    {"category":"ascendancy","external_id":"poe2.pob.ascendancy.stormweaver","display_name":"Stormweaver","attributes":{"character_class_external_id":"poe2.pob.class.sorceress","progression_type":"regular"}},
+    {"category":"skill_gem","external_id":"poe2.pob.gem.perfect_strike","display_name":"Perfect Strike","attributes":{"game_version":"0.3.0"}},
+    {"category":"skill_gem","external_id":"poe2.pob.gem.lightning_arrow","display_name":"Lightning Arrow","attributes":{"game_version":"0.3.0"}},
+    {"category":"skill_gem","external_id":"poe2.pob.gem.arc","display_name":"Arc","attributes":{"game_version":"0.3.0"}},
+    {"category":"support_gem","external_id":"poe2.pob.support.fixture","display_name":"PoE2 Support","attributes":{"game_version":"0.3.0"}},
+    {"category":"passive_node","external_id":"poe2.pob.node.1001","display_name":"PoE2 Passive 1001","attributes":{"game_version":"0.3.0"}},
+    {"category":"modifier_definition","external_id":"poe2.modifier.maximum_life","display_name":"PoE2 maximum Life","attributes":{"game_version":"0.3.0"}},
+    {"category":"modifier_definition","external_id":"poe2.modifier.elemental_resistance","display_name":"PoE2 elemental resistance","attributes":{"game_version":"0.3.0"}},
+    {"category":"trade_vocabulary_definition","external_id":"poe2.trade.manual","display_name":"PoE2 manual Trade vocabulary","attributes":{"supported":true,"game_version":"0.3.0"}}
+  ]
+}
