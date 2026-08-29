@@ -47,7 +47,7 @@ final class MarketObservationBuilder
         $liquidity = min(10_000, $listingCount * 100);
         $make = static fn (string $amount): Budget => Budget::fromDecimal($currency, $amount)->value();
 
-        return new MarketObservation($edition, $source, $sourceVersion, $league, $observedAt, $expiresAt, $make($median), $make($p25), $make($p75), $make($p90), $listingCount, $sample, $outliers, $confidence, $liquidity);
+        return new MarketObservation($edition, $source, $sourceVersion, $league, $observedAt, $expiresAt, $make($median), $make($p25), $make($p75), $make($p90), $listingCount, $sample, $outliers, $confidence, $liquidity, $expiresAt->getTimestamp() - $observedAt->getTimestamp());
     }
 
     /** @param list<string> $values

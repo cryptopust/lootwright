@@ -27,12 +27,14 @@ final readonly class MarketObservation implements JsonSerializable
         public int $outliersRejected,
         public int $confidenceBasisPoints,
         public int $liquidityBasisPoints,
+        public int $ttlSeconds,
     ) {
         if (trim($source) === '' || trim($sourceVersion) === '' || trim($league) === ''
             || $expiresAt <= $observedAt || $listingCount < 0 || $sampleSize < 1
             || $outliersRejected < 0 || $outliersRejected > $sampleSize
             || $confidenceBasisPoints < 0 || $confidenceBasisPoints > 10_000
             || $liquidityBasisPoints < 0 || $liquidityBasisPoints > 10_000
+            || $ttlSeconds < 1 || $ttlSeconds !== $expiresAt->getTimestamp() - $observedAt->getTimestamp()
             || ! $median->currency->equals($p25->currency)
             || ! $median->currency->equals($p75->currency)
             || ! $median->currency->equals($p90->currency)
@@ -57,6 +59,7 @@ final readonly class MarketObservation implements JsonSerializable
             'observed_at' => $this->observedAt->format(DATE_ATOM),
             'expires_at' => $this->expiresAt->format(DATE_ATOM),
             'median' => $this->median,
+            'trimmed_median' => $this->median,
             'p25' => $this->p25,
             'p75' => $this->p75,
             'p90' => $this->p90,
@@ -65,6 +68,7 @@ final readonly class MarketObservation implements JsonSerializable
             'outliers_rejected' => $this->outliersRejected,
             'confidence_basis_points' => $this->confidenceBasisPoints,
             'liquidity_basis_points' => $this->liquidityBasisPoints,
+            'ttl_seconds' => $this->ttlSeconds,
         ];
     }
 }

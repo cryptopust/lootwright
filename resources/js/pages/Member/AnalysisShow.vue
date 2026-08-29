@@ -40,7 +40,7 @@ const props = defineProps<{
                 decision_trace?: Record<string, unknown>;
                 findings?: unknown[];
             }>;
-            manual_trade_recipes?: Array<Record<string, unknown>>;
+            manual_trade_recipes?: Array<Record<string, any>>;
             analysis_result?: { unsupported_data?: string[] };
             upgrade_graph?: { ordering_reasons?: Record<string, string> };
             constraints?: { locked_items?: string[] };
@@ -106,6 +106,16 @@ return constraints.map((entry) => String(entry)).join('\n');
 
     return 'No printable recipe available.';
 };
+async function copyTradeMode(recipe: Record<string, unknown>, mode: string): Promise<void> {
+    const text = `${mode}\n\n${recipeText(recipe)}\n\nLootwright validates filters locally; no Trade URL or listing request was generated.`;
+
+    try {
+        await navigator.clipboard.writeText(text);
+        feedback.value = `${mode} copied.`;
+    } catch {
+        feedback.value = 'Clipboard access was denied.';
+    }
+}
 function toggleLock(item: { id?: string; slots?: string[] }): void {
     const id = itemKey(item);
     locked.value = locked.value.includes(id) ? locked.value.filter((entry) => entry !== id) : [...locked.value, id];
@@ -206,6 +216,9 @@ function deleteAnalysis(id: string): void {
                 <article v-for="(recipe, index) in output?.manual_trade_recipes ?? []" :key="`${String(recipe.slot ?? 'slot')}-${index}`" class="recipe-card">
                     <header><strong>{{ label(String(recipe.slot ?? 'item')) }}</strong><span>{{ recipe.league ?? 'Standard' }}</span></header>
                     <p>{{ recipe.explanation ?? recipe.broad_recipe ?? 'Use the deterministic filter recipe below.' }}</p>
+                    <nav class="segmented-control" aria-label="Trade search modes">
+                        <button v-for="mode in ['Broad Search', 'Strict Search', 'Budget Search', 'Alternative Search']" :key="mode" type="button" @click="copyTradeMode(recipe, mode)">{{ mode }}</button>
+                    </nav>
                     <details><summary>Show recipe</summary><pre>{{ recipeText(recipe) }}</pre></details>
                 </article>
             </section>

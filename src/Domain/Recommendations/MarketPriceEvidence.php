@@ -25,6 +25,10 @@ final readonly class MarketPriceEvidence implements JsonSerializable
         public int $listingCount = 0,
         public int $confidenceBasisPoints = 0,
         public int $liquidityBasisPoints = 0,
+        public ?Budget $p25 = null,
+        public ?Budget $p75 = null,
+        public ?Budget $p90 = null,
+        public int $outliersRejected = 0,
     ) {
         if (preg_match('/^[A-Z][A-Z0-9-]{2,63}$/D', $sourceKey) !== 1
             || trim($sourceVersion) === ''
@@ -35,6 +39,7 @@ final readonly class MarketPriceEvidence implements JsonSerializable
             || $sampleSize < 0 || $listingCount < 0
             || $confidenceBasisPoints < 0 || $confidenceBasisPoints > 10_000
             || $liquidityBasisPoints < 0 || $liquidityBasisPoints > 10_000
+            || $outliersRejected < 0
         ) {
             throw new InvalidArgumentException('Market price evidence requires approved-style provenance, timestamps, and checksum.');
         }
@@ -58,6 +63,10 @@ final readonly class MarketPriceEvidence implements JsonSerializable
             'listing_count' => $this->listingCount,
             'confidence_basis_points' => $this->confidenceBasisPoints,
             'liquidity_basis_points' => $this->liquidityBasisPoints,
+            'p25' => $this->p25,
+            'p75' => $this->p75,
+            'p90' => $this->p90,
+            'outliers_rejected' => $this->outliersRejected,
         ];
     }
 }

@@ -35,6 +35,7 @@ final readonly class UpgradeCandidate implements JsonSerializable
         public ?MarketPriceEvidence $priceEvidence = null,
         public array $tradeRequirements = [],
         public ?string $targetSlot = null,
+        public ?UpgradeMarketValue $marketValue = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9._:-]{1,127}$/D', $id) !== 1 || trim($title) === '') {
             throw new InvalidArgumentException('An upgrade candidate requires a canonical ID and title.');
@@ -80,17 +81,21 @@ final readonly class UpgradeCandidate implements JsonSerializable
             $this->priceEvidence,
             $this->tradeRequirements,
             $this->targetSlot,
+            $this->marketValue,
         );
     }
 
-    public function withPriceEvidence(?MarketPriceEvidence $evidence, ?int $score = null): self
+    public function withPriceEvidence(?MarketPriceEvidence $evidence, UpgradeMarketValue|int|null $marketValue = null): self
     {
+        $score = is_int($marketValue) ? $marketValue : $this->score;
+        $value = $marketValue instanceof UpgradeMarketValue ? $marketValue : $this->marketValue;
+
         return new self(
             $this->id, $this->gameEdition, $this->ruleset, $this->classification,
             $this->title, $this->prerequisites, $this->conflicts, $this->dependentSlots,
             $this->affectedFindings, $this->expectedEffects, $this->budgetUncertainty,
-            $this->marketDataRequirement, $score ?? $this->score, $this->impossible,
-            $this->impossibleReason, $evidence, $this->tradeRequirements, $this->targetSlot,
+            $this->marketDataRequirement, $score, $this->impossible,
+            $this->impossibleReason, $evidence, $this->tradeRequirements, $this->targetSlot, $value,
         );
     }
 
@@ -116,6 +121,7 @@ final readonly class UpgradeCandidate implements JsonSerializable
             'price_evidence' => $this->priceEvidence,
             'trade_requirements' => $this->tradeRequirements,
             'target_slot' => $this->targetSlot,
+            'market_value' => $this->marketValue,
         ];
     }
 }
