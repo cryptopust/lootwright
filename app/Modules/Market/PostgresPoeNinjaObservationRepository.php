@@ -45,7 +45,7 @@ final class PostgresPoeNinjaObservationRepository implements MarketObservationRe
             $metadata = is_string($row->confidence_metadata) ? json_decode($row->confidence_metadata, true) : (array) $row->confidence_metadata;
 
             return [
-                'price' => rtrim(rtrim(number_format((float) $row->normalized_value, 4, '.', ''), '0'), '.'),
+                'price' => self::decimal((string) $row->normalized_value),
                 'currency' => self::currency((string) $row->primary_currency),
                 'source' => (string) $row->source_key,
                 'source_version' => (string) $row->source_version,
@@ -63,5 +63,16 @@ final class PostgresPoeNinjaObservationRepository implements MarketObservationRe
             'divine orb' => 'DIVINE',
             default => 'UNKNOWN',
         };
+    }
+
+    private static function decimal(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^(?:0|[1-9]\d{0,14})(?:\.\d{1,4})?$/D', $value) !== 1) {
+            return '0';
+        }
+        [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+
+        return ltrim($whole, '0') === '' ? '0'.($fraction === '' ? '' : '.'.$fraction) : $whole.($fraction === '' ? '' : '.'.$fraction);
     }
 }

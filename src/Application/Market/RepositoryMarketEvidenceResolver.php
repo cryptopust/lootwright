@@ -23,16 +23,25 @@ final readonly class RepositoryMarketEvidenceResolver implements MarketEvidenceR
         }
 
         $externalIds = array_values(array_filter(array_map(
-            static fn (array $requirement): ?string => is_string($requirement['modifier_id'] ?? null) ? $requirement['modifier_id'] : null,
+            static fn (array $requirement): ?string => is_string($requirement['market_external_id'] ?? null) ? $requirement['market_external_id'] : null,
             $candidate->tradeRequirements,
         ), static fn (?string $id): bool => $id !== null));
-        if ($externalIds === []) {
+        $league = null;
+        $category = null;
+        foreach ($candidate->tradeRequirements as $requirement) {
+            if (is_string($requirement['market_league'] ?? null)) {
+                $league = $requirement['market_league'];
+            }
+            if (is_string($requirement['market_category'] ?? null)) {
+                $category = $requirement['market_category'];
+            }
+        }
+        if ($externalIds === [] || $league === null || $category === null) {
             return null;
         }
 
-        $league = 'standard';
         $request = new TradeSearchRequest($candidate->gameEdition, $league, [
-            'economy_category' => 'stash',
+            'economy_category' => $category,
             'external_ids' => $externalIds,
         ]);
         $estimate = $this->provider->estimate($request, $candidate->id, new DateTimeImmutable('now'));
