@@ -90,34 +90,45 @@ defineProps<{
                 <h3>Henüz analiz yok</h3>
                 <p>Sihirbazla ilk PoE1 planını oluştur.</p>
             </div>
-            <table v-else class="data-table">
-                <thead>
-                    <tr>
-                        <th>Kimlik</th>
-                        <th>Oyun</th>
-                        <th>Durum</th>
-                        <th>Tarih</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="item in recent" :key="item.id">
-                        <td>
-                            <a :href="`/analyses/${item.id}`">{{ item.id }}</a>
-                        </td>
-                        <td>{{ item.game_edition }}</td>
-                        <td>
-                            <span class="status-chip">{{ item.state }}</span>
-                        </td>
-                        <td>
-                            {{
-                                new Date(item.created_at).toLocaleDateString(
-                                    'tr-TR',
-                                )
-                            }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div
+                v-else
+                class="table-scroll"
+                tabindex="0"
+                aria-label="Son analizler tablosu"
+            >
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Kimlik</th>
+                            <th>Oyun</th>
+                            <th>Durum</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in recent" :key="item.id">
+                            <td>
+                                <a :href="`/analyses/${item.id}`">{{
+                                    item.id
+                                }}</a>
+                            </td>
+                            <td>{{ item.game_edition }}</td>
+                            <td>
+                                <span class="status-chip">{{
+                                    item.state
+                                }}</span>
+                            </td>
+                            <td>
+                                {{
+                                    new Date(
+                                        item.created_at,
+                                    ).toLocaleDateString('tr-TR')
+                                }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section></AppShell
     >
 </template>

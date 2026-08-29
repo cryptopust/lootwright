@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 
 export type AppLocale = 'tr' | 'en';
@@ -25,9 +26,15 @@ export function useLocale() {
         }
 
         initialized = true;
+        const page = usePage();
+        const userLocale = (
+            page?.props as { auth?: { user?: { locale?: string } } } | undefined
+        )?.auth?.user?.locale;
         const stored = window.localStorage.getItem('lootwright.locale');
 
-        if (stored === 'tr' || stored === 'en') {
+        if (userLocale === 'tr' || userLocale === 'en') {
+            applyLocale(userLocale);
+        } else if (stored === 'tr' || stored === 'en') {
             applyLocale(stored);
         } else {
             applyLocale('tr');

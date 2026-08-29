@@ -6,8 +6,27 @@ import StatusBanner from '@/components/app/StatusBanner.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { tx } = useLocale();
-const props = defineProps<{ usage?: { calls_today: number; cost_today_micro_usd: number; calls_month: number; cost_month_micro_usd: number; input_tokens_month: number; output_tokens_month: number; failures_month: number } }>();
-const usage = () => props.usage ?? { calls_today: 0, cost_today_micro_usd: 0, calls_month: 0, cost_month_micro_usd: 0, input_tokens_month: 0, output_tokens_month: 0, failures_month: 0 };
+const props = defineProps<{
+    usage?: {
+        calls_today: number;
+        cost_today_micro_usd: number;
+        calls_month: number;
+        cost_month_micro_usd: number;
+        input_tokens_month: number;
+        output_tokens_month: number;
+        failures_month: number;
+    };
+}>();
+const usage = () =>
+    props.usage ?? {
+        calls_today: 0,
+        cost_today_micro_usd: 0,
+        calls_month: 0,
+        cost_month_micro_usd: 0,
+        input_tokens_month: 0,
+        output_tokens_month: 0,
+        failures_month: 0,
+    };
 </script>
 
 <template>
@@ -63,7 +82,10 @@ const usage = () => props.usage ?? { calls_today: 0, cost_today_micro_usd: 0, ca
                 <span>{{
                     tx({ tr: 'Bugünkü maliyet', en: 'Cost today' })
                 }}</span
-                ><strong>${{ (usage().cost_today_micro_usd / 1_000_000).toFixed(6) }}</strong
+                ><strong
+                    >${{
+                        (usage().cost_today_micro_usd / 1_000_000).toFixed(6)
+                    }}</strong
                 ><small>{{ tx({ tr: 'gerçekleşen', en: 'actual' }) }}</small>
             </div>
             <div>

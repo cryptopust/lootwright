@@ -3011,6 +3011,36 @@ tbody tr:last-child td {
     padding: 0.2rem 0.55rem;
     font: 0.65rem var(--font-mono);
 }
+.saved-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+.saved-grid h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+}
+.saved-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.saved-list a {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    text-decoration: none;
+}
+.saved-list span {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
 .filter-bar {
     display: flex;
     align-items: end;
@@ -3430,10 +3460,66 @@ tbody tr:last-child td {
         grid-template-columns: 1fr 1fr;
     }
     .data-section {
-        overflow-x: auto;
+        overflow: visible;
     }
     .data-table {
         min-width: 42rem;
+    }
+    .table-scroll {
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    .section-nav {
+        margin-inline: -0.25rem;
+        padding-inline: 0.25rem;
+        scrollbar-width: thin;
+    }
+    .section-nav a {
+        min-height: 2.75rem;
+        display: inline-flex;
+        align-items: center;
+        padding-inline: 0.8rem;
+    }
+    .filter-bar {
+        align-items: stretch;
+    }
+    .filter-bar label,
+    .filter-bar input,
+    .filter-bar select,
+    .filter-bar .button,
+    .filter-bar > button {
+        width: 100%;
+    }
+    .saved-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .metric-strip {
+        margin-block: 1.5rem 2rem;
+    }
+    .metric-strip > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+    }
+    .metric-strip dd {
+        margin-top: 0;
+        font-size: 1.35rem;
+    }
+    .data-section,
+    .settings-section {
+        padding: 1rem;
+    }
+    .page-heading.is-split {
+        gap: 1rem;
+    }
+    .page-heading.is-split .button {
+        width: 100%;
     }
 }
 

@@ -34,11 +34,13 @@ class CreateNewUser implements CreatesNewUsers
                 Rule::unique(User::class),
             ],
             'password' => $this->passwordRules(),
+            'locale' => ['sometimes', 'string', 'in:en,tr'],
         ])->validate();
 
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
+            'locale' => $input['locale'] ?? 'en',
             'password' => Hash::make($input['password']),
             'role' => UserRole::Member,
             'status' => UserStatus::Active,

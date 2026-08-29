@@ -25,35 +25,45 @@ defineProps<{
                 Şifre, token, raw PoB, item metni, prompt, cookie ve IP içermez.
             </p>
         </header>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Tarih</th>
-                    <th>Aktör</th>
-                    <th>İşlem</th>
-                    <th>Sebep</th>
-                    <th>Metadata</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="entry in entries.data" :key="entry.id">
-                    <td>
-                        {{ new Date(entry.created_at).toLocaleString('tr-TR') }}
-                    </td>
-                    <td>{{ entry.actor_email }}</td>
-                    <td>
-                        <code>{{ entry.action }}</code>
-                    </td>
-                    <td>{{ entry.reason }}</td>
-                    <td>
-                        <code>{{
-                            typeof entry.metadata === 'string'
-                                ? entry.metadata
-                                : JSON.stringify(entry.metadata)
-                        }}</code>
-                    </td>
-                </tr>
-            </tbody>
-        </table></AppShell
+        <div
+            class="table-scroll"
+            tabindex="0"
+            aria-label="Audit kayıtları tablosu"
+        >
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Aktör</th>
+                        <th>İşlem</th>
+                        <th>Sebep</th>
+                        <th>Metadata</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="entry in entries.data" :key="entry.id">
+                        <td>
+                            {{
+                                new Date(entry.created_at).toLocaleString(
+                                    'tr-TR',
+                                )
+                            }}
+                        </td>
+                        <td>{{ entry.actor_email }}</td>
+                        <td>
+                            <code>{{ entry.action }}</code>
+                        </td>
+                        <td>{{ entry.reason }}</td>
+                        <td>
+                            <code>{{
+                                typeof entry.metadata === 'string'
+                                    ? entry.metadata
+                                    : JSON.stringify(entry.metadata)
+                            }}</code>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div></AppShell
     >
 </template>

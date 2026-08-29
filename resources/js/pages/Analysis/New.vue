@@ -572,9 +572,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
                         />
                         <span
                             ><strong>Path of Exile 1</strong
-                            ><small
-                                >Aktif production MVP kapsamı.</small
-                            ></span
+                            ><small>Aktif production MVP kapsamı.</small></span
                         >
                     </label>
                 </div>

@@ -28,6 +28,7 @@ use App\Http\Controllers\ReanalyzeController;
 use App\Http\Controllers\RetrieveAnalysisController;
 use App\Http\Controllers\SubmitAnalysisController;
 use App\Http\Controllers\SubmitWizardAnalysisController;
+use App\Http\Controllers\SavedRecordsController;
 use App\Http\Controllers\UsageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -121,6 +122,12 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/profile', [ProfileController::class, 'profile'])->name('profile');
         Route::get('/profile/security', [ProfileController::class, 'security'])->name('profile.security');
         Route::get('/profile/privacy', [ProfileController::class, 'privacy'])->name('profile.privacy');
+        Route::get('/saved', [SavedRecordsController::class, 'page'])->name('saved.page');
+        Route::get('/api/saved', [SavedRecordsController::class, 'index'])->middleware('throttle:analysis-read')->name('saved.index');
+        Route::post('/api/saved/builds/{buildId}', [SavedRecordsController::class, 'saveBuild'])->whereUuid('buildId')->middleware('throttle:analysis-submit')->name('saved.builds.store');
+        Route::delete('/api/saved/builds/{buildId}', [SavedRecordsController::class, 'unsaveBuild'])->whereUuid('buildId')->middleware('throttle:deletion')->name('saved.builds.delete');
+        Route::post('/api/saved/analyses/{analysisId}', [SavedRecordsController::class, 'saveAnalysis'])->whereUuid('analysisId')->middleware('throttle:analysis-submit')->name('saved.analyses.store');
+        Route::delete('/api/saved/analyses/{analysisId}', [SavedRecordsController::class, 'unsaveAnalysis'])->whereUuid('analysisId')->middleware('throttle:deletion')->name('saved.analyses.delete');
     });
 });
 

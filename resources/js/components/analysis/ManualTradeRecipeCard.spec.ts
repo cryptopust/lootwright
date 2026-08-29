@@ -114,7 +114,9 @@ describe('ManualTradeRecipeCard', () => {
 
         expect(writeText).toHaveBeenCalledWith('BROAD MANUAL FILTER');
         expect(wrapper.text()).toContain('unknown.modifier');
-        expect(wrapper.text()).toContain('ring: Review resistance before replacing.');
+        expect(wrapper.text()).toContain(
+            'ring: Review resistance before replacing.',
+        );
         expect(wrapper.html()).not.toContain('/api/trade/');
     });
 

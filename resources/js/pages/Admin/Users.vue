@@ -51,40 +51,46 @@ const filters = reactive({
                 </select></label
             ><button class="button is-secondary">Filtrele</button>
         </form>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Üye</th>
-                    <th>Rol</th>
-                    <th>Durum</th>
-                    <th>Doğrulama</th>
-                    <th>Analiz</th>
-                    <th>Kayıt</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="user in users.data" :key="user.id">
-                    <td>
-                        <a :href="`/admin/users/${user.id}`"
-                            ><strong>{{ user.name }}</strong
-                            ><br /><small>{{ user.email }}</small></a
-                        >
-                    </td>
-                    <td>{{ user.role }}</td>
-                    <td>{{ user.status }}</td>
-                    <td>
-                        {{ user.email_verified_at ? 'Doğrulandı' : 'Bekliyor' }}
-                    </td>
-                    <td>{{ user.analyses_count }}</td>
-                    <td>
-                        {{
-                            new Date(user.created_at).toLocaleDateString(
-                                'tr-TR',
-                            )
-                        }}
-                    </td>
-                </tr>
-            </tbody>
-        </table></AppShell
+        <div class="table-scroll" tabindex="0" aria-label="Üye tablosu">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Üye</th>
+                        <th>Rol</th>
+                        <th>Durum</th>
+                        <th>Doğrulama</th>
+                        <th>Analiz</th>
+                        <th>Kayıt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="user in users.data" :key="user.id">
+                        <td>
+                            <a :href="`/admin/users/${user.id}`"
+                                ><strong>{{ user.name }}</strong
+                                ><br /><small>{{ user.email }}</small></a
+                            >
+                        </td>
+                        <td>{{ user.role }}</td>
+                        <td>{{ user.status }}</td>
+                        <td>
+                            {{
+                                user.email_verified_at
+                                    ? 'Doğrulandı'
+                                    : 'Bekliyor'
+                            }}
+                        </td>
+                        <td>{{ user.analyses_count }}</td>
+                        <td>
+                            {{
+                                new Date(user.created_at).toLocaleDateString(
+                                    'tr-TR',
+                                )
+                            }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div></AppShell
     >
 </template>

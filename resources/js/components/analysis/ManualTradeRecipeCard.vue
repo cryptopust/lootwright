@@ -23,9 +23,7 @@ const props = withDefaults(
 const variant = ref<'strict' | 'broad'>('strict');
 const copyStatus = ref<'idle' | 'copied' | 'failed'>('idle');
 const { tx } = useLocale();
-const isProductionRecipe = computed(
-    () => 'strict_recipe' in props.recipe,
-);
+const isProductionRecipe = computed(() => 'strict_recipe' in props.recipe);
 const filters = computed<DemoRecipeVariant>(() => {
     if (!isProductionRecipe.value) {
         return (props.recipe as DemoRecipe)[variant.value];
@@ -54,7 +52,8 @@ const edition = computed(() =>
 );
 const itemContext = computed(() =>
     isProductionRecipe.value
-        ? ((props.recipe as TradeRecipeView).item_class ?? 'Item class bilinmiyor')
+        ? ((props.recipe as TradeRecipeView).item_class ??
+          'Item class bilinmiyor')
         : `${(props.recipe as DemoRecipe).category} · ${(props.recipe as DemoRecipe).baseFamily}`,
 );
 const budgetContext = computed(() =>
@@ -96,7 +95,10 @@ const renderedText = computed(() => {
             : recipe.broad_recipe;
     }
 
-    const lines = ['Lootwright manual Trade recipe', `Slot: ${props.recipe.slot}`];
+    const lines = [
+        'Lootwright manual Trade recipe',
+        `Slot: ${props.recipe.slot}`,
+    ];
 
     for (const [heading, values] of Object.entries({
         Required: filters.value.required,
@@ -307,10 +309,7 @@ async function copyRecipe(): Promise<void> {
                     }}
                 </h3>
                 <ul>
-                    <li
-                        v-for="dependency in dependencies"
-                        :key="dependency"
-                    >
+                    <li v-for="dependency in dependencies" :key="dependency">
                         {{ dependency }}
                     </li>
                 </ul>
@@ -328,15 +327,25 @@ async function copyRecipe(): Promise<void> {
             </dl>
         </div>
 
-        <section v-if="unsupportedFilters.length > 0" class="manual-action-boundary">
+        <section
+            v-if="unsupportedFilters.length > 0"
+            class="manual-action-boundary"
+        >
             <div>
-                <strong>{{ tx({ tr: 'Desteklenmeyen filtreler', en: 'Unsupported filters' }) }}</strong>
+                <strong>{{
+                    tx({
+                        tr: 'Desteklenmeyen filtreler',
+                        en: 'Unsupported filters',
+                    })
+                }}</strong>
                 <ul>
                     <li
                         v-for="filter in unsupportedFilters"
                         :key="filter.modifier_id ?? filter.candidate"
                     >
-                        <code>{{ filter.modifier_id ?? filter.candidate }}</code>
+                        <code>{{
+                            filter.modifier_id ?? filter.candidate
+                        }}</code>
                         — {{ filter.reason }}
                     </li>
                 </ul>

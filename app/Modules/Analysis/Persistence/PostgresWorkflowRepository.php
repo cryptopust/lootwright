@@ -87,6 +87,7 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
             'id' => $analysisId,
             'artifact_id' => $artifactId,
             'owner_id_hash' => $ownerHash,
+            'user_id' => $this->userId($ownerId),
             'game_edition' => $edition->value,
             'version' => 1,
             'state' => AnalysisState::Queued->value,
@@ -112,6 +113,17 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
         event(new BuildArtifactSubmitted($artifactId, $analysisId, $edition->value));
 
         return new SubmissionReceipt($artifactId, $analysisId, AnalysisState::Queued, false);
+    }
+
+    private function userId(string $ownerId): ?int
+    {
+        if (! ctype_digit($ownerId)) {
+            return null;
+        }
+
+        $userId = (int) $ownerId;
+
+        return DB::table('users')->where('id', $userId)->exists() ? $userId : null;
     }
 
     public function claimArtifact(string $artifactId): ?ArtifactRecord
@@ -465,6 +477,7 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
                 'artifact_id' => $parent->artifactId,
                 'build_id' => $parent->artifactId,
                 'owner_id_hash' => $this->string($artifact, 'owner_id_hash'),
+                'user_id' => DB::table('analyses')->where('id', $parent->id)->value('user_id'),
                 'parent_analysis_id' => $parent->id,
                 'game_edition' => $parent->edition->value,
                 'version' => $version,

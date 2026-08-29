@@ -4,7 +4,11 @@ import AppShell from '@/components/app/AppShell.vue';
 import MemberNav from '@/components/member/MemberNav.vue';
 import type { User } from '@/types';
 const user = usePage<{ auth: { user: User } }>().props.auth.user;
-const form = useForm({ name: user.name, email: user.email, locale: String(user.locale ?? 'en') });
+const form = useForm({
+    name: user.name,
+    email: user.email,
+    locale: String(user.locale ?? 'en'),
+});
 </script>
 <template>
     <Head title="Profil" /><AppShell
@@ -24,7 +28,13 @@ const form = useForm({ name: user.name, email: user.email, locale: String(user.l
                 ><span>E-posta</span
                 ><input v-model="form.email" type="email" autocomplete="email"
             /></label>
-            <label class="field"><span>Language</span><select v-model="form.locale"><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+            <label class="field"
+                ><span>Language</span
+                ><select v-model="form.locale">
+                    <option value="en">English</option>
+                    <option value="tr">Türkçe</option>
+                </select></label
+            >
             <div
                 v-if="Object.keys(form.errors).length"
                 class="form-error"

@@ -10,7 +10,11 @@ defineProps<{ current: string }>();
         ><a
             href="/analyses"
             :aria-current="current === 'analyses' ? 'page' : undefined"
-            >Analizler</a
+            >Analiz geçmişi</a
+        ><a
+            href="/saved"
+            :aria-current="current === 'saved' ? 'page' : undefined"
+            >Saved</a
         ><a
             href="/profile"
             :aria-current="current === 'profile' ? 'page' : undefined"
@@ -23,6 +27,10 @@ defineProps<{ current: string }>();
             href="/profile/privacy"
             :aria-current="current === 'privacy' ? 'page' : undefined"
             >Gizlilik</a
+        ><a
+            href="/usage"
+            :aria-current="current === 'usage' ? 'page' : undefined"
+            >AI kullanımı</a
         >
     </nav>
 </template>

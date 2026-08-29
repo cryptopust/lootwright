@@ -61,28 +61,38 @@ function paginationLabel(label: string): string {
             ><label>Bitiş<input v-model="filters.to" type="date" /></label
             ><button class="button is-secondary">Filtrele</button>
         </form>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Kimlik</th>
-                    <th>Oyun</th>
-                    <th>Durum</th>
-                    <th>Oluşturma</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in analyses.data" :key="item.id">
-                    <td>
-                        <a :href="`/analyses/${item.id}`">{{ item.id }}</a>
-                    </td>
-                    <td>{{ item.game_edition }}</td>
-                    <td>{{ item.state }}</td>
-                    <td>
-                        {{ new Date(item.created_at).toLocaleString('tr-TR') }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div
+            class="table-scroll"
+            tabindex="0"
+            aria-label="Analiz geçmişi tablosu"
+        >
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kimlik</th>
+                        <th>Oyun</th>
+                        <th>Durum</th>
+                        <th>Oluşturma</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in analyses.data" :key="item.id">
+                        <td>
+                            <a :href="`/analyses/${item.id}`">{{ item.id }}</a>
+                        </td>
+                        <td>{{ item.game_edition }}</td>
+                        <td>{{ item.state }}</td>
+                        <td>
+                            {{
+                                new Date(item.created_at).toLocaleString(
+                                    'tr-TR',
+                                )
+                            }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <nav class="pagination" aria-label="Sayfalama">
             <a
                 v-for="link in analyses.links"

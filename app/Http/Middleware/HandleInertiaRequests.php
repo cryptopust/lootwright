@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $authenticatedUser->getAuthIdentifier(),
                     'name' => $authenticatedUser->name,
                     'email' => $authenticatedUser->email,
+                    'locale' => $authenticatedUser->locale,
                     'role' => $role->value,
                     'status' => $status->value,
                     'email_verified_at' => $authenticatedUser->email_verified_at?->toIso8601String(),
