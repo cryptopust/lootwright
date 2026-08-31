@@ -32,7 +32,8 @@ not encode unit prices.
 2. Create an application from `cryptopust/lootwright`.
 3. Select the current reviewed branch. Do not enable a deploy hook or automatic
    production release as part of this documentation task.
-4. Create one environment named `staging` or `pre-alpha`.
+4. Create one environment named `staging` or `production` according to the
+   approved release plan.
 5. Select Europe (Frankfurt) when it is offered to the account.
 
 Use the generated Cloud domain. Laravel Cloud assigns a `laravel.cloud` domain
@@ -47,8 +48,8 @@ Set the application runtime to:
 - PHP 8.4
 - Node.js 24
 
-- Select the smallest Starter application compute suitable for a Laravel 13
-  pre-alpha shell (the smallest viable Flex application compute), and enable
+- Select the smallest application compute suitable for the measured Laravel 13
+  workload and enable
   Scale to Zero.
 - Attach Serverless PostgreSQL and enable its Scale to Zero setting. Keep the
   Cloud-injected connection values as the authority; do not paste the local
@@ -115,7 +116,7 @@ DB_PASSWORD
 Laravel Cloud injects those values. Never copy local credentials from
 `.env.example`, and never commit real Cloud credentials.
 
-### Required pre-alpha lockdown settings
+### Required initial lockdown settings
 
 The application currently has an encrypted local artifact handoff that is not
 durable on Cloud. Until private object storage and asynchronous workers are
@@ -206,7 +207,7 @@ deployment blocker for imports and asynchronous analysis on Cloud. Keep
 configured and tested across web and worker processes.
 
 With that capability disabled, `FILESYSTEM_DISK=local` is temporarily acceptable
-for pre-alpha framework caches, compiled views, logs routed to stderr, and local
+for framework caches, compiled views, logs routed to stderr, and local
 evaluation output. The application has no public upload workflow, and local
 files must never be treated as permanent storage. The local disk's HTTP
 serve/upload routes are disabled.
@@ -220,7 +221,7 @@ serve/upload routes are disabled.
 4. Record the generated domain. Set `APP_URL` only if generated links are wrong;
    set an anchored `TRUSTED_HOSTS` value when the exact host is known, then
    redeploy if either value changes.
-5. Open `GET /` and confirm the pre-alpha landing page and exact GGG
+5. Open `GET /` and confirm the landing page and exact GGG
    non-affiliation notice render.
 6. Confirm `GET /up` returns plain-text `OK` without a database, Valkey, OpenAI,
    GGG, or other external call. Use `/up` as the initial Cloud health probe.

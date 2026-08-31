@@ -122,7 +122,7 @@ sequenceDiagram
   recovers pending rows. Publisher and job retries are bounded independently.
 - The selected cache/queue backend contains disposable jobs, rate-limit counters,
   and cache entries, never the sole copy of a result. Local/self-hosted operation
-  may use Redis/Horizon; Laravel Cloud may use Valkey and Cloud queue facilities.
+  uses Laravel Cloud managed cache/queue facilities when configured.
 - Logs contain opaque request IDs, not share codes, item text, credentials, or AI prompts.
 - User deletion removes artifacts, analyses, and prior retained imports through
   typed module ports. Only unlinkable aggregate deletion counts remain for

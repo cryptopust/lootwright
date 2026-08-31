@@ -1,24 +1,21 @@
 # MVP Readiness Review
 
-## Verdict: FAIL
+## Verdict: BLOCKED (live evidence)
 
 Reviewed on 2026-08-16 against Git `0ccc8ec` plus the release-review changes in
 the working tree. This is not a production-ready release.
 
-Hosting addendum: [ADR 0014](../adr/0014-laravel-cloud-staging.md) now selects
-Laravel Cloud for initial pre-alpha staging. Self-hosted Redis/Horizon packaging
-evidence below is historical and does not make Valkey or Horizon mandatory on
-Cloud. The original 2026-08-16 verdict is historical. ADR 0018 and the
-2026-08-20 verification now close only the governed deterministic-finding
-engine gate; production recommendation and Manual Trade recipe accuracy gates
-remain open.
+Laravel Cloud is the production platform. Docker/Compose and Horizon material
+in this document is historical compatibility guidance only; Cloud-managed
+resources are authoritative. This document records repository evidence, not a
+live deployment claim.
 
 The implementation, security baseline, parsers, policy controls, persistence
 orchestration, AI containment, and production package are internally well
 tested. The shipping container now binds the real PoE1 finding engine and fails
 closed unless an exact governed ruleset is active. Real findings are production
-capable; prioritized upgrades and Manual Trade Recipes remain gated and this
-document's overall MVP verdict therefore remains FAIL.
+capable; prioritized upgrades and Manual Trade Recipes remain explicitly
+scope-limited. Live Cloud/provider/real-player evidence remains the blocker.
 
 ## Verified evidence
 

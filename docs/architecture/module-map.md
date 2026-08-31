@@ -66,9 +66,9 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 - A module owns its tables and Eloquent models. Other modules use its application port, not direct queries.
 - Synchronous calls are preferred inside the process. Queue only bounded, idempotent work that benefits from retry or latency isolation.
 - Laravel cache and queue abstractions are the infrastructure boundary. Local
-  Docker and self-hosted deployments may use Redis/Horizon; Laravel Cloud may
-  use Valkey and managed queue/background facilities only when an enabled
-  feature requires them. See [ADR 0014](../adr/0014-laravel-cloud-staging.md).
+  Laravel Cloud is production and uses managed cache/queue/background facilities
+  only when an enabled feature requires them. Docker/Redis/Horizon files are
+  local compatibility tooling.
 - Laravel events may notify in-process secondary behavior, but event logs are not the source of truth and event sourcing is prohibited.
 - Database transactions end at a use-case boundary. Cross-module transactions must be explicit and tested.
 - The narrow workflow outbox is limited to parse/analysis dispatch. It is a

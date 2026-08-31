@@ -20,8 +20,9 @@ independent source, ruleset, parser, engine, policy path, and release gates;
 public availability remains independently controlled until those gates are
 evidenced.
 
-Any public route or UI that accepts PoE2 before that approval is a release-scope
-defect, not proof that PoE2 analysis is implemented.
+Any public route or UI that accepts PoE2 is subject to its independent ruleset,
+data-quality, security, and acceptance gates; architecture support alone does
+not activate the edition.
 
 ## Shared contracts
 

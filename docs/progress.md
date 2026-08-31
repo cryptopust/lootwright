@@ -1,4 +1,12 @@
-# Delivery Progress: Prompts 00–15
+# Delivery Progress: historical prompt ledger
+
+Current repository state (2026-08-31): Laravel Cloud is the production
+platform; PoE1 and PoE2 are separate, gate-controlled targets; Cloud deployment,
+performance, acceptance, and red-team hardening are implemented in code and
+documented, while live Cloud/provider evidence remains operator-collected.
+See the current [README](../README.md), [live acceptance](release/live-acceptance.md),
+and [performance budget](operations/performance-budget.md). Entries below are a
+historical implementation ledger and may describe superseded intermediate gates.
 
 This is the controlled implementation sequence. A later prompt may refine earlier documentation but may not bypass its gates. `Pending` means no application implementation has been authorized or completed.
 
