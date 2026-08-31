@@ -170,7 +170,7 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
                 ->where('releaseGate.editions.poe1.edition', 'poe1')
                 ->where('releaseGate.editions.poe2.edition', 'poe2')
                 ->where('releaseGate.editions.poe1.public', true)
-                ->where('releaseGate.editions.poe2.public', true)
+                ->where('releaseGate.editions.poe2.public', false)
                 ->where('releaseGate.editions.poe2.status', 'FAIL'));
     }
 
@@ -182,7 +182,7 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
         self::assertContains($report['editions']['poe2']['status'], ['FAIL', 'PASS', 'PASS_WITH_LIMITATIONS']);
     }
 
-    public function test_public_submission_accepts_poe2_without_running_poe1_mechanics(): void
+    public function test_public_submission_rejects_inactive_poe2_before_workflow_creation(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
 
@@ -192,6 +192,8 @@ final class MvpPlayerJourneyAcceptanceTest extends TestCase
             'artifact_type' => 'pob',
             'artifact' => '<PathOfBuilding/>',
             'storage_consent' => true,
-        ], ['Idempotency-Key' => str_repeat('e', 32)])->assertAccepted();
+        ], ['Idempotency-Key' => str_repeat('e', 32)])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('game');
     }
 }

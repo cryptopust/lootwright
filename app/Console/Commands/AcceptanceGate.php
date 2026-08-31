@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Modules\AI\OpenAi\OpenAiResponsesProvider;
 use App\Modules\Analysis\Infrastructure\ProductionEditionDeterministicAnalysisEngine;
 use App\Modules\ExternalSources\FixedExternalSourceAdapterCatalog;
-use App\Modules\AI\OpenAi\OpenAiResponsesProvider;
 use App\Modules\Release\RuntimeMarker;
 use Illuminate\Console\Command;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
@@ -40,7 +40,7 @@ final class AcceptanceGate extends Command
             StructuredAiProvider::class => OpenAiResponsesProvider::class,
         ];
         foreach ($bindings as $port => $canonical) {
-            if (! $this->app->bound($port) || ! $this->app->make($port) instanceof $canonical) {
+            if (! app()->bound($port) || get_class(app()->make($port)) !== $canonical) {
                 $this->error("{$port} is not bound to the canonical production implementation.");
 
                 return self::FAILURE;

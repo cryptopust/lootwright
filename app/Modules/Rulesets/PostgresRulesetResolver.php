@@ -2,8 +2,8 @@
 
 namespace App\Modules\Rulesets;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\DB;
 use Lootwright\Domain\Rulesets\Ports\ActiveRulesetResolver;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\Domain\Rulesets\RulesetCompatibilityChecker;

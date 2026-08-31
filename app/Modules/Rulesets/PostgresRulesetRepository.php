@@ -2,8 +2,8 @@
 
 namespace App\Modules\Rulesets;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\DB;
 use Lootwright\Domain\PolicyProvenance\CommercialUseStatus;
 use Lootwright\Domain\PolicyProvenance\DataProvenance;
 use Lootwright\Domain\PolicyProvenance\PermissionStatus;

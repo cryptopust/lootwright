@@ -2,8 +2,8 @@
 
 namespace App\Modules\Rulesets;
 
-use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
 use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;

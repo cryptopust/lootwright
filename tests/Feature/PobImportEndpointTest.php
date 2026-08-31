@@ -25,7 +25,7 @@ class PobImportEndpointTest extends TestCase
             'input' => $this->fixture('poe1-minimal.xml'),
             'persist' => false,
             'expected_game' => 'poe2',
-        ])->assertConflict();
+        ])->assertUnprocessable()->assertJsonValidationErrors('expected_game');
     }
 
     protected function setUp(): void
@@ -208,13 +208,11 @@ class PobImportEndpointTest extends TestCase
     {
         $this->postJson('/api/build-imports/pob', [
             'input' => $this->fixture('poe2-minimal.xml'),
-        ])->assertOk()
-            ->assertJsonPath('status', 'normalized');
+        ])->assertUnprocessable()->assertJsonPath('status', 'rejected');
 
-        $this->assertDatabaseHas('policy_decision_audits', [
+        $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB2-COMMUNITY',
             'operation' => 'pob2.community.format_interpret',
-            'decision' => 'allow',
         ]);
         $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB-COMMUNITY',

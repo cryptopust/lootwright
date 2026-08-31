@@ -18,7 +18,8 @@ final class WizardSubmissionTest extends TestCase
         $headers = ['Idempotency-Key' => str_repeat('p', 32)];
         $payload = [...$this->payload(), 'game' => 'poe2', 'character_class' => 'witch', 'ascendancy' => 'lich', 'alternate_ascendancy' => 'abyssal-lich'];
         $this->actingAs($user)->postJson('/api/analyses/wizard', $payload, $headers)
-            ->assertAccepted();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('game');
     }
 
     public function test_guest_and_unverified_user_cannot_submit_persistent_analysis(): void
@@ -68,7 +69,8 @@ final class WizardSubmissionTest extends TestCase
     {
         $owner = User::factory()->create();
         $this->actingAs($owner)->putJson('/api/analysis-draft', ['game' => 'poe2', 'flow' => 'plan', 'current_step' => 2, 'safe_fields' => ['game' => 'poe2', 'character_class' => 'witch']])
-            ->assertAccepted();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('game');
     }
 
     /** @return array<string, mixed> */
