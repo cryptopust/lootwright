@@ -14,7 +14,12 @@ Schedule::command('pob:prune-imports')->hourly()->onOneServer()->withoutOverlapp
 Schedule::command('analysis:prune-artifacts')->hourly()->onOneServer()->withoutOverlapping();
 Schedule::command('security:prune-retained-data')->dailyAt('03:15')->onOneServer()->withoutOverlapping();
 Schedule::command('workflow:dispatch-outbox')->everyMinute()->onOneServer()->withoutOverlapping();
-Schedule::command('lootwright:sources:sync-poe-ninja')->everyThirtyMinutes()->onOneServer()->withoutOverlapping();
+if ((bool) config('external-sources.poe_ninja.enabled')) {
+    Schedule::command('lootwright:sources:sync-poe-ninja')->everyThirtyMinutes()->onOneServer()->withoutOverlapping();
+}
+if ((bool) config('external-sources.poe_ninja.enabled') || (bool) config('external-sources.poe_wiki_cargo.enabled')) {
+    Schedule::command('lootwright:sources:prune')->weeklyOn(0, '04:10')->onOneServer()->withoutOverlapping();
+}
 
 Artisan::command('lootwright:sources:sync-poe-ninja {--league=}', function (PoeNinjaSyncService $sync): int {
     $league = $this->option('league');

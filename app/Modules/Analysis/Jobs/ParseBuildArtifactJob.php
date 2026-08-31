@@ -27,12 +27,21 @@ final class ParseBuildArtifactJob implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
+    /** Keep a worker from holding a managed-queue lease indefinitely. */
+    public int $timeout = 300;
+
+    public bool $failOnTimeout = true;
+
+    public int $maxExceptions = 3;
+
     public int $uniqueFor = 600;
 
     public function __construct(
         public readonly string $artifactId,
         public readonly ?GameEdition $edition = null,
-    ) {}
+    ) {
+        $this->onQueue('build-parsing');
+    }
 
     /** @return list<int> */
     public function backoff(): array

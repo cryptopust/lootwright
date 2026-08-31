@@ -1,13 +1,16 @@
-# Laravel Cloud Pre-Alpha Staging
+# Laravel Cloud Production Runtime
 
-Status: staging guide only. Following this guide creates external resources and
+Status: production platform baseline. Following this guide creates external resources and
 must be performed manually by an authorized repository owner. This repository
 change does not connect GitHub, create a Cloud application, or deploy anything.
 
-The first hosting target is Laravel Cloud Starter in Europe (Frankfurt), using
+Laravel Cloud is the production platform. Use the smallest compute and managed
+PostgreSQL/cache/queue resources that meet observed demand, with Scale to Zero
+where safe. The first hosting target is Laravel Cloud Starter in Europe (Frankfurt), using
 Laravel Cloud Serverless PostgreSQL and the free generated `*.laravel.cloud`
-environment domain. No custom domain, Reverb, paid Nightwatch requirement,
-Valkey, or queue resource is needed for the initial locked-down foundation.
+environment domain. No custom domain, Reverb, or paid Nightwatch requirement is
+needed for the initial locked-down foundation. Managed cache/queue resources are
+added only when asynchronous capabilities are approved.
 
 Official references:
 
@@ -50,14 +53,13 @@ Set the application runtime to:
 - Attach Serverless PostgreSQL and enable its Scale to Zero setting. Keep the
   Cloud-injected connection values as the authority; do not paste the local
   `.env.example` database password into Cloud.
-- Do not create Valkey initially. Database-backed cache and sessions are
-  adequate for the locked-down foundation.
-- Do not create a managed queue or background worker initially. Imports,
-  rulesets, external links, AI, and queued analysis remain disabled.
+- Attach Cloud's managed cache and managed queue when asynchronous capabilities
+  are enabled. Database-backed cache/queue are acceptable only while those
+  capabilities remain disabled.
 - Do not add Reverb. The application has no WebSocket requirement.
 - Check cold-start behavior after enabling Scale to Zero. When uninterrupted
-  queued work becomes necessary, use a reviewed managed queue rather than
-  relying on an application process that may sleep.
+  queued work becomes necessary, use Cloud's managed queue; do not run Horizon
+  as a Cloud requirement.
 - Enable the scheduler only when retention or outbox commands are intended to
   run in this environment. Laravel Cloud runs `schedule:run` every minute when
   its Scheduler toggle is enabled.
@@ -187,8 +189,9 @@ Do not add any of these to the deploy commands:
 
 The repository's `composer run setup` command is for local development; it
 generates a key and runs migrations, so it is not the Cloud build command.
-Likewise, `deploy:check-config` currently describes the stricter self-hosted
-Redis/Horizon production profile and must not be used as a Cloud success claim.
+Run `php artisan deploy:check-cloud-config` in predeploy. The older
+`deploy:check-config` command validates the optional self-hosted container
+profile and is not a Laravel Cloud readiness signal.
 
 ## 5. Ephemeral filesystem boundary
 

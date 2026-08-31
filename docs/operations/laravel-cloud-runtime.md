@@ -1,4 +1,9 @@
-# Laravel Cloud Runtime Reality (2026-08-26)
+# Laravel Cloud Runtime Reality (2026-08-31)
+
+The codebase now includes Cloud-specific predeploy/postdeploy scripts and a
+managed-resource configuration gate. Live Cloud dashboard, queue, scheduler,
+storage, and alert evidence remains operator-collected and is intentionally not
+represented as verified by local commands.
 
 Status: **UNVERIFIED**. This report records evidence available from the
 repository checkout and local commands. Repository documentation is not a

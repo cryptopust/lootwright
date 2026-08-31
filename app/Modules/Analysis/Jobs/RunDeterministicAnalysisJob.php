@@ -29,13 +29,22 @@ final class RunDeterministicAnalysisJob implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
+    /** Deterministic analysis is bounded and safe to retry on managed queues. */
+    public int $timeout = 300;
+
+    public bool $failOnTimeout = true;
+
+    public int $maxExceptions = 3;
+
     public int $uniqueFor = 600;
 
     public function __construct(
         public readonly string $analysisId,
         public readonly ?GameEdition $edition = null,
         public readonly ?string $rulesetChecksumSha256 = null,
-    ) {}
+    ) {
+        $this->onQueue('deterministic-analysis');
+    }
 
     /** @return list<int> */
     public function backoff(): array

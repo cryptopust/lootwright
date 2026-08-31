@@ -1,10 +1,13 @@
 # Production Environment Reference
 
-Status: safe-default reference for the self-hosted immutable application image.
-The canonical copyable template is `deploy/env.production.example`; blank values
-are intentional. Laravel Cloud staging instead follows
+Status: safe-default reference for Laravel Cloud production. The canonical
+copyable template is `deploy/env.production.example`; blank values are
+intentional. Laravel Cloud injects managed resource connection values; do not
+copy self-hosted Redis/Horizon assumptions over Cloud-injected settings. The
+Docker/Compose package remains local/self-hosted compatibility tooling only.
+Cloud production follows
 [`docs/deployment/laravel-cloud.md`](../deployment/laravel-cloud.md) and must not
-copy self-hosted Redis/Horizon assumptions over Cloud-injected resource values.
+enable a capability until durable storage and managed queue evidence exists.
 
 ## External sources
 
