@@ -33,6 +33,7 @@ the temporary outbound switch; see the [import runbook](poe1-passive-tree-import
 | `APP_DEBUG` | `false` | No | Never enable for public requests. |
 | `APP_URL` | Canonical `https://` origin | No | `https://lootwright.org` for the primary deployment. |
 | `APP_RELEASE_SHA` | Lowercase 40/64-character digest | No | Must identify the reviewed source; image deployment also pins an OCI digest. |
+| `LOOTWRIGHT_RUNTIME_MODE` | `PRODUCTION_CANONICAL` | No | Required by the live acceptance gate; local/testing harnesses use `TEST_FIXTURE` and cannot pass it. |
 | `DEPLOYMENT_LOCKDOWN_MODE` | `true` initially | No | Enforces global and capability-off startup state. |
 | `TRUSTED_HOSTS` | Comma-separated exact regexes | No | No wildcard; include only served hosts. |
 | `TRUSTED_PROXIES` | Exact proxy IPs/CIDRs | No | Edge must strip spoofed forwarded headers. |

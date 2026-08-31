@@ -17,6 +17,11 @@ Use newly generated test accounts and unique idempotency keys. Record only
 opaque IDs, statuses, checksums, timings, and failure codes; never export build
 text, prompts, credentials, cookies, or personal data.
 
+Before creating any test data, the gate verifies the canonical
+`ProductionEditionDeterministicAnalysisEngine`, `FixedExternalSourceAdapterCatalog`,
+and `OpenAiResponsesProvider` bindings. Rebinding a port to a fixture or fake
+implementation fails the run immediately.
+
 ## Acceptance matrix
 
 For each edition independently (PoE1 first; PoE2 only when its release gate is
