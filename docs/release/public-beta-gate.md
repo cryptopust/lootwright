@@ -1,7 +1,8 @@
 # Lootwright public-beta gate
 
 **Review date:** 2026-08-31
-**Reviewed revision:** `a423755` (`docs: reconcile documentation with production`)
+**Reviewed baseline:** `a423755` (`docs: reconcile documentation with production`)
+**Gate commit:** `c8b6aac` (`release: complete Lootwright public beta gate`)
 **Overall status:** **NOT_READY**
 
 This gate is based on repository evidence and commands run in this checkout. It
