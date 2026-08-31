@@ -3,6 +3,7 @@
 namespace App\Modules\Rulesets;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\DB;
 use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
 use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
@@ -26,14 +27,20 @@ use RuntimeException;
 
 final class PostgresCanonicalGameDataRepository implements GameDataRepository
 {
+    public function __construct(private readonly CacheRepository $cache) {}
+
     public function find(GameEdition $edition, string $rulesetVersionId, CanonicalEntityType $type, string $externalId): ?CanonicalGameEntity
     {
-        $row = $this->query($edition, $rulesetVersionId)
-            ->where('data.entity_type', $type->value)
-            ->where('data.external_id', $externalId)
-            ->first();
+        $key = 'canonical-entity:v1:'.hash('sha256', implode('|', [$edition->value, $rulesetVersionId, $type->value, $externalId]));
 
-        return $row === null ? null : $this->hydrate($row);
+        return $this->cache->remember($key, now()->addSeconds((int) config('performance.canonical_cache_seconds', 3600)), function () use ($edition, $rulesetVersionId, $type, $externalId): ?CanonicalGameEntity {
+            $row = $this->query($edition, $rulesetVersionId)
+                ->where('data.entity_type', $type->value)
+                ->where('data.external_id', $externalId)
+                ->first();
+
+            return $row === null ? null : $this->hydrate($row);
+        });
     }
 
     public function listForRuleset(GameEdition $edition, string $rulesetVersionId, ?CanonicalEntityType $type = null): array

@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsurePolicyAdminTokenIsValid;
 use App\Http\Middleware\EnsureReadinessTokenIsValid;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventAdminTwoFactorDisable;
+use App\Http\Middleware\PerformanceTelemetry;
 use App\Http\Middleware\RequireEmergencyCapability;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\RequireVerifiedEmailWhenConfigured;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignCorrelationId::class);
+        $middleware->append(PerformanceTelemetry::class);
         $middleware->trustHosts(
             static function (): array {
                 $hosts = config('deployment.trusted_hosts', []);

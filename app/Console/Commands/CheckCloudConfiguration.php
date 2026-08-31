@@ -20,9 +20,9 @@ final class CheckCloudConfiguration extends Command
             $this->equals('APP_ENV', config('app.env'), 'production'),
             $this->equals('APP_DEBUG', (bool) config('app.debug'), false),
             $this->httpsUrl(),
-            $this->secret('APP_KEY', (string) config('app.key'), 32),
+            $this->validateSecret('APP_KEY', (string) config('app.key'), 32),
             $this->equals('DB_CONNECTION', config('database.default'), 'pgsql'),
-            $this->secret('READINESS_TOKEN', (string) config('services.readiness.token'), 32),
+            $this->validateSecret('READINESS_TOKEN', (string) config('services.readiness.token'), 32),
             $this->equals('LOG_CHANNEL', config('logging.default'), 'stderr'),
             $this->equals('SESSION_ENCRYPT', (bool) config('session.encrypt'), true),
             $this->equals('SESSION_SECURE_COOKIE', (bool) config('session.secure'), true),
@@ -48,7 +48,7 @@ final class CheckCloudConfiguration extends Command
         return str_starts_with((string) config('app.url'), 'https://') ? null : 'APP_URL must use HTTPS.';
     }
 
-    private function secret(string $name, string $value, int $minimum): ?string
+    private function validateSecret(string $name, string $value, int $minimum): ?string
     {
         $value = trim($value);
         $lower = strtolower($value);

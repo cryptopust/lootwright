@@ -3,6 +3,7 @@
 namespace App\Modules\Rulesets;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Lootwright\Domain\Rulesets\Ports\ActiveRulesetResolver;
 use Lootwright\Domain\Rulesets\Ports\RulesetResolver;
 use Lootwright\Domain\Rulesets\RulesetCompatibilityChecker;
@@ -22,6 +23,7 @@ final readonly class PostgresRulesetResolver implements ActiveRulesetResolver, R
     public function __construct(
         private PostgresRulesetRepository $rulesets,
         private RulesetCompatibilityChecker $compatibility,
+        private CacheRepository $cache,
     ) {}
 
     public function resolve(
@@ -67,7 +69,15 @@ final readonly class PostgresRulesetResolver implements ActiveRulesetResolver, R
         if (! $patchScope->exists()) {
             return new RulesetResolution($edition, $patch->value, $requestedLeague, $parserVersion->value, RulesetCompatibilityStatus::UnsupportedPatch);
         }
-        $activeId = $patchScope->where('parser_version', $parserVersion->value)->value('ruleset_version_id');
+        $cacheKey = 'ruleset-active:v1:'.hash('sha256', implode('|', [
+            $edition->value,
+            $patch->value,
+            $requestedLeague ?? '',
+            $parserVersion->value,
+        ]));
+        $activeId = $this->cache->remember($cacheKey, now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), static function () use ($patchScope, $parserVersion): mixed {
+            return $patchScope->where('parser_version', $parserVersion->value)->value('ruleset_version_id');
+        });
         if (! is_string($activeId)) {
             return new RulesetResolution($edition, $patch->value, $requestedLeague, $parserVersion->value, RulesetCompatibilityStatus::IncompatibleParser);
         }

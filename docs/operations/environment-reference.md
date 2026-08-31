@@ -38,6 +38,9 @@ the temporary outbound switch; see the [import runbook](poe1-passive-tree-import
 | `TRUSTED_HOSTS` | Comma-separated exact regexes | No | No wildcard; include only served hosts. |
 | `TRUSTED_PROXIES` | Exact proxy IPs/CIDRs | No | Edge must strip spoofed forwarded headers. |
 | `LOG_CHANNEL` | `stderr` | No | Redacted structured application logs only. |
+| `PERFORMANCE_TELEMETRY_ENABLED` | `false` | No | Opt-in sampled profiling; enable only for a bounded Cloud measurement window. |
+| `PERFORMANCE_SLOW_QUERY_MS` | `100` | No | Logs only hashed SQL text and duration above this threshold. |
+| `RULESET_CACHE_SECONDS`, `CANONICAL_CACHE_SECONDS` | `3600` | No | Immutable, checksum-scoped cache TTLs; never contain user-private analysis. |
 
 ## PostgreSQL
 

@@ -65,6 +65,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -324,6 +325,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ((bool) config('performance.enabled')) {
+            DB::listen(static function (QueryExecuted $event): void {
+                $threshold = (int) config('performance.slow_query_ms', 100);
+                if ($event->time >= $threshold) {
+                    Log::warning('slow_database_query', [
+                        'duration_ms' => $event->time,
+                        'query_hash' => hash('sha256', preg_replace('/\s+/', ' ', $event->sql) ?? $event->sql),
+                    ]);
+                }
+            });
+        }
         Queue::failing(static function (JobFailed $event): void {
             // Emit a provider-neutral, secret-free operational signal. Cloud
             // log routing can alert on this event without coupling the domain

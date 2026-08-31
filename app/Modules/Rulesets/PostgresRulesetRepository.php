@@ -3,6 +3,7 @@
 namespace App\Modules\Rulesets;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Lootwright\Domain\PolicyProvenance\CommercialUseStatus;
 use Lootwright\Domain\PolicyProvenance\DataProvenance;
 use Lootwright\Domain\PolicyProvenance\PermissionStatus;
@@ -25,14 +26,16 @@ use RuntimeException;
 
 final class PostgresRulesetRepository implements RulesetRepository
 {
+    public function __construct(private readonly CacheRepository $cache) {}
+
     public function findById(string $id): ?GameRuleset
     {
-        return $this->find(['rulesets.id' => $id]);
+        return $this->cache->remember('ruleset:v1:id:'.hash('sha256', $id), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.id' => $id]));
     }
 
     public function findByVersion(GameEdition $edition, string $version): ?GameRuleset
     {
-        return $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]);
+        return $this->cache->remember('ruleset:v1:version:'.hash('sha256', $edition->value.'|'.$version), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]));
     }
 
     /** @param array<string, string> $where */
