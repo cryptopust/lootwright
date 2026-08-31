@@ -22,6 +22,13 @@ final readonly class Poe1RulesetLoader
             throw new RuntimeException('The active PoE1 ruleset contains no canonical data.');
         }
 
+        foreach ($entities as $entity) {
+            $source = strtolower($entity->provenance->sourceCode);
+            if (str_contains($source, 'fixture') || str_contains($source, 'fake') || str_contains($source, 'mock')) {
+                throw new RuntimeException('Fixture or fake provenance cannot be loaded in the PoE1 canonical runtime.');
+            }
+        }
+
         $coverage = [];
         foreach (CanonicalEntityType::cases() as $type) {
             $coverage[$type->value] = count(array_filter($entities, static fn ($entity): bool => $entity->type() === $type));
