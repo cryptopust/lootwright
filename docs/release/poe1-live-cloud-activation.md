@@ -131,3 +131,29 @@ jobs, and no pending workflow-outbox records. Therefore live deterministic
 analysis, planner/recipes, save/reload, ownership isolation, and authenticated
 E2E remain unverified. This is an operational P1 blocker, not a policy or
 ruleset compatibility failure.
+
+## Queue runtime investigation (2026-09-01)
+
+The pending record was a Laravel database-queue analysis job. Its safe metadata
+matched the expected `deterministic-analysis` queue; the `jobs` table is
+PostgreSQL `public.jobs` with the standard Laravel schema, and timestamps were
+immediately available (no future delay or reservation). Effective Cloud config
+reported `queue.default=database`, `database.queue=default`, and
+`after_commit=true`; per-job routing is `deterministic-analysis`.
+
+The Cloud background-process inventory initially contained workers for both
+`build-parsing` and `deterministic-analysis` with the correct connection and
+queue, but the queued job was not consumed automatically. A bounded explicit
+worker using the exact connection and queue consumed the job successfully,
+proving dispatch, schema, timing, serialization, and database connectivity.
+The managed analysis process was then updated through the supported Cloud CLI
+with the exact bounded command and a replacement process was created to force a
+fresh worker revision. Queue monitoring subsequently reported zero pending,
+delayed, or reserved jobs. This classifies the incident as
+`MANAGED_WORKER_NOT_RUNNING` / `STALE_WORKER_DEPLOYMENT` (Cloud process
+lifecycle), not a connection or queue-name mismatch.
+
+The deployed application revision remains `bae8ebf45efe3f82eceb32015ce90be5a61a47cc`.
+The worker payload is deployment-safe: scalar IDs only, with PostgreSQL
+rehydration of the current ruleset. No job encryption or after-commit defect was
+observed, and `queue:failed` remains empty.
