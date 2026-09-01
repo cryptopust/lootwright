@@ -70,3 +70,18 @@ The repository remains ready for Cloud activation at commit `564911c`, but the
 live application cannot be called `LIVE_POE1_BETA_READY` from this environment.
 Remaining blockers: verified QA mailbox, Cloud deployment SHA/runtime access,
 and the live `policy_denied` PoE1 import gate.
+
+## Follow-up Cloud CLI verification (2026-09-01)
+
+The requested Laravel Cloud CLI was not present in this execution environment.
+`laravel` resolves to the Herd Laravel Installer (`5.31.1`) and reports that no
+`cloud` command is defined; `cloud` and `laravel-cloud` executables are absent,
+and no Cloud credentials are available. This is `CLI_NOT_INSTALLED`, not a
+Cloud authentication or permission failure.
+
+The live hostname still responds with HTTP 200, `/up` is HTTP 200, `/ready` is
+HTTP 404, and `/status` is HTTP 403. The live Inertia asset version remains
+`dc56ee4d1294401e1322d48f3615fe36`; this is not a deployment SHA and cannot
+prove that `c924433` is deployed. No Cloud Artisan command, migration, policy
+seed, ruleset activation, or user verification was attempted without the
+required runtime interface.
