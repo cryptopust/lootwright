@@ -16,6 +16,7 @@ use App\Modules\AI\OpenAi\OpenAiResponsesProvider;
 use App\Modules\AI\PostgresAnalysisExplanationRepository;
 use App\Modules\Analysis\Infrastructure\CompositeSupplementalUserDataEraser;
 use App\Modules\Analysis\Infrastructure\DatabaseAnalysisPolicyGate;
+use App\Modules\Analysis\Infrastructure\DatabaseArtifactStorage;
 use App\Modules\Analysis\Infrastructure\EncryptedArtifactStorage;
 use App\Modules\Analysis\Infrastructure\LaravelIdentifierGenerator;
 use App\Modules\Analysis\Infrastructure\LaravelTransactionManager;
@@ -180,7 +181,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(WorkflowRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(AnalysisDocumentRepository::class, PostgresWorkflowRepository::class);
         $this->app->bind(BuildLifecycleRepository::class, PostgresWorkflowRepository::class);
-        $this->app->bind(ArtifactStorage::class, EncryptedArtifactStorage::class);
+        $this->app->bind(ArtifactStorage::class, static function ($app): ArtifactStorage {
+            return match (config('filesystems.disks.analysis-artifacts.driver', 'local')) {
+                'database' => $app->make(DatabaseArtifactStorage::class),
+                default => $app->make(EncryptedArtifactStorage::class),
+            };
+        });
         $this->app->bind(WorkflowDispatcher::class, LaravelWorkflowDispatcher::class);
         $this->app->bind(IdentifierGenerator::class, LaravelIdentifierGenerator::class);
         $this->app->bind(SupplementalUserDataEraser::class, CompositeSupplementalUserDataEraser::class);
