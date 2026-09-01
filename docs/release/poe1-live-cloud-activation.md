@@ -2,7 +2,7 @@
 
 ## Status
 
-`NOT_READY` (2026-09-01)
+`NOT_READY` (2026-09-01; queue blocker resolved, authenticated vertical slice still pending)
 
 Local Playwright 1.62.1 and the installed Chromium binary now provide real
 browser evidence. The live page and unauthenticated PoE1 wizard render and
