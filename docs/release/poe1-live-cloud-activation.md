@@ -4,11 +4,11 @@
 
 `CLOUD_ACTIVATION_UNVERIFIED` (2026-09-01)
 
-The deployed URL responded over HTTPS, but this workspace had no connected
-browser or Laravel Cloud runtime/CLI connector. Registration, authentication,
-ruleset activation, CLI acceptance, and the authenticated browser analysis flow
-therefore could not be executed without inventing evidence. No production data
-was changed.
+Local Playwright 1.62.1 and the installed Chromium binary now provide real
+browser evidence. The live page and unauthenticated PoE1 wizard render and
+operate. Synthetic registration reaches `/email/verify`, but no mailbox is
+available, so verified login and authenticated analysis remain blocked. Cloud
+runtime/CLI authority is unavailable; no production mutation was attempted.
 
 ## Deployment
 
@@ -30,10 +30,20 @@ was changed.
 - Session cookies were marked Secure, HttpOnly, and SameSite=Lax. Cookie
   values were not retained or reported.
 - `/status` returned HTTP 403.
+- Chromium navigation to `/` returned HTTP 200 with a readable title and h1,
+  no failed document requests, and no page errors.
+- The live wizard reached the PoE1 build-information step at `/analyses/new`.
+- Repository-owned PoE1 XML submitted from the wizard received controlled
+  `POST /api/build-imports/pob` HTTP 403 `policy_denied`.
+- Registration `POST /register` redirected to `/email/verify`
+  (`MAIL_VERIFICATION_BLOCKED` without mailbox access).
+- Browser console reported CSP violations for inline challenge script/style;
+  no failed asset was observed.
 
-## Unverified gates
+## Unverified/blocked gates
 
-QA account creation, email verification, login/logout/re-login, PostgreSQL
+QA account creation completed through the public UI, but email verification,
+login/logout/re-login, PostgreSQL
 configuration and migration status, queue and scheduler state, durable storage,
 source-status/import/publish/activation commands, `PRODUCTION_CANONICAL` runtime,
 CLI acceptance, browser build analysis, planner constraints, Trade recipes,
@@ -41,9 +51,18 @@ save/reload, owner isolation, export/delete, invalid-input handling, responsive
 screens, admin denial, password reset, and post-deploy retesting all require a
 connected browser and Cloud operator/runtime access.
 
+## Tooling
+
+- `npx playwright --version`: 1.62.1; Chromium was already installed.
+- Guarded suite: `npm run test:e2e:live` with
+  `LOOTWRIGHT_LIVE_E2E=true`; login additionally needs runtime credentials.
+- Live suite: 2 passed, 1 skipped (credential-gated login).
+
 ## Release decision
 
 `CLOUD_ACTIVATION_UNVERIFIED`
 
 The repository remains ready for Cloud activation at commit `564911c`, but the
 live application cannot be called `LIVE_POE1_BETA_READY` from this environment.
+Remaining blockers: verified QA mailbox, Cloud deployment SHA/runtime access,
+and the live `policy_denied` PoE1 import gate.

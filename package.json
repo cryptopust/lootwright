@@ -11,14 +11,15 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "format": "prettier --write resources/ tests/e2e/ playwright.config.ts vite.config.ts vitest.config.ts",
-        "format:check": "prettier --check resources/ tests/e2e/ playwright.config.ts vite.config.ts vitest.config.ts",
+        "format": "prettier --write resources/ tests/e2e/ playwright.config.ts playwright.live.config.ts vite.config.ts vitest.config.ts",
+        "format:check": "prettier --check resources/ tests/e2e/ playwright.config.ts playwright.live.config.ts vite.config.ts vitest.config.ts",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "typecheck": "vue-tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:e2e": "playwright test",
+        "test:e2e:live": "playwright test --config playwright.live.config.ts",
         "test:e2e:update": "playwright test --update-snapshots"
     },
     "devDependencies": {
