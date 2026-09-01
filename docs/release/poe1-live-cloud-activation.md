@@ -2,13 +2,15 @@
 
 ## Status
 
-`CLOUD_ACTIVATION_UNVERIFIED` (2026-09-01)
+`NOT_READY` (2026-09-01)
 
 Local Playwright 1.62.1 and the installed Chromium binary now provide real
 browser evidence. The live page and unauthenticated PoE1 wizard render and
 operate. Synthetic registration reaches `/email/verify`, but no mailbox is
 available, so verified login and authenticated analysis remain blocked. Cloud
-runtime/CLI authority is unavailable; no production mutation was attempted.
+runtime/CLI authority is verified; the policy defaults were seeded earlier,
+but the production workflow remains fail-closed without an approved immutable
+PoE1 ruleset matching the acceptance build.
 
 ## Deployment
 
@@ -17,6 +19,8 @@ runtime/CLI authority is unavailable; no production mutation was attempted.
 - Repository branch SHA: verified with `git ls-remote`; Cloud-served revision:
   unverified.
 - Test date: 2026-09-01 (Europe/Istanbul)
+- Current Cloud CLI deployment: `3e745c36b01437f9fcf00bd70929b035cbfe699b`
+  (succeeded; documentation-only)
 
 ## Safe HTTP observations
 
@@ -69,7 +73,8 @@ connected browser and Cloud operator/runtime access.
 The repository remains ready for Cloud activation at commit `564911c`, but the
 live application cannot be called `LIVE_POE1_BETA_READY` from this environment.
 Remaining blockers: verified QA mailbox, Cloud deployment SHA/runtime access,
-and the live `policy_denied` PoE1 import gate.
+  and the missing approved immutable ruleset for the normalized acceptance
+  build. The policy gate itself is now allowing local PoE1 import.
 
 ## Follow-up Cloud CLI verification (2026-09-01)
 
