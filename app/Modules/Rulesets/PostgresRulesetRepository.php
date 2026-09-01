@@ -2,7 +2,6 @@
 
 namespace App\Modules\Rulesets;
 
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\DB;
 use Lootwright\Domain\PolicyProvenance\CommercialUseStatus;
 use Lootwright\Domain\PolicyProvenance\DataProvenance;
@@ -26,19 +25,18 @@ use RuntimeException;
 
 final class PostgresRulesetRepository implements RulesetRepository
 {
-    public function __construct(private readonly CacheRepository $cache) {}
-
     public function findById(string $id): ?GameRuleset
     {
-        // v2 invalidates serialized identities produced before the ruleset
-        // identity contract was finalized.  Reusing those entries can yield
-        // __PHP_Incomplete_Class and fail closed even when the DB row is valid.
-        return $this->cache->remember('ruleset:v2:id:'.hash('sha256', $id), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.id' => $id]));
+        // Ruleset identities contain readonly domain value objects and must not
+        // be serialized into the Cloud cache.  Older serialized entries can
+        // hydrate as __PHP_Incomplete_Class after a deploy; the database is the
+        // authoritative, checksum-verified catalog, so resolve directly.
+        return $this->find(['rulesets.id' => $id]);
     }
 
     public function findByVersion(GameEdition $edition, string $version): ?GameRuleset
     {
-        return $this->cache->remember('ruleset:v2:version:'.hash('sha256', $edition->value.'|'.$version), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]));
+        return $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]);
     }
 
     /** @param array<string, string> $where */
