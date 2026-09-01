@@ -34,7 +34,11 @@ runtime/CLI authority is unavailable; no production mutation was attempted.
   no failed document requests, and no page errors.
 - The live wizard reached the PoE1 build-information step at `/analyses/new`.
 - Repository-owned PoE1 XML submitted from the wizard received controlled
-  `POST /api/build-imports/pob` HTTP 403 `policy_denied`.
+  `POST /api/build-imports/pob` HTTP 403 `policy_denied`. A direct safe replay
+  captured policy reason `missing_rule` for `USER-POB-001 / import /
+  user_input.pob_code.import`; this is the exact database Policy Gate decision,
+  not an emergency switch or parser failure. The reviewed remedy is an
+  idempotent `PolicyDefaultsSeeder` run in Cloud, followed by a retest.
 - Registration `POST /register` redirected to `/email/verify`
   (`MAIL_VERIFICATION_BLOCKED` without mailbox access).
 - Browser console reported CSP violations for inline challenge script/style;

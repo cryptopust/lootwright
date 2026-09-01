@@ -135,4 +135,20 @@ final class CatalogAndMembershipTest extends TestCase
         self::assertSame(UserRole::SuperAdmin, $verified->fresh()->role);
         $this->assertDatabaseHas('admin_audit_logs', ['actor_user_id' => $verified->id, 'target_user_id' => $verified->id, 'action' => 'user.super_admin.promoted']);
     }
+
+    public function test_operator_email_verification_requires_force_in_production_and_is_audited(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $this->app->detectEnvironment(static fn (): string => 'production');
+
+        self::assertSame(1, Artisan::call('lootwright:user:verify-email', ['email' => $user->email]));
+        self::assertFalse($user->fresh()->hasVerifiedEmail());
+        self::assertSame(0, Artisan::call('lootwright:user:verify-email', ['email' => $user->email, '--force' => true]));
+        self::assertTrue($user->fresh()->hasVerifiedEmail());
+        $this->assertDatabaseHas('admin_audit_logs', [
+            'actor_user_id' => $user->id,
+            'target_user_id' => $user->id,
+            'action' => 'user.email_verified.operator',
+        ]);
+    }
 }

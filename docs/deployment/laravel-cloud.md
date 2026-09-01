@@ -173,10 +173,14 @@ php artisan optimize
 `php artisan optimize` creates the release caches in the build phase. It must not
 make a network call or depend on an OpenAI key.
 
-Use only the database migration as the deploy command:
+Use the database migration followed by the idempotent policy-default seed as
+the deploy command. The seed is required because the runtime Policy Gate is
+database-backed; without it, valid local PoE1 imports fail closed with
+`policy_denied` / `missing_rule` even when the application code is current.
 
 ```bash
 php artisan migrate --force
+php artisan db:seed --class=PolicyDefaultsSeeder --force
 ```
 
 Do not add any of these to the deploy commands:
