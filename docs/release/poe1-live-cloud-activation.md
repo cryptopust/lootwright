@@ -95,12 +95,22 @@ PostgreSQL 18.6 over `pgsql` with the expected ruleset, policy, analysis, and
 user tables. `queue:failed` reports no failed jobs, and `schedule:list` shows
 the four configured pruning/outbox schedules. Bounded Cloud logs are readable.
 
-The reviewed `PolicyDefaultsSeeder` was already run remotely before this
-checkpoint (the live PoE1 import then changed from HTTP 403 `policy_denied` /
-`missing_rule` to HTTP 200 `normalized`). No migration, ruleset activation,
-QA verification, deployment, or other production mutation was performed as
-part of the CLI tooling checkpoint itself. CLI acceptance remains blocked by
-the absence of an approved immutable ruleset matching the normalized
-acceptance build. The live `/up` endpoint is HTTP 200; `/ready` remains HTTP
-404 and `/status` HTTP 403 (the latter is blocked by the Cloud web-server
-access rule), pending route-architecture follow-up.
+The reviewed `PolicyDefaultsSeeder` was executed remotely through Cloud and
+completed successfully. The official pinned PoE1 source validated (7 classes,
+3390 nodes, upstream SHA-256
+`7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122`). A
+candidate was published and activated as immutable ruleset
+`01a05dca-26e5-7329-8e99-3ed46be85e58`, version
+`3.29.1-analysis.1.0.0.skilltree.8bd138b3`, parser `1.0.0`, ruleset checksum
+`6d5b31892ee364afba6d73b964ecf3c402b74faff31c25ddbe227a2550d4829e`.
+Activation history is present and the previous ruleset history was not
+deleted. The hard Cloud acceptance command still fails closed with
+`No approved immutable ruleset exactly matches the normalized PoE1 build.`;
+therefore live analysis and authenticated UI activation are not claimed.
+
+Cloud `route:list` confirms `/ready`, `/status`, and the PoE1 import/analysis
+routes are registered. `/up` is HTTP 200, `/ready` HTTP 404, and `/status`
+HTTP 403 at the Cloud edge. `queue:failed` reports no failed jobs and
+`schedule:list` reports the four existing pruning/outbox schedules. The
+guarded live Playwright suite passes its two unauthenticated tests (the login
+test remains credential-gated and skipped).

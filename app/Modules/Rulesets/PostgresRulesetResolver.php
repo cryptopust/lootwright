@@ -69,7 +69,9 @@ final readonly class PostgresRulesetResolver implements ActiveRulesetResolver, R
         if (! $patchScope->exists()) {
             return new RulesetResolution($edition, $patch->value, $requestedLeague, $parserVersion->value, RulesetCompatibilityStatus::UnsupportedPatch);
         }
-        $cacheKey = 'ruleset-active:v1:'.hash('sha256', implode('|', [
+        // Bump the namespace when the persisted RulesetIdentity shape changes;
+        // stale serialized values must never influence deterministic lookup.
+        $cacheKey = 'ruleset-active:v2:'.hash('sha256', implode('|', [
             $edition->value,
             $patch->value,
             $requestedLeague ?? '',

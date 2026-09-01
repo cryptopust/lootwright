@@ -30,12 +30,15 @@ final class PostgresRulesetRepository implements RulesetRepository
 
     public function findById(string $id): ?GameRuleset
     {
-        return $this->cache->remember('ruleset:v1:id:'.hash('sha256', $id), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.id' => $id]));
+        // v2 invalidates serialized identities produced before the ruleset
+        // identity contract was finalized.  Reusing those entries can yield
+        // __PHP_Incomplete_Class and fail closed even when the DB row is valid.
+        return $this->cache->remember('ruleset:v2:id:'.hash('sha256', $id), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.id' => $id]));
     }
 
     public function findByVersion(GameEdition $edition, string $version): ?GameRuleset
     {
-        return $this->cache->remember('ruleset:v1:version:'.hash('sha256', $edition->value.'|'.$version), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]));
+        return $this->cache->remember('ruleset:v2:version:'.hash('sha256', $edition->value.'|'.$version), now()->addSeconds((int) config('performance.ruleset_cache_seconds', 3600)), fn (): ?GameRuleset => $this->find(['rulesets.game_edition' => $edition->value, 'rulesets.version' => $version]));
     }
 
     /** @param array<string, string> $where */
