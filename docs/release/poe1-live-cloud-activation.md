@@ -73,15 +73,29 @@ and the live `policy_denied` PoE1 import gate.
 
 ## Follow-up Cloud CLI verification (2026-09-01)
 
-The requested Laravel Cloud CLI was not present in this execution environment.
-`laravel` resolves to the Herd Laravel Installer (`5.31.1`) and reports that no
-`cloud` command is defined; `cloud` and `laravel-cloud` executables are absent,
-and no Cloud credentials are available. This is `CLI_NOT_INSTALLED`, not a
-Cloud authentication or permission failure.
+The official global `laravel/cloud-cli` package v0.5.2 is installed. The
+`cloud` executable is available from Composer's global bin directory and the
+authenticated account can enumerate applications and environments.
 
-The live hostname still responds with HTTP 200, `/up` is HTTP 200, `/ready` is
-HTTP 404, and `/status` is HTTP 403. The live Inertia asset version remains
-`dc56ee4d1294401e1322d48f3615fe36`; this is not a deployment SHA and cannot
-prove that `c924433` is deployed. No Cloud Artisan command, migration, policy
-seed, ruleset activation, or user verification was attempted without the
-required runtime interface.
+Cloud positively identifies application `lootwright`, environment
+`production`, and hostname
+`lootwright-production-kt2jq5.laravel.cloud`. The current successful
+deployment is `6a3ff3d21bdf80c13210d18e3b53f36b04de6b8e` (`docs: record Cloud CLI
+availability and live status`). Remote `command:run` execution is proven.
+`php artisan about --only=environment` reports Laravel 13.25.0, production,
+debug OFF, and the expected URL. `php artisan migrate:status` reports every
+repository migration applied through
+`2026_08_29_130000_create_user_saved_records`; `php artisan db:show` proves
+PostgreSQL 18.6 over `pgsql` with the expected ruleset, policy, analysis, and
+user tables. `queue:failed` reports no failed jobs, and `schedule:list` shows
+the four configured pruning/outbox schedules. Bounded Cloud logs are readable.
+
+The reviewed `PolicyDefaultsSeeder` was already run remotely before this
+checkpoint (the live PoE1 import then changed from HTTP 403 `policy_denied` /
+`missing_rule` to HTTP 200 `normalized`). No migration, ruleset activation,
+QA verification, deployment, or other production mutation was performed as
+part of the CLI tooling checkpoint itself. CLI acceptance remains blocked by
+the absence of an approved immutable ruleset matching the normalized
+acceptance build. The live `/up` endpoint is HTTP 200; `/ready` remains HTTP
+404 and `/status` HTTP 403 (the latter is blocked by the Cloud web-server
+access rule), pending route-architecture follow-up.
