@@ -167,10 +167,9 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
                     'locked_items' => array_values(array_filter($this->parameters($analysis)['locked_items'] ?? [], 'is_string')),
                 ],
                 'budget' => $this->parameters($analysis)['budget'] ?? null,
-                'latencies_ms' => [
-                    'planner' => $plannerLatencyMs,
-                    'trade_recipe' => $recipeLatencyMs,
-                ],
+                // Operational timings are recorded by the workflow telemetry;
+                // the canonical output remains byte-stable across replays.
+                'latencies_ms' => ['planner' => 0, 'trade_recipe' => 0],
             ]);
 
             return new DeterministicAnalysisSnapshot(
@@ -467,6 +466,14 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         if ($ruleset === null) {
             throw new RuntimeException('Missing published ruleset.');
         }
+        if ((string) ($ruleset->game_edition ?? '') !== GameEdition::Poe1->value
+            || (string) ($ruleset->version ?? '') !== $identity->version->value
+            || (string) ($ruleset->patch ?? '') !== $identity->patch->value
+            || (string) ($ruleset->parser_version ?? '') !== $identity->parserVersion->value
+            || ! hash_equals($identity->checksumSha256, (string) ($ruleset->checksum_sha256 ?? ''))
+        ) {
+            throw new RuntimeException('Published PoE1 ruleset metadata does not match its immutable identity.');
+        }
         $rulesetPayload = $this->json($ruleset->canonical_payload ?? null);
         if (! hash_equals($identity->checksumSha256, hash('sha256', CanonicalJson::encode($rulesetPayload)))) {
             throw new RuntimeException('Ruleset checksum mismatch.');
@@ -549,9 +556,35 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             is_array($build['items'] ?? null) ? array_values($build['items']) : [],
             is_array($build['configuration'] ?? null) ? $build['configuration'] : [],
             is_array($build['summary_values'] ?? null) ? $build['summary_values'] : [],
-            '',
-            false,
+            is_string($build['notes_untrusted_text'] ?? null) ? $build['notes_untrusted_text'] : '',
+            ($build['beta'] ?? false) === true,
+            is_array($build['attributes'] ?? null) ? $build['attributes'] : [],
+            is_int($build['life'] ?? null) || is_string($build['life'] ?? null) ? $build['life'] : null,
+            is_int($build['energy_shield'] ?? null) || is_string($build['energy_shield'] ?? null) ? $build['energy_shield'] : null,
+            is_int($build['mana'] ?? null) || is_string($build['mana'] ?? null) ? $build['mana'] : null,
+            is_int($build['armour'] ?? null) || is_string($build['armour'] ?? null) ? $build['armour'] : null,
+            is_int($build['evasion'] ?? null) || is_string($build['evasion'] ?? null) ? $build['evasion'] : null,
+            is_array($build['resistances'] ?? null) ? $build['resistances'] : [],
+            $this->listOfArrays($build['supports'] ?? null),
+            $this->listOfArrays($build['auras'] ?? null),
+            $this->listOfArrays($build['item_modifiers'] ?? null),
+            is_array($build['keystones'] ?? null) ? array_values(array_filter($build['keystones'], 'is_string')) : [],
+            $this->listOfArrays($build['jewels'] ?? null),
+            $this->listOfArrays($build['clusters'] ?? null),
+            [],
+            [],
+            [],
         );
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function listOfArrays(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter($value, static fn (mixed $entry): bool => is_array($entry)));
     }
 
     /** @return array<string, mixed> */
@@ -569,6 +602,14 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             'skills' => $build->skills,
             'items' => array_values($items),
             'summary_values' => $build->summaryValues,
+            'attributes' => $build->attributes,
+            'life' => $build->life,
+            'energy_shield' => $build->energyShield,
+            'mana' => $build->mana,
+            'armour' => $build->armour,
+            'evasion' => $build->evasion,
+            'resistances' => $build->resistances,
+            'keystones' => $build->keystones,
         ];
     }
 

@@ -39,6 +39,9 @@ final class AcceptPoe1 extends Command
             $path = is_string($path) && $path !== ''
                 ? $path
                 : (string) config('acceptance.poe1_build', base_path('resources/acceptance/poe1-supported.xml'));
+            if (preg_match('/^[A-Za-z]:[\\\\\/]/D', $path) !== 1 && ! str_starts_with($path, '/')) {
+                throw new RuntimeException('Acceptance input must be an absolute local path.');
+            }
             $resolved = realpath($path);
             if (! is_string($resolved) || ! is_file($resolved) || is_link($path)
                 || preg_match('#[\\/]tests[\\/]fixtures[\\/]#i', $resolved) === 1
@@ -72,20 +75,20 @@ final class AcceptPoe1 extends Command
                 GameEdition::Poe1,
                 'pob',
                 'acceptance://poe1',
-                $import->inputChecksumSha256,
+                $import->result->inputChecksumSha256,
                 AnalysisState::Completed,
                 'pob1',
-                $import->parserVersion,
+                $import->result->parserVersion,
                 $normalized,
                 hash('sha256', $normalized),
-                '3.29.1',
+                (string) config('acceptance.poe1_ruleset_patch', '3.29.1'),
                 null,
             );
             $context = $engine->resolve($analysis, $artifact);
             $snapshot = $engine->run($analysis, $artifact, $context);
             $elapsed = (int) ceil((hrtime(true) - $started) / 1_000_000);
-            $findingCodes = array_values(array_map(static fn ($finding): string => $finding->code, $snapshot->findings));
-            $recommendationCodes = array_values(array_map(static fn ($recommendation): string => $recommendation->id, $snapshot->recommendations));
+            $findingCodes = array_map(static fn ($finding): string => $finding->code, $snapshot->findings);
+            $recommendationCodes = array_map(static fn ($recommendation): string => $recommendation->code, $snapshot->recommendations);
 
             $this->line('status=PASS');
             $this->line('runtime='.RuntimeMarker::current());

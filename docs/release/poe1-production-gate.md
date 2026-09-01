@@ -27,6 +27,14 @@ output, publish/activate only after policy approval, then run the command above
 against the Cloud deployment. If Cloud credentials, database, or queue
 evidence are unavailable, status is `READY_FOR_CLOUD_ACTIVATION`, not live.
 
+### Exact activation sequence
+
+1. In a Laravel Cloud staging environment, set `LOOTWRIGHT_RUNTIME_MODE=PRODUCTION_CANONICAL`, keep AI/market/PoE2 switches disabled, and configure the reviewed GGG passive-tree source switch and operator contact.
+2. Run the pinned import in dry-run mode, review class/node counts and checksums, then run the operator import with publish/activate enabled. The importer validates policy, checksum, edition, parser compatibility, canonical identifiers, and referential integrity before activation.
+3. Confirm the `ruleset_activations` row and append-only activation history identify the ruleset ID, PoE1 edition, patch, parser version, source manifest, checksum, and activation timestamp.
+4. Execute `php artisan lootwright:acceptance:poe1 --no-ansi` on the deployed release. A `status=PASS` result is required; `status=BLOCKED` remains fail-closed.
+5. For rollback, activate the previous published ruleset through the same governed operator workflow. Do not delete rows or run destructive database rollback.
+
 ## Status vocabulary
 
 - **PASS** — all canonical stages completed.
