@@ -114,3 +114,20 @@ HTTP 403 at the Cloud edge. `queue:failed` reports no failed jobs and
 `schedule:list` reports the four existing pruning/outbox schedules. The
 guarded live Playwright suite passes its two unauthenticated tests (the login
 test remains credential-gated and skipped).
+
+## Continued activation (2026-09-01)
+
+Commit `50aa17468ade5fd9f669630864298355b6ec9bd2` deployed successfully.
+Cloud acceptance passes with `PRODUCTION_CANONICAL`, the real active ruleset,
+deterministic analyzer, planner, and manual recipe engine. Root cause was stale
+serialized `GameRuleset` cache entries hydrating as `__PHP_Incomplete_Class`;
+ruleset rows now come directly from PostgreSQL.
+
+A disposable QA account was registered through the public form, verified with
+the operator-only Cloud command, and logged in successfully. Live PoE1 import
+returned HTTP 200 `normalized`; wizard submission returned HTTP 202 `queued`.
+The analysis remained queued: Cloud showed one pending database job, no failed
+jobs, and no pending workflow-outbox records. Therefore live deterministic
+analysis, planner/recipes, save/reload, ownership isolation, and authenticated
+E2E remain unverified. This is an operational P1 blocker, not a policy or
+ruleset compatibility failure.
