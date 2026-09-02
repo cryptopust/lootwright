@@ -2,7 +2,7 @@
 
 ## Status
 
-`NOT_READY` (2026-09-01; queue blocker resolved, authenticated vertical slice still pending)
+`NOT_READY` (2026-09-02; managed workers and authenticated PoE1 vertical slice verified, ownership gate still pending)
 
 Local Playwright 1.62.1 and the installed Chromium binary now provide real
 browser evidence. The live page and unauthenticated PoE1 wizard render and
@@ -161,3 +161,66 @@ observed, and `queue:failed` remains empty.
 An operator-only, data-free queue probe was added for both production queues.
 Automatic parsing, automatic analysis, idle-worker, and post-deployment probe
 results remain required before this report can promote the release status.
+
+## Final managed-worker verification (2026-09-02)
+
+Cloud identifies application `lootwright`, environment `production`, and the
+expected hostname. The latest successful deployment is
+`66501ba5b90e1778b9b9b1cd2d2d8e051c8c2558` (`fix: normalize standard league
+selection`); this supersedes the previously recorded `fee2c0a` deployment.
+The production environment reports Laravel 13.25.0, PHP 8.5.9, debug OFF,
+and status `running`.
+
+The managed background-process inventory contains exactly two workers (one
+process each), both attached to production and with no stale duplicate:
+
+- parsing: `php artisan queue:work database --queue=build-parsing --tries=3 --backoff=30 --sleep=3 --rest=0 --timeout=300 --quiet`;
+- analysis: `php artisan queue:work database --queue=deterministic-analysis --tries=3 --backoff=30 --sleep=3 --rest=0 --timeout=300 --quiet`.
+
+Operator probes were dispatched through Cloud `command:run` only; no
+`queue:work` command was run. Parsing probe
+`01a062ae-36da-72e1-9cb7-b884f61515d5` reached queued → started → completed
+(`2026-09-02T15:12:59Z` → `15:13:01Z`). Analysis probe
+`01a062ae-ef41-7304-9c5c-46dfc290cf60` reached queued → started → completed
+(`15:13:46Z` → `15:13:47Z`). A further analysis probe after an idle interval,
+`01a062b0-a1f2-71dc-b185-c07a02ec7e37`, was automatically consumed as well.
+Cloud reports no failed jobs.
+
+The real QA PoE1 workflow completed without manual intervention:
+`IMPORT_ACCEPTED` HTTP 202, states `queued → processing → completed`, analysis
+`01a062b1-d19b-709f-bc1c-e3cc6b168372`. The result is deterministic PoE1,
+engine `1.0.0`, active ruleset
+`01a05dca-26e5-7329-8e99-3ed46be85e58`, version
+`3.29.1-analysis.1.0.0.skilltree.8bd138b3`, checksum
+`6d5b31892ee364afba6d73b964ecf3c402b74faff31c25ddbe227a2550d4829e`.
+The normalized summary exposes Duelist/Slayer level 96, mana and capped
+fire/cold/lightning resistances, chaos resistance, and the Cleave main skill.
+Planner and recipe arrays were empty for this healthy fixture; no market data,
+Trade IDs, URLs, prices, or AI output were present.
+
+Save/reload/export behavior was exercised for the QA-owned analysis: save
+returned 201, saved listing returned the same analysis, export returned 200
+JSON, and unsave returned 200. Ownership-isolation view/API/export checks
+against QA User 2 returned 404; cross-owner delete returned 423 (password
+confirmation), and no User 1 data changed. Owner password-confirmed deletion
+and persistence checks remain follow-up beta checks. Production failure
+injection was not run
+(`PRODUCTION_FAILURE_INJECTION_NOT_RUN`).
+
+Health endpoints remain `/up` 200, `/ready` 404, and `/status` 403. Cloud
+`route:list` previously confirmed both routes are registered; the latter two
+responses are treated as edge/private-readiness behavior and are not weakened.
+
+## Controlled semantic variants (2026-09-02)
+
+Using the same live PoE1 workflow and managed workers, the healthy baseline
+completed with no findings. A FireResist 50/75 mutation produced
+`defence.fire_resistance.below_reported_max`, a traced recommendation, and one
+manual POE1 recipe. A Strength 20/100 mutation produced
+`attributes.requirement.missing`, a traced recommendation, and one manual POE1
+recipe. Both results retained the active ruleset identity and had no market or
+AI data. The attempted CI and Resolute Technique variants used display names
+instead of canonical numeric passive-node identifiers; the importer therefore
+did not recognize those keystones, so CI/RT semantic gates remain unproven.
+Owner-confirmed deletion likewise remains unproven pending completion of the
+password-confirmation form.

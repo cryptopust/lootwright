@@ -39,6 +39,12 @@ Production runs one process per queue:
 - parsing: `database` / `build-parsing`, one process;
 - analysis: `database` / `deterministic-analysis`, one process.
 
+As of 2026-09-02, Laravel Cloud production worker process IDs are
+`process-a2a4d3e0-719f-495c-b45a-97164226f57b` (parsing) and
+`process-a2a4efb6-2a45-4d7c-a58c-4b1b596a1f3a` (analysis); both report one
+process and the commands above. They are managed by the `production`
+environment and restart with its deployment revision.
+
 Cloud restarts these background processes with the environment deployment. A
 post-deployment probe is required because a recorded process definition alone
 does not prove that its worker is consuming jobs.
