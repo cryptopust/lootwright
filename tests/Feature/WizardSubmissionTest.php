@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -54,6 +55,20 @@ final class WizardSubmissionTest extends TestCase
         self::assertSame($first->json('analysis_id'), $second->json('analysis_id'));
         $this->assertDatabaseCount('analyses', 1);
         self::assertStringNotContainsString('raw-secret-pob', json_encode(DB::table('analyses')->get()->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function test_submission_without_a_budget_normalizes_the_default_currency_to_null(): void
+    {
+        Bus::fake();
+        $user = User::factory()->create();
+        $payload = [...$this->payload(), 'budget_amount' => '', 'budget_currency' => 'DIVINE'];
+
+        $this->actingAs($user)
+            ->postJson('/api/analyses/wizard', $payload, ['Idempotency-Key' => str_repeat('n', 32)])
+            ->assertAccepted();
+
+        $parameters = json_decode(Crypt::decryptString((string) DB::table('analyses')->value('parameters_snapshot_encrypted')), true, flags: JSON_THROW_ON_ERROR);
+        self::assertNull($parameters['budget']);
     }
 
     public function test_draft_rejects_raw_artifact_fields_and_is_owner_scoped(): void
