@@ -157,3 +157,7 @@ The deployed application revision remains `bae8ebf45efe3f82eceb32015ce90be5a61a4
 The worker payload is deployment-safe: scalar IDs only, with PostgreSQL
 rehydration of the current ruleset. No job encryption or after-commit defect was
 observed, and `queue:failed` remains empty.
+
+An operator-only, data-free queue probe was added for both production queues.
+Automatic parsing, automatic analysis, idle-worker, and post-deployment probe
+results remain required before this report can promote the release status.
