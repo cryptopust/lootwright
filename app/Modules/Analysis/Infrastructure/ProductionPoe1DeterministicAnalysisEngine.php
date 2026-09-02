@@ -551,6 +551,9 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             $entity = $resolver->resolve(CanonicalEntityType::Keystone, $nodeId);
             if ($entity !== null) {
                 $keystones[] = $entity->externalId;
+                if ($entity->displayName !== null) {
+                    $keystones[] = $entity->displayName;
+                }
             }
         }
         $keystones = array_values(array_unique(array_filter($keystones, 'is_string')));

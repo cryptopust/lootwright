@@ -378,6 +378,7 @@ final readonly class Poe1DeterministicAnalysisEngine
             $value = strtolower(trim((string) $keystone));
             $value = preg_replace('/^poe1\\.pob\\.(?:keystone|node)\\./', '', $value) ?? $value;
             $value = preg_replace('/^keystone:/', '', $value) ?? $value;
+            $value = preg_replace('/^passive:/', '', $value) ?? $value;
             $value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? $value;
             if ($value === $needle) {
                 return true;
