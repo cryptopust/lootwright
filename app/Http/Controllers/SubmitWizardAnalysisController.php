@@ -24,7 +24,8 @@ final class SubmitWizardAnalysisController extends Controller
         $goals = array_values(array_unique([...$data['goals'], $data['priority'], $data['play_style'], ...array_filter([$data['problem'] ?? null, $data['description'] ?? null])]));
         $budgetAmount = $data['budget_amount'] ?? null;
         $budgetCurrency = $budgetAmount === null ? null : ($data['budget_currency'] ?? null);
-        $receipt = $useCase->handle(new SubmitBuildArtifactCommand((string) $request->user()->id, $data['idempotency_key'], $edition, Locale::from('tr-TR')->value(), $type, $artifact, new AnalysisParameters($goals, $budgetAmount, $budgetCurrency, new AnalysisSelection(PlatformRealm::Pc, $data['league'] ?? null, $data['goals'][0], null, null, null, (bool) $data['ai_explanation_opt_in'], $data['character_class'], $data['ascendancy'] ?? null, (int) $data['character_level'], $data['flow'], $data['alternate_ascendancy'] ?? null, $data['secondary_progression'] ?? null))));
+        $league = ($data['league'] ?? null) === 'standard' ? null : ($data['league'] ?? null);
+        $receipt = $useCase->handle(new SubmitBuildArtifactCommand((string) $request->user()->id, $data['idempotency_key'], $edition, Locale::from('tr-TR')->value(), $type, $artifact, new AnalysisParameters($goals, $budgetAmount, $budgetCurrency, new AnalysisSelection(PlatformRealm::Pc, $league, $data['goals'][0], null, null, null, (bool) $data['ai_explanation_opt_in'], $data['character_class'], $data['ascendancy'] ?? null, (int) $data['character_level'], $data['flow'], $data['alternate_ascendancy'] ?? null, $data['secondary_progression'] ?? null))));
         DB::table('analyses')->where('id', $receipt->analysisId)->whereNull('user_id')->update(['user_id' => $request->user()->id]);
 
         return response()->json(['analysis_id' => $receipt->analysisId, 'status' => $receipt->state->value, 'idempotent_replay' => $receipt->replayed], $receipt->replayed ? 200 : 202, ['Cache-Control' => 'no-store']);

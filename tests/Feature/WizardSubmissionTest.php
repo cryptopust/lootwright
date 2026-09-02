@@ -69,6 +69,7 @@ final class WizardSubmissionTest extends TestCase
 
         $parameters = json_decode(Crypt::decryptString((string) DB::table('analyses')->value('parameters_snapshot_encrypted')), true, flags: JSON_THROW_ON_ERROR);
         self::assertNull($parameters['budget']);
+        self::assertNull($parameters['selection']['league']);
     }
 
     public function test_draft_rejects_raw_artifact_fields_and_is_owner_scoped(): void
