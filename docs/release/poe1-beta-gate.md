@@ -46,5 +46,18 @@ requires the authenticated confirmation form and no deletion request was
 issued. The permanent live suite remains the original 3/3 guarded tests and
 does not yet include ownership/delete/variant assertions.
 
-Decision: `NOT_READY` until canonical CI/RT node variants and owner-confirmed
-delete are evidenced, with a permanent live-suite expansion.
+The owner-confirmed delete flow was completed for disposable analysis
+`01a0632e-5cdd-7189-b7cd-3749192e7237`: after Fortify confirmation, delete
+returned the dashboard redirect and subsequent detail/API/export reads all
+returned 404. Saved listings no longer contained the record. (The initial
+confirmation request itself returned to `/dashboard`; no middleware was
+bypassed.)
+
+Canonical keystone IDs were resolved from the active production snapshot:
+Chaos Inoculation `passive:11455`, Resolute Technique `passive:31961`.
+However, the live app was still on the pre-hydration deployment when the first
+numeric-node probes ran, so CI and RT semantic results remain pending a
+deployment of the canonical-keystone hydration fix.
+
+Decision: `NOT_READY` until the hydration deployment and live CI/RT negative
+assertions are evidenced, with the permanent live-suite expansion.

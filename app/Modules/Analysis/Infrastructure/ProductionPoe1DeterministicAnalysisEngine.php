@@ -106,6 +106,7 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
             }
             [$analysisRules, $knownNodes, $snapshotProvenance, $canonicalRuleset] = $this->loadAndVerifyRuleset($identity);
             $build = $this->hydrateBuild($artifact->normalizedSnapshot ?? '');
+            $build = $this->hydrateCanonicalKeystones($build, $canonicalRuleset);
             $this->validateCanonicalBuildReferences($build, $canonicalRuleset);
             $analysisId = AnalysisId::from(GameEdition::Poe1, $analysis->id);
             if ($analysisId->isFailure() || ! $analysisId->value() instanceof AnalysisId) {
@@ -534,6 +535,59 @@ final readonly class ProductionPoe1DeterministicAnalysisEngine implements Determ
         if ($class !== null && $ascendancy !== null && $ascendancy->characterClassExternalId !== $class->externalId) {
             throw new TerminalWorkflowFailure('canonical_ascendancy_class_mismatch', 'The PoE1 ascendancy does not belong to the resolved canonical character class.');
         }
+    }
+
+    /**
+     * PoB exports encode allocated keystones in the passive-node list. Resolve
+     * those numeric IDs against the active immutable ruleset before analysis so
+     * mechanic-aware rules (CI/RT) receive canonical identities. Unknown IDs
+     * remain untouched and continue through the normal fail-closed diagnostics.
+     */
+    private function hydrateCanonicalKeystones(CanonicalImportedBuild $build, Poe1Ruleset $ruleset): CanonicalImportedBuild
+    {
+        $resolver = new Poe1CanonicalResolver($ruleset);
+        $keystones = $build->keystones;
+        foreach ($build->passiveNodeIds as $nodeId) {
+            $entity = $resolver->resolve(CanonicalEntityType::Keystone, $nodeId);
+            if ($entity !== null) {
+                $keystones[] = $entity->externalId;
+            }
+        }
+        $keystones = array_values(array_unique(array_filter($keystones, 'is_string')));
+        sort($keystones, SORT_STRING);
+
+        return new CanonicalImportedBuild(
+            $build->edition,
+            $build->buildVersion,
+            $build->characterLevel,
+            $build->characterClassId,
+            $build->ascendancyId,
+            $build->choices,
+            $build->passiveNodeIds,
+            $build->skills,
+            $build->items,
+            $build->configuration,
+            $build->summaryValues,
+            $build->notes,
+            $build->beta,
+            $build->attributes,
+            $build->life,
+            $build->energyShield,
+            $build->mana,
+            $build->armour,
+            $build->evasion,
+            $build->resistances,
+            $build->supports,
+            $build->auras,
+            $build->itemModifiers,
+            $keystones,
+            $build->jewels,
+            $build->clusters,
+            $build->propertySupport,
+            $build->unsupportedFields,
+            $build->warnings,
+            $build->sourceMetadata,
+        );
     }
 
     private function hydrateBuild(string $snapshot): CanonicalImportedBuild

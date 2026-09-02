@@ -10,6 +10,7 @@ const enabled = process.env.LOOTWRIGHT_LIVE_E2E === 'true';
 const liveUrl =
     process.env.LOOTWRIGHT_LIVE_URL ??
     'https://lootwright-production-kt2jq5.laravel.cloud';
+const destructive = process.env.LOOTWRIGHT_LIVE_E2E_DESTRUCTIVE === 'true';
 
 test.describe('PoE1 Laravel Cloud acceptance', () => {
     test.skip(!enabled, 'Set LOOTWRIGHT_LIVE_E2E=true to run against Cloud.');
@@ -72,5 +73,10 @@ test.describe('PoE1 Laravel Cloud acceptance', () => {
         await page.getByRole('button', { name: /Giriş yap|Login/i }).click();
         await page.waitForLoadState('networkidle');
         await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+    });
+
+    test('keeps destructive ownership/delete checks explicitly opt-in', async () => {
+        test.skip(!destructive, 'Set LOOTWRIGHT_LIVE_E2E_DESTRUCTIVE=true for disposable destructive checks.');
+        expect(destructive).toBe(true);
     });
 });

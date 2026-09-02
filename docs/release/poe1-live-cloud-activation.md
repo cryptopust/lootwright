@@ -222,5 +222,9 @@ recipe. Both results retained the active ruleset identity and had no market or
 AI data. The attempted CI and Resolute Technique variants used display names
 instead of canonical numeric passive-node identifiers; the importer therefore
 did not recognize those keystones, so CI/RT semantic gates remain unproven.
-Owner-confirmed deletion likewise remains unproven pending completion of the
-password-confirmation form.
+Owner-confirmed deletion was completed for disposable analysis
+`01a0632e-5cdd-7189-b7cd-3749192e7237`; after the Fortify confirmation form,
+subsequent detail/API/export reads returned 404 and the saved listing no
+longer contained the record. CI/RT numeric-node probes were run before the
+canonical-keystone hydration fix deployed, so those semantic gates remain
+pending deployment and retest.
