@@ -19,6 +19,7 @@ use Lootwright\Application\Workflow\DTO\DeletionResult;
 use Lootwright\Application\Workflow\DTO\DeterministicAnalysisSnapshot;
 use Lootwright\Application\Workflow\DTO\ParsedArtifact;
 use Lootwright\Application\Workflow\DTO\PortableAnalysisDocument;
+use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\DTO\SubmissionReceipt;
 use Lootwright\Application\Workflow\Exception\IdempotencyConflict;
 use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
@@ -243,6 +244,40 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
             ]);
         }, 3);
         event(new BuildArtifactParsed($artifactId, $parsed->edition->value, $parsed->adapterKey, $parsed->parserVersion));
+    }
+
+    public function pinAnalysisRuleset(string $analysisId, ResolvedAnalysisContext $context): void
+    {
+        DB::transaction(function () use ($analysisId, $context): void {
+            $analysis = DB::table('analyses')->where('id', $analysisId)->lockForUpdate()->first();
+            if ($analysis === null || $this->string($analysis, 'state') !== AnalysisState::Processing->value) {
+                throw new TerminalWorkflowFailure('analysis_state_conflict', 'The ruleset identity could not be pinned before analysis dispatch.');
+            }
+
+            foreach ([
+                'ruleset_id' => $context->rulesetId,
+                'ruleset_version' => $context->rulesetVersion,
+                'ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+            ] as $field => $expected) {
+                $existing = $this->nullableString($analysis, $field);
+                if ($existing !== null && $existing !== $expected) {
+                    throw new TerminalWorkflowFailure('stale_ruleset_selection', 'The persisted ruleset identity changed before analysis dispatch.');
+                }
+            }
+
+            DB::table('analyses')->where('id', $analysisId)->update([
+                'ruleset_id' => $context->rulesetId,
+                'ruleset_version' => $context->rulesetVersion,
+                'ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+                'updated_at' => now(),
+            ]);
+            DB::table('builds')->where('id', $this->string($analysis, 'artifact_id'))->update([
+                'selected_ruleset_id' => $context->rulesetId,
+                'selected_ruleset_version' => $context->rulesetVersion,
+                'selected_ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+                'updated_at' => now(),
+            ]);
+        }, 3);
     }
 
     public function claimAnalysis(string $analysisId): ?AnalysisRecord

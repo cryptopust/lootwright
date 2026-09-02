@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use App\Modules\BuildIntake\PolicyGatedPobImporter;
 use Database\Seeders\PolicyDefaultsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +53,6 @@ final class ProductionPoe1AnalysisTest extends TestCase
         $xml = file_get_contents(base_path('tests/Fixtures/Pob/poe1-minimal.xml'));
         self::assertIsString($xml);
         $xml = $this->canonicalPoe1Xml(str_replace('targetVersion="3_0"', 'targetVersion="3.29.1"', $xml));
-        $ruleset = DB::table('ruleset_versions')->sole();
         $response = $this->actingAs($user)->postJson('/api/analyses', [
             'game' => 'poe1',
             'locale' => 'en-US',
@@ -60,9 +60,6 @@ final class ProductionPoe1AnalysisTest extends TestCase
             'artifact' => $xml,
             'storage_consent' => true,
             'goals' => ['Inspect deterministic fixture evidence.'],
-            'ruleset_id' => $ruleset->id,
-            'ruleset_version' => $ruleset->version,
-            'ruleset_checksum_sha256' => $ruleset->checksum_sha256,
         ], ['Idempotency-Key' => str_repeat('r', 32)])->assertAccepted();
         $artifactId = $response->json('artifact_id');
         $analysisId = $response->json('analysis_id');
@@ -70,6 +67,16 @@ final class ProductionPoe1AnalysisTest extends TestCase
         self::assertIsString($analysisId);
 
         $this->app->make(ParseAndNormalizeBuild::class)->handle($artifactId);
+        $ruleset = DB::table('ruleset_versions')->sole();
+        $this->assertDatabaseHas('analyses', [
+            'id' => $analysisId,
+            'ruleset_id' => $ruleset->id,
+            'ruleset_version' => $ruleset->version,
+            'ruleset_checksum_sha256' => $ruleset->checksum_sha256,
+        ]);
+        Queue::assertPushed(RunDeterministicAnalysisJob::class, static fn (RunDeterministicAnalysisJob $job): bool => $job->analysisId === $analysisId
+            && $job->edition === GameEdition::Poe1
+            && $job->rulesetChecksumSha256 === $ruleset->checksum_sha256);
         $this->app->make(RunDeterministicAnalysis::class)->handle($analysisId);
 
         $this->assertDatabaseHas('analyses', ['id' => $analysisId, 'state' => 'completed']);
