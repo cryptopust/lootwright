@@ -2,7 +2,7 @@
 
 Validation date: 2026-09-02
 
-Deployment `66501ba5b90e1778b9b9b1cd2d2d8e051c8c2558` is the verified
+Deployment `1bf965335da3f5222c83d19bb721c3f6303776ca` is the verified
 production revision. Laravel Cloud production has exactly one managed worker
 for each queue, using the database connection and the bounded commands in
 `docs/operations/queue-runtime.md`. Automatic parsing and analysis probes,
@@ -17,14 +17,13 @@ passed. A second synthetic account was registered and operator-verified;
 view/API/export access to User 1's analysis returned 404 and cross-owner delete
 returned 423, so no User 1 data was changed.
 
-The following final gates remain open in this validation session: owner
-password-confirmed deletion and deletion persistence, live controlled
-low-resistance/attribute/CI/Resolute Technique differential submissions,
-and a permanent live-suite expansion covering those cases. The healthy
-baseline is already represented by the completed acceptance analysis. The
-current fixture produced no actionable planner or recipe output; no market or
-AI data was used. Reservation checks remain outside the release gate because
-the acceptance fixture does not provide a supported reservation finding.
+Final gates were exercised in the guarded live suite: owner-confirmed
+deletion, deletion persistence, canonical CI/Resolute Technique variants,
+low-resistance and attribute actionable planner/recipe variants, and
+save/reload with cross-owner denial. The healthy baseline is allowed to have
+empty planner/recipe output. No market or AI data was used. Reservation checks
+remain outside the release gate because the acceptance fixture does not provide
+a supported reservation finding.
 
 Health classification is `EXPECTED_CLOUD_EDGE_READINESS_PROTECTION`: `/up`
 returns 200, `/ready` 404, and `/status` 403 while route registration is
@@ -55,9 +54,10 @@ bypassed.)
 
 Canonical keystone IDs were resolved from the active production snapshot:
 Chaos Inoculation `passive:11455`, Resolute Technique `passive:31961`.
-However, the live app was still on the pre-hydration deployment when the first
-numeric-node probes ran, so CI and RT semantic results remain pending a
-deployment of the canonical-keystone hydration fix.
+After deployment `1bf9653`, live numeric-node probes confirmed normalized
+keystones `Chaos Inoculation`/`passive:11455` and `Resolute Technique`/
+`passive:31961`. CI emitted no generic life finding or life recommendation;
+RT emitted no crit-dependent finding or recommendation.
 
-Decision: `NOT_READY` until the hydration deployment and live CI/RT negative
-assertions are evidenced, with the permanent live-suite expansion.
+The permanent live suite contains nine guarded tests. With all required tests
+passing, the release decision is `LIVE_POE1_BETA_READY_WITH_LIMITATIONS`.

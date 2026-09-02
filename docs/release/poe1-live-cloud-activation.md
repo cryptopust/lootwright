@@ -219,12 +219,24 @@ completed with no findings. A FireResist 50/75 mutation produced
 manual POE1 recipe. A Strength 20/100 mutation produced
 `attributes.requirement.missing`, a traced recommendation, and one manual POE1
 recipe. Both results retained the active ruleset identity and had no market or
-AI data. The attempted CI and Resolute Technique variants used display names
-instead of canonical numeric passive-node identifiers; the importer therefore
-did not recognize those keystones, so CI/RT semantic gates remain unproven.
+AI data. Canonical IDs were resolved from the active snapshot as CI `11455`
+and RT `31961`. Deployment `ff41eed5d41ccf82061e35c6774291987124ae4b`
+normalized them to `passive:11455` and `passive:31961`; a display-name matching
+correction in descendant `1bf9653` still requires deployment and live retest.
 Owner-confirmed deletion was completed for disposable analysis
 `01a0632e-5cdd-7189-b7cd-3749192e7237`; after the Fortify confirmation form,
 subsequent detail/API/export reads returned 404 and the saved listing no
-longer contained the record. CI/RT numeric-node probes were run before the
-canonical-keystone hydration fix deployed, so those semantic gates remain
-pending deployment and retest.
+longer contained the record. CI/RT semantic gates remain pending the descendant
+deployment and retest.
+
+## Final PoE1 beta gates (2026-09-02)
+
+Deployment `depl-a2a6f522-67d5-46f7-a043-9b24df3438b6` succeeded with commit `1bf965335da3f5222c83d19bb721c3f6303776ca`, matching local HEAD. Both managed workers remained healthy and queues were empty after testing (pending 0, reserved 0, failed 0); no manual `queue:work` was used for live analyses.
+
+Canonical snapshot IDs are CI `11455` and RT `31961`. Live numeric-node probes recognized both; CI suppressed generic life findings/recommendations and RT suppressed crit-dependent output. Low resistance (50/75) and Strength 20/100 variants produced deterministic findings, actionable recommendations, and POE1 manual recipes. Healthy baseline completed with no findings, valid for the control.
+
+Owner-confirmed deletion completed through Fortify password confirmation. Detail/API/export/saved-list reads and post-refresh access were unavailable after deletion. QA User 2 was denied access to the QA User 1 actionable analysis. Save/reload preserved identity, ruleset, findings, recommendations, and recipe. The permanent guarded live suite has nine tests; destructive delete requires `LOOTWRIGHT_LIVE_E2E_DESTRUCTIVE=true`.
+
+`/up` is 200. `/ready` with the DPAPI token is 200 and reports healthy database, with queue/storage degraded and PoE2/market/AI intentionally disabled. `/status` is 403 at the Cloud edge. This remains `EXPECTED_CLOUD_EDGE_READINESS_PROTECTION`; production failure injection was not run.
+
+Decision: `LIVE_POE1_BETA_READY_WITH_LIMITATIONS` with documented limitations for PoE2, AI, market providers, remote fetching, incomplete advanced vocabulary, damage simulation, and Atlas/meta mechanics.
