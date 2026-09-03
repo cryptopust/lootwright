@@ -6,6 +6,7 @@ use JsonSerializable;
 use Lootwright\Domain\Shared\Error\DomainError;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
 use Lootwright\Domain\Shared\Error\DomainResult;
+use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Value\Confidence;
 use Lootwright\Domain\Shared\Value\Locale;
 
@@ -58,6 +59,30 @@ final readonly class BuildIntent implements JsonSerializable
             $confidence,
             $validatedClarifications,
         ));
+    }
+
+    /** Explicit unknown intent for workflows that predate structured intent. */
+    public static function unspecified(GameEdition $edition, Locale $locale): self
+    {
+        $content = ContentGoal::from($edition, 'intent.unspecified')->value();
+        $style = PlayStyle::from($edition, 'intent.unspecified')->value();
+        $goal = PlayerGoal::create(
+            $edition,
+            'No structured build intent was supplied.',
+            $content,
+            $style,
+        )->value();
+        $clarification = ClarificationRequirement::create(
+            'intent.required',
+            'Which content goal and play style should the analysis evaluate?',
+        )->value();
+
+        return self::create(
+            $goal,
+            $locale,
+            Confidence::fromBasisPoints(0)->value(),
+            [$clarification],
+        )->value();
     }
 
     public function requiresClarification(): bool

@@ -1,11 +1,40 @@
 # Production Packaging and Deployment
 
-Status: self-hosted/container package implemented on 2026-08-16. It remains a
-supported local and self-hosted option, but [ADR 0014](../adr/0014-laravel-cloud-staging.md)
-selects Laravel Cloud for the first pre-alpha staging environment. Follow the
-[Laravel Cloud guide](../deployment/laravel-cloud.md) for that path. No image was
-published, repository pushed, domain registered, infrastructure created, or
-environment deployed by this work.
+Status: Laravel Cloud is the production platform. The Docker/Compose files in
+`deploy/` are local or self-hosted compatibility tooling only and are not the
+production architecture. Follow the [Laravel Cloud guide](../deployment/laravel-cloud.md)
+and run `scripts/predeploy-check.ps1` / `scripts/postdeploy-check.ps1` for each
+release.
+
+Cloud provisions the application runtime, PostgreSQL, cache, managed queue and
+scheduler from the environment dashboard. Do not create a permanent Redis,
+Horizon, cron host, or worker VM when a Cloud managed resource (including
+scale-to-zero) satisfies the workload.
+
+## Cloud production baseline
+
+- PostgreSQL is the authoritative store; run `php artisan migrate:status` and
+  `php artisan migrate --force` only through Cloud's deploy command.
+- Use Cloud cache and managed queue connections. Expensive build parsing,
+  deterministic analysis, approved dataset imports, market refreshes, and AI
+  work run asynchronously on isolated queues (`build-parsing`,
+  `deterministic-analysis`, `source-imports`, and `ai`).
+- Jobs are idempotent/unique, bounded by explicit timeouts, retry three times
+  with 10/30/90 second backoff (source imports are one attempt with a 600-second
+  adapter timeout), and persist terminal failures in `failed_jobs`. Queue
+  visibility/retry leases must exceed the 300-second analysis timeout (the
+  repository defaults to 360 seconds).
+- The Cloud scheduler runs only the registered, idempotent commands (five core
+  tasks plus conditional source sync/pruning). Every
+  multi-instance task uses `onOneServer()` and `withoutOverlapping()`; no ad-hoc
+  cron polling is permitted.
+- User artifacts use a private durable object-storage disk before imports or
+  queued analysis are enabled. Ephemeral application storage is scratch-only.
+- `/up` is public liveness. `/ready?detail=1` is token-protected and reports
+  database, cache, queue, storage, active rulesets, market, and AI states.
+- Cloud logs receive redacted structured events for HTTP/analysis/queue/import/
+  market/AI failures and latency. Alert routing is configured in Cloud, not in
+  application code.
 
 ## Artifact and trust model
 

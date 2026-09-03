@@ -4,7 +4,8 @@ The register controls external facts, formats, APIs, and content. Absence from t
 
 Last reviewed: GGG Developer Docs/API Reference on 2026-08-14 at 13:16 UTC;
 GGG Terms re-verified on 2026-08-15 at 20:26 UTC; OpenAI API/program evidence on
-2026-08-15.
+2026-08-15; game-data candidates and current upstream revisions reviewed on
+2026-08-21; repository and API availability rechecked on 2026-08-25.
 
 The Developer Docs, API Reference, and Terms were retrieved again from the
 exact first-party URLs below. All returned HTTP 200. No material policy-text
@@ -33,16 +34,21 @@ funding permission. No approval may be inferred from that absence.
 | `USER-INPUT-001` | Natural-language goals explicitly entered in Lootwright | Directly supplied by the user for analysis | Constrained intent extraction and deterministic analysis configuration | Never publish or reuse; user-controlled retention | `allowed` subject to privacy/security controls |
 | `USER-INPUT-002` | PoB/PoB2 share code explicitly pasted or uploaded as plain text by the user, including a canonical `https://pobb.in/{base64url-code}` wrapper | Directly supplied by the user; the wrapper path is extracted locally and underlying format provenance is separate | Decode only after the applicable parser-format record is approved; never request the wrapper URL | Never publish or persist raw input; normalized persistence requires authenticated ownership, consent, encryption, bounded retention, and deletion | `conditional`; input accepted only when parser record is active |
 | `USER-INPUT-003` | Path of Exile item text explicitly pasted by the user | Directly supplied by the user | Parse user-provided facts for that user's analysis | Never build a corpus or redistribute protected expression; short-lived raw retention | `allowed` with conservative parsing and display |
+| `USER-POB-001` | PoB text deliberately submitted by its user | User input, separate from format/game-data provenance | Bounded private import and normalization; never ruleset authority | No public redistribution; consent, ownership, retention and deletion controls apply | `allowed`; enabled by default for explicit submission only |
+| `USER-ITEM-TEXT-001` | Item text deliberately submitted by its user | User input, separate from canonical item metadata | Bounded private import and normalization; never ruleset authority | No corpus or public redistribution | `allowed`; enabled by default for explicit submission only |
+| `GGG-POE1-SKILLTREE-001` | GGG official [`skilltree-export`](https://github.com/grindinggear/skilltree-export/tree/8bd138b32ea2631455cac5935bfab089f826094f), root `data.json` only | Commit `8bd138b32ea2631455cac5935bfab089f826094f`, retrieved 2026-08-20; raw SHA-256 `7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122` | Operator-only, bounded immutable PoE1 snapshot import, reviewed ruleset activation, and local checksum-verified passive-node membership analysis; exact commit/URL/checksum only | Repository has no separate license file; record `LicenseRef-GGG-Terms-of-Use`; no assets or flavour text; icon path reference only; GGG source attribution and non-affiliation notice retained | `allowed-default-off`; import requires `GGG_PASSIVE_TREE_IMPORT_ENABLED=true`; activated local analysis requires the exact Policy Gate allow and performs no network request |
+| `GGG-POE1-ATLASTREE-001` | Exact documented official PoE1 Atlas-tree export family; [GGG API Reference](https://www.pathofexile.com/developer/docs/reference) | GGG official source with the same immutable metadata requirements | Recorded for future factual Atlas work | No protected media | `allowed-outside-mvp`; disabled for import and activation in the PoE1 MVP |
 | `LOOTWRIGHT-001` | Lootwright-original rules, formulas, schemas, and documentation | Contributor-authored with review and evidence records | Runtime analysis and open-source distribution | MIT for original material only | `allowed`; must not encode unproven GGG facts |
 | `POB1-FORMAT-001` | Path of Building Community, <https://github.com/PathOfBuildingCommunity/PathOfBuilding>, commit `bcbca9b60b04abc17935c84ff3589342193bd758`; [license](https://github.com/PathOfBuildingCommunity/PathOfBuilding/blob/bcbca9b60b04abc17935c84ff3589342193bd758/LICENSE.md), file SHA-256 `d5e0e888aaf923e4a1e85078f2ae24602baa79d883a359c3ed928354a57bd0db` | Maintained upstream PoE1 repository and consolidated root license reviewed 2026-08-14 | Format-only interoperability for codes users paste/upload: Base64URL/Base64, zlib envelope, `PathOfBuilding` XML root, and build-section field names | Lootwright-original parser only; no upstream Lua, dependencies, data, formulas, assets, or builds; attribution required | `allowed-format-only`; review expires 2026-11-12 or immediately on upstream format/license change |
 | `POB2-FORMAT-001` | Path of Building Community, <https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2>, commit `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`; [license](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/blob/5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6/LICENSE.md), file SHA-256 `22d2d075c1d361971764fbbd1e12e1485bdf35f0769ffac4eca8a79afc60dda8` | Maintained upstream PoE2 repository and consolidated root license reviewed 2026-08-14 | Beta format-only interoperability for codes users paste/upload: same envelope, distinct `PathOfBuilding2` XML root, and separately normalized fields | Same exclusions as PoE1; no parity claim beyond original structural fixtures; attribution required | `allowed-format-only-beta`; review expires 2026-11-12 or immediately on upstream format/license change |
+| `POENINJA-ECONOMY-001` | poe.ninja API docs: <https://poe.ninja/docs/api>, retrieved 2026-08-20 | Public documented PoE1 economy surface; source version `economy-v1` | Only the documented allowlisted PoE1 economy operations, out-of-band normalization, cached market context, visible attribution and freshness | No icons/image URLs or raw payload retention; never ruleset authority; no SLA assumed | `conditional-disabled`; requires both poe.ninja switches, Policy Gate, contact, exact host/path and current evidence |
 
 ## Candidate or disabled records
 
 | ID | Candidate | Intended use | Missing approval evidence | Status |
 | --- | --- | --- | --- | --- |
 | `POE1-RULES-001` | No ruleset source selected | Canonical PoE1 stats, calculations, patch/league rules | Exact documented GGG export or permitted third-party source, license/commercial terms, version, checksum, transformation and redistribution analysis | `disabled-candidate` |
-| `POE2-RULES-001` | No ruleset source selected | Canonical PoE2 rules in phase two | Same evidence as PoE1 plus phase-two activation ADR | `disabled-candidate` |
+| `POE2-RULES-001` | No ruleset source selected | Canonical PoE2 rules for Early Access analysis | Same evidence as PoE1 plus separate PoE2 activation review and ADR | `disabled-candidate` |
 | `GGG-API-MVP` | Documented resources under the API Reference | Potential future account or game metadata | Concrete product need, exact documented operation, application registration, scopes, retention, rate limits, approval | `disabled`; not needed for MVP |
 | `GGG-TRADE-UNDOCUMENTED` | `/api/trade/search`, `/api/trade/fetch`, `/api/trade/data/*` | None | These are outside the allowed architecture | `permanently-prohibited` under current constitution |
 | `GGG-PUBLIC-STASH` | Documented PoE1 Public Stashes resource | None for Lootwright | Live market indexing is a product non-goal even though the resource is documented | `disabled-out-of-scope` |
@@ -50,9 +56,35 @@ funding permission. No approval may be inferred from that absence.
 | `THIRD-PARTY-BUILD-SITES` | Any third-party build or trade site | None | Scraping is prohibited; API/license/provenance not selected | `disabled` |
 | `POBBIN-REMOTE` | Remote <https://pobb.in/> fetching | Optional future retrieval of a user-selected build | Explicit operator permission, terms, retention, security review, exact host/path policy, and user consent | `disabled-candidate`; remote fetch remains prohibited. A locally extracted canonical pasted URL wrapper is governed by `USER-INPUT-002`, not this record. |
 | `REPOE-CANDIDATE` | RePoE candidate <https://github.com/brather1ng/RePoE> or a similar generated dataset | Candidate ruleset facts | Exact version, license chain, underlying GGG-data rights, commercial/derivative/redistribution permission, checksum, and attribution | `disabled-candidate`; hosted redistribution prohibited while rights are unknown |
+| `POB-GAME-DATA-CANDIDATE` | Path of Building Community PoE1 repository, reviewed commit `510e03806791db5fb6563ef93104f2a62a273b97` | Candidate embedded/generated PoE1 facts, separate from format interoperability | The MIT software license does not by itself establish rights for embedded/generated GGG data; exact field, transformation, redistribution, commercial and attribution review | `requires-review`; no production authority |
+| `POB2-GAME-DATA-CANDIDATE` | Path of Building Community PoE2 repository, reviewed commit `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6` | Candidate embedded/generated PoE2 facts, separate from beta format interoperability | Same rights review plus independent PoE2 release approval | `requires-review`; no production authority |
+| `DAT-SCHEMA-CANDIDATE` | [`poe-tool-dev/dat-schema`](https://github.com/poe-tool-dev/dat-schema/tree/73ae93b30c1fe6b1e159cad8414349391cc0aac4), commit `73ae93b30c1fe6b1e159cad8414349391cc0aac4` | Importer schema research only | Repository schema is MIT, but it supplies no approved game rows or permission for another source's rows | `approved-schema-only`; disabled as canonical fact source |
+| `PYPOE-CANDIDATE` | PyPoE/client-derived tooling | None in production | Intended data path reads client files and produces derived game data; both are prohibited by the current constitution | `prohibited-disabled` |
+| `POEWIKI-CARGO-001` | Path of Exile Wiki [Cargo API](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Data_query_API) and [copyright](https://www.poewiki.net/wiki/Path_of_Exile_Wiki:Copyrights) | Candidate factual metadata fields only | CC BY-NC-SA/share-alike, underlying GGG data, attribution, caching, redistribution, production activation and funding review | `conditional-disabled`; `POEWIKI_IMPORT_ENABLED=false`; no article prose, images, icons, audio, flavour text, screenshots, or rendering templates |
+| `POE2-DATASET-CANDIDATE` | Lootwright-authored PoE2 0.3.0 canonical dataset package | Edition-isolated canonical records, deterministic rules, and local Trade vocabulary | Exact checksum, edition scope, immutable publication, and independent release/staging review | `allowed-default-off`; no remote fetch and no PoE1 fallback |
+| `POE-DB-CANDIDATE` | PoEDB community database, <https://poedb.tw/> | Candidate lookup/reference only | No documented redistribution/commercial licence or canonical snapshot permission recorded; no runtime client | `requires-review`; do not scrape or import |
+| `CRAFT-OF-EXILE-CANDIDATE` | Craft of Exile, <https://www.craftofexile.com/> | Candidate crafting-reference source only | No approved API/data licence, cache, redistribution, or commercial-use evidence; no runtime client | `disabled-candidate`; do not scrape or import |
+| `POE-TRADE-VOCABULARY-CANDIDATE` | Official Trade vocabulary/internal data paths | None; manual recipes use Lootwright-owned canonical keys only | `/api/trade/search`, `/api/trade/fetch`, and `/api/trade/data/*` are undocumented and prohibited | `permanently-prohibited`; no adapter |
 | `AI-PROVIDER-001` | Official OpenAI [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5.4 nano](https://developers.openai.com/api/docs/models/gpt-5.4-nano), [pricing](https://developers.openai.com/api/docs/pricing), [data controls](https://developers.openai.com/api/docs/guides/your-data), and [spend limits](https://developers.openai.com/api/docs/guides/spend-limits), retrieved 2026-08-15 | Optional intent extraction, clarification, and deterministic-result explanation through the tested adapter only | User-facing privacy disclosure and opt-in UX, provider approval, deployment endpoint/model/region/retention review, and verified OpenAI project hard spend limit | `disabled-candidate`; adapter exists, but exact operations remain non-executable `require_review` |
 
 ## Record requirements
+
+## Market capability decisions
+
+Market permissions are reviewed independently. The current executable defaults
+are intentionally conservative:
+
+| Source | Search | Read/listings | Cache | Aggregate/analyze | Store/display | Link | Generate filters |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GGG documented API reference | disabled | disabled | disabled | disabled | disabled | disabled | disabled |
+| Official Trade pages/internal paths | prohibited | prohibited | prohibited | prohibited | prohibited | prohibited | prohibited |
+| poe.ninja economy record (`POENINJA-ECONOMY-001`) | disabled by default | conditional, operator-only | conditional, bounded TTL | conditional, contextual only | conditional with attribution/freshness | disabled | disabled |
+| Approved community dataset | requires source-specific review | requires source-specific review | requires source-specific review | requires source-specific review | requires source-specific review | disabled unless documented | disabled unless documented |
+
+The `TradeProvider` contract reflects these separate decisions. Enabling one
+capability never implies permission for another. No provider may collect
+credentials, reuse sessions, bypass rate limits, automate purchases or seller
+interactions, or call undocumented Trade endpoints.
 
 Before changing a candidate to `allowed`, add:
 
@@ -69,3 +101,9 @@ Before changing a candidate to `allowed`, add:
 ## Explicit exclusions
 
 Lootwright's [MIT license scope](../../LICENSE-SCOPE.md) does not grant rights to any entry owned by GGG, a user, or a third party. Technical accessibility, user submission, factual nature, or an upstream repository's open-source license does not automatically prove that embedded publisher data/assets may be copied or redistributed.
+
+The executable Source Registry is the `policy_data_sources` projection seeded
+from `PolicyDefaults`; it does not supersede this reviewed register. Registry
+metadata may only restrict a documented decision. Enabling configuration cannot
+turn `unknown`, `require_review`, `prohibited`, expired evidence or an active
+kill switch into an allow decision.

@@ -5,13 +5,14 @@ namespace Lootwright\Application\Workflow\DTO;
 use Lootwright\Domain\Analysis\Finding;
 use Lootwright\Domain\Recommendations\Recommendation;
 use Lootwright\Domain\TradePlanning\ManualTradeRecipe;
+use Lootwright\Domain\TradePlanning\TradeRecipe;
 
 final readonly class DeterministicAnalysisSnapshot
 {
     /**
      * @param  list<Finding>  $findings
      * @param  list<Recommendation>  $recommendations
-     * @param  list<ManualTradeRecipe|\Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe>  $recipes
+     * @param  list<ManualTradeRecipe|TradeRecipe|\Lootwright\Application\TradePlanning\DTO\ManualTradeRecipe>  $recipes
      */
     public function __construct(
         public string $adapterKey,

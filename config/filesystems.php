@@ -39,9 +39,17 @@ return [
         ],
 
         'analysis-artifacts' => [
-            'driver' => 'local',
+            // Cloud workers run on separate ephemeral instances, so production
+            // must use durable S3-compatible object storage. Local remains the
+            // safe default for development and tests.
+            'driver' => env('ANALYSIS_ARTIFACTS_DRIVER', 'local'),
             'root' => storage_path('app/private/analysis-artifacts'),
-            'serve' => false,
+            'key' => env('ANALYSIS_ARTIFACTS_KEY', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('ANALYSIS_ARTIFACTS_SECRET', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('ANALYSIS_ARTIFACTS_REGION', env('AWS_DEFAULT_REGION', 'auto')),
+            'bucket' => env('ANALYSIS_ARTIFACTS_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('ANALYSIS_ARTIFACTS_ENDPOINT', env('AWS_ENDPOINT')),
+            'use_path_style_endpoint' => filter_var(env('ANALYSIS_ARTIFACTS_PATH_STYLE', env('AWS_USE_PATH_STYLE_ENDPOINT', false)), FILTER_VALIDATE_BOOL),
             'throw' => true,
             'report' => false,
         ],

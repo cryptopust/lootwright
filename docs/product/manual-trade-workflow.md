@@ -9,7 +9,9 @@ Status: the compiler, closed DTO schema, canonical serialization, plain-text
 renderer, Policy Gate operations, and fixture-only conformance tests are
 implemented. Production recipes remain fail-closed until an approved immutable
 PoE1 ruleset publishes the exact filter vocabulary and the deterministic
-analyzer/prioritizer produces slot plans. PoE2 generation remains inactive.
+analyzer/prioritizer produces slot plans. PoE2 catalog/intake is active, while
+PoE2 manual-recipe generation remains fail-closed until its deterministic
+vocabulary and policy evidence are approved.
 
 ## Workflow
 
@@ -55,6 +57,12 @@ Each slot recipe contains:
 - ruleset ID/version/checksum, parser version, source/version, and confidence;
   and
 - unresolved requirements with a clarification question.
+
+When immutable poe.ninja evidence is available, a recipe may additionally show a
+clearly labelled category estimate, unique-item estimate, gem estimate, or
+currency conversion with source timestamp and freshness. It is never an exact
+rare or modifier-combination price; use “no exact market match available” when
+the category cannot support the target.
 
 Canonical modifier IDs in the DTO are Lootwright-internal, edition-scoped
 identifiers used to preserve evidence. They are not official Trade stat IDs and

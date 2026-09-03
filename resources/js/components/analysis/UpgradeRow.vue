@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ConfidenceMeter from '@/components/app/ConfidenceMeter.vue';
+import UnknownValue from '@/components/arpg/UnknownValue.vue';
 import { useLocale } from '@/composables/useLocale';
 import type { DemoUpgrade } from '@/types/analysis-ui';
 
@@ -56,6 +57,9 @@ const { tx } = useLocale();
                 <strong>{{ tx({ tr: 'Sınır:', en: 'Limitation:' }) }}</strong>
                 {{ tx(upgrade.limitation) }}
             </p>
+        </div>
+        <div class="upgrade-cost">
+            <span>Maliyet</span><UnknownValue note="no-live-listings" />
         </div>
         <ConfidenceMeter :value="upgrade.confidence" />
     </article>

@@ -1,0 +1,604 @@
+<?php
+
+namespace App\Modules\Rulesets;
+
+use Carbon\CarbonImmutable;
+use DomainException;
+use Illuminate\Database\Connection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Lootwright\Application\Rulesets\DTO\RulesetActivation;
+use Lootwright\Application\Rulesets\DTO\RulesetPublication;
+use Lootwright\Application\Rulesets\DTO\SourceSnapshotImport;
+use Lootwright\Application\Rulesets\DTO\SourceSnapshotQuarantine;
+use Lootwright\Application\Rulesets\DTO\SourceSnapshotRecord;
+use Lootwright\Application\Rulesets\Ports\GovernedRulesetRepository;
+use Lootwright\Application\Rulesets\Ports\SourceGovernancePolicy;
+use Lootwright\Domain\PoeCatalog\Canonical\Ascendancy;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalEntityType;
+use Lootwright\Domain\PoeCatalog\Canonical\CanonicalGameEntity;
+use Lootwright\Domain\PoeCatalog\Canonical\Keystone;
+use Lootwright\Domain\Shared\Game\GameEdition;
+use Lootwright\Domain\Shared\Serialization\CanonicalJson;
+use RuntimeException;
+
+final readonly class PostgresGovernedRulesetRepository implements GovernedRulesetRepository
+{
+    public function __construct(private SourceGovernancePolicy $policy) {}
+
+    public function importSnapshot(SourceSnapshotImport $snapshot): SourceSnapshotRecord
+    {
+        if (! hash_equals($snapshot->checksumSha256, hash('sha256', CanonicalJson::encode($snapshot->normalizedPayload)))) {
+            throw new DomainException('The source snapshot checksum does not match its normalized payload.');
+        }
+
+        return DB::transaction(function (Connection $_connection) use ($snapshot): SourceSnapshotRecord {
+            $now = CarbonImmutable::now('UTC');
+            $runId = $snapshot->importRunId ?? (string) Str::uuid7();
+            $versionId = $this->sourceVersionId($snapshot->sourceCode, $snapshot->sourceVersion);
+            $sourceLocatorChecksum = hash('sha256', $snapshot->sourceUrl);
+
+            if ($snapshot->importRunId === null) {
+                DB::table('external_source_sync_runs')->insert([
+                    'id' => $runId,
+                    'policy_source_version_id' => $versionId,
+                    'source_key' => $snapshot->sourceCode,
+                    'source_version' => $snapshot->sourceVersion,
+                    'game_edition' => $snapshot->edition->value,
+                    'operation' => $snapshot->operation,
+                    'status' => 'started',
+                    'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                    'started_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            } else {
+                $stagedRun = DB::table('external_source_sync_runs')->where('id', $runId)->lockForUpdate()->first();
+
+                if ($stagedRun === null
+                    || $this->property($stagedRun, 'source_key') !== $snapshot->sourceCode
+                    || $this->property($stagedRun, 'source_version') !== $snapshot->sourceVersion
+                    || $this->property($stagedRun, 'game_edition') !== $snapshot->edition->value
+                    || $this->property($stagedRun, 'operation') !== $snapshot->operation
+                    || $this->property($stagedRun, 'response_checksum_sha256') !== ($snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256)
+                    || $this->property($stagedRun, 'status') !== 'staged'
+                ) {
+                    throw new DomainException('The staged import run does not match this source snapshot.');
+                }
+            }
+
+            $existing = DB::table('source_snapshots')
+                ->where('source_code', $snapshot->sourceCode)
+                ->where('game_edition', $snapshot->edition->value)
+                ->where('source_locator_sha256', $sourceLocatorChecksum)
+                ->where(function ($query) use ($snapshot): void {
+                    $query->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256)
+                        ->orWhere(function ($legacy) use ($snapshot): void {
+                            $legacy->whereNull('upstream_checksum_sha256')
+                                ->where('checksum_sha256', $snapshot->checksumSha256);
+                        });
+                })
+                ->first(['id']);
+
+            if ($existing !== null) {
+                $snapshotId = $this->property($existing, 'id');
+                $this->completeRun($runId, 'succeeded', $snapshotId, $now);
+
+                return new SourceSnapshotRecord($runId, $snapshotId, 'succeeded', true);
+            }
+
+            if ($snapshot->upstreamRevision !== null) {
+                $revision = DB::table('source_snapshots')
+                    ->where('source_code', $snapshot->sourceCode)
+                    ->where('game_edition', $snapshot->edition->value)
+                    ->where('upstream_revision', $snapshot->upstreamRevision)
+                    ->first(['id']);
+
+                if ($revision !== null) {
+                    $conflictId = (string) Str::uuid7();
+                    $existingSnapshotId = $this->property($revision, 'id');
+                    DB::table('source_conflicts')->insert([
+                        'id' => $conflictId,
+                        'import_run_id' => $runId,
+                        'source_version_id' => $versionId,
+                        'source_code' => $snapshot->sourceCode,
+                        'game_edition' => $snapshot->edition->value,
+                        'existing_snapshot_id' => $existingSnapshotId,
+                        'upstream_revision' => $snapshot->upstreamRevision,
+                        'candidate_checksum_sha256' => $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256,
+                        'reason_code' => 'revision_checksum_conflict',
+                        'status' => 'quarantined',
+                        'detected_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                    $this->completeRun($runId, 'quarantined', null, $now, 'revision_checksum_conflict');
+
+                    return new SourceSnapshotRecord($runId, null, 'quarantined', false, $conflictId);
+                }
+            }
+
+            $snapshotId = (string) Str::uuid7();
+            DB::table('source_snapshots')->insert([
+                'id' => $snapshotId,
+                'first_import_run_id' => $runId,
+                'source_version_id' => $versionId,
+                'source_code' => $snapshot->sourceCode,
+                'game_edition' => $snapshot->edition->value,
+                'source_url' => $snapshot->sourceUrl,
+                'source_locator_sha256' => $sourceLocatorChecksum,
+                'upstream_revision' => $snapshot->upstreamRevision,
+                'retrieved_at' => $snapshot->retrievedAt,
+                'checksum_sha256' => $snapshot->checksumSha256,
+                'upstream_checksum_sha256' => $snapshot->sourceChecksumSha256 ?? $snapshot->checksumSha256,
+                'content_type' => $snapshot->contentType,
+                'license_identifier' => $snapshot->licenseIdentifier,
+                'status' => 'valid',
+                'schema_version' => $snapshot->schemaVersion,
+                'normalized_payload' => CanonicalJson::encode($snapshot->normalizedPayload),
+                'created_at' => $now,
+            ]);
+            $this->completeRun($runId, 'succeeded', $snapshotId, $now);
+
+            return new SourceSnapshotRecord($runId, $snapshotId, 'succeeded', false);
+        }, 3);
+    }
+
+    public function quarantineSnapshot(SourceSnapshotQuarantine $snapshot): SourceSnapshotRecord
+    {
+        return DB::transaction(function (Connection $_connection) use ($snapshot): SourceSnapshotRecord {
+            $now = CarbonImmutable::now('UTC');
+            $runId = (string) Str::uuid7();
+            $versionId = $this->sourceVersionId($snapshot->sourceCode, $snapshot->sourceVersion);
+            $sourceLocatorChecksum = hash('sha256', $snapshot->sourceUrl);
+
+            DB::table('external_source_sync_runs')->insert([
+                'id' => $runId,
+                'policy_source_version_id' => $versionId,
+                'source_key' => $snapshot->sourceCode,
+                'source_version' => $snapshot->sourceVersion,
+                'game_edition' => $snapshot->edition->value,
+                'operation' => $snapshot->operation,
+                'status' => 'quarantined',
+                'response_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'failure_code' => $snapshot->reasonCode,
+                'started_at' => $now,
+                'completed_at' => $now,
+                'fetched_at' => $snapshot->retrievedAt,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $existing = DB::table('source_snapshots')
+                ->where('source_code', $snapshot->sourceCode)
+                ->where('game_edition', $snapshot->edition->value)
+                ->where('source_locator_sha256', $sourceLocatorChecksum)
+                ->where('upstream_checksum_sha256', $snapshot->sourceChecksumSha256)
+                ->first(['id']);
+            if ($existing !== null) {
+                $snapshotId = $this->property($existing, 'id');
+                DB::table('external_source_sync_runs')->where('id', $runId)->update(['source_snapshot_id' => $snapshotId]);
+
+                return new SourceSnapshotRecord($runId, $snapshotId, 'quarantined', true);
+            }
+
+            $snapshotId = (string) Str::uuid7();
+            $conflictId = (string) Str::uuid7();
+            $quarantinePayload = [
+                'quarantine' => [
+                    'reason_code' => $snapshot->reasonCode,
+                    'upstream_content_sha256' => $snapshot->sourceChecksumSha256,
+                ],
+            ];
+            DB::table('source_snapshots')->insert([
+                'id' => $snapshotId,
+                'first_import_run_id' => $runId,
+                'source_version_id' => $versionId,
+                'source_code' => $snapshot->sourceCode,
+                'game_edition' => $snapshot->edition->value,
+                'source_url' => $snapshot->sourceUrl,
+                'source_locator_sha256' => $sourceLocatorChecksum,
+                'upstream_revision' => $snapshot->upstreamRevision,
+                'retrieved_at' => $snapshot->retrievedAt,
+                'checksum_sha256' => hash('sha256', CanonicalJson::encode($quarantinePayload)),
+                'upstream_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'content_type' => 'application/json',
+                'license_identifier' => 'LicenseRef-GGG-Terms-of-Use',
+                'status' => 'rejected',
+                'schema_version' => 'quarantine-1.0.0',
+                'normalized_payload' => CanonicalJson::encode($quarantinePayload),
+                'created_at' => $now,
+            ]);
+            DB::table('external_source_sync_runs')->where('id', $runId)->update(['source_snapshot_id' => $snapshotId]);
+            DB::table('source_conflicts')->insert([
+                'id' => $conflictId,
+                'import_run_id' => $runId,
+                'source_version_id' => $versionId,
+                'source_code' => $snapshot->sourceCode,
+                'game_edition' => $snapshot->edition->value,
+                'existing_snapshot_id' => $snapshotId,
+                'upstream_revision' => $snapshot->upstreamRevision,
+                'candidate_checksum_sha256' => $snapshot->sourceChecksumSha256,
+                'reason_code' => $snapshot->reasonCode,
+                'status' => 'quarantined',
+                'detected_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            return new SourceSnapshotRecord($runId, $snapshotId, 'quarantined', false, $conflictId);
+        }, 3);
+    }
+
+    public function publish(RulesetPublication $ruleset): string
+    {
+        if (! hash_equals($ruleset->checksumSha256, hash('sha256', CanonicalJson::encode($ruleset->canonicalPayload)))) {
+            throw new DomainException('The ruleset checksum does not match its canonical payload.');
+        }
+
+        return DB::transaction(function (Connection $_connection) use ($ruleset): string {
+            $existing = DB::table('ruleset_versions')
+                ->where('game_edition', $ruleset->edition->value)
+                ->where('checksum_sha256', $ruleset->checksumSha256)
+                ->lockForUpdate()
+                ->first(['id', 'patch', 'league', 'parser_version', 'schema_version']);
+            if ($existing !== null) {
+                $existingData = get_object_vars($existing);
+                $existingSnapshotIds = DB::table('ruleset_source_snapshots')
+                    ->where('ruleset_version_id', $this->string($existingData, 'id'))
+                    ->pluck('source_snapshot_id')
+                    ->map(static fn (mixed $id): string => (string) $id)
+                    ->all();
+                $requestedSnapshotIds = $ruleset->sourceSnapshotIds;
+                sort($existingSnapshotIds, SORT_STRING);
+                sort($requestedSnapshotIds, SORT_STRING);
+                if ($this->string($existingData, 'patch') !== $ruleset->patch
+                    || $this->nullableString($existingData, 'league') !== $ruleset->league
+                    || $this->string($existingData, 'parser_version') !== $ruleset->parserVersion
+                    || $this->string($existingData, 'schema_version') !== $ruleset->schemaVersion
+                    || $existingSnapshotIds !== $requestedSnapshotIds
+                ) {
+                    throw new DomainException('Existing ruleset content has incompatible publication metadata.');
+                }
+
+                $existingId = $this->string($existingData, 'id');
+                $this->persistDatasetApproval($ruleset, $existingId);
+                $this->persistCanonicalData($ruleset, $existingId);
+
+                return $existingId;
+            }
+
+            $snapshots = DB::table('source_snapshots')
+                ->join('policy_data_sources', 'policy_data_sources.id', '=', 'source_snapshots.source_code')
+                ->whereIn('source_snapshots.id', $ruleset->sourceSnapshotIds)
+                ->lockForUpdate()
+                ->get([
+                    'source_snapshots.id',
+                    'source_snapshots.game_edition',
+                    'source_snapshots.status',
+                    'source_snapshots.source_code',
+                    'policy_data_sources.governance_status',
+                ]);
+
+            if ($snapshots->count() !== count($ruleset->sourceSnapshotIds)) {
+                throw new DomainException('Every ruleset source snapshot must exist.');
+            }
+
+            foreach ($snapshots as $snapshot) {
+                $data = get_object_vars($snapshot);
+                $snapshotId = $this->string($data, 'id');
+
+                if ($this->string($data, 'game_edition') !== $ruleset->edition->value
+                    || $this->string($data, 'status') !== 'valid'
+                    || $this->string($data, 'governance_status') === 'prohibited'
+                    || DB::table('source_conflicts')->where('existing_snapshot_id', $snapshotId)->where('status', 'quarantined')->exists()
+                ) {
+                    throw new DomainException('A ruleset can cite only valid, same-game, non-prohibited snapshots.');
+                }
+            }
+
+            DB::table('ruleset_versions')->insert([
+                'id' => $ruleset->id,
+                'game_edition' => $ruleset->edition->value,
+                'version' => $ruleset->version,
+                'patch' => $ruleset->patch,
+                'league' => $ruleset->league,
+                'league_key' => $ruleset->league ?? '',
+                'parser_version' => $ruleset->parserVersion,
+                'checksum_sha256' => $ruleset->checksumSha256,
+                'schema_version' => $ruleset->schemaVersion,
+                'status' => 'published',
+                'canonical_payload' => CanonicalJson::encode($ruleset->canonicalPayload),
+                'supersedes_ruleset_version_id' => $ruleset->supersedesRulesetVersionId,
+                'published_at' => $ruleset->publishedAt,
+                'created_at' => $ruleset->publishedAt,
+            ]);
+
+            foreach ($ruleset->sourceSnapshotIds as $snapshotId) {
+                DB::table('ruleset_source_snapshots')->insert([
+                    'ruleset_version_id' => $ruleset->id,
+                    'source_snapshot_id' => $snapshotId,
+                    'created_at' => $ruleset->publishedAt,
+                ]);
+            }
+
+            $this->persistDatasetApproval($ruleset, $ruleset->id);
+            $this->persistCanonicalData($ruleset, $ruleset->id);
+
+            return $ruleset->id;
+        }, 3);
+    }
+
+    public function activate(string $rulesetVersionId, string $actorType = 'operator'): RulesetActivation
+    {
+        if (preg_match('/^[a-z][a-z0-9_-]{1,31}$/D', $actorType) !== 1) {
+            throw new DomainException('Ruleset activation requires a canonical actor type.');
+        }
+
+        return DB::transaction(function (Connection $_connection) use ($rulesetVersionId, $actorType): RulesetActivation {
+            $row = DB::table('ruleset_versions')->where('id', $rulesetVersionId)->lockForUpdate()->first();
+
+            if ($row === null) {
+                throw new DomainException('The requested ruleset version does not exist.');
+            }
+
+            $data = get_object_vars($row);
+
+            if ($this->string($data, 'status') !== 'published') {
+                throw new DomainException('Only a published ruleset can be activated.');
+            }
+
+            $approval = DB::table('ruleset_dataset_approvals')
+                ->where('ruleset_version_id', $rulesetVersionId)
+                ->first(['dataset_classification', 'provenance_status', 'compatibility_status']);
+            if ($approval === null) {
+                throw new DomainException('Ruleset activation requires an explicit dataset approval record.');
+            }
+            $approvalData = get_object_vars($approval);
+            if ($this->string($approvalData, 'dataset_classification') !== 'approved_import'
+                || $this->string($approvalData, 'provenance_status') !== 'approved'
+                || $this->string($approvalData, 'compatibility_status') !== 'compatible'
+            ) {
+                throw new DomainException('Fixture, unavailable, incompatible, or unapproved rulesets cannot be activated.');
+            }
+
+            $sources = DB::table('ruleset_source_snapshots')
+                ->join('source_snapshots', 'source_snapshots.id', '=', 'ruleset_source_snapshots.source_snapshot_id')
+                ->join('policy_data_sources', 'policy_data_sources.id', '=', 'source_snapshots.source_code')
+                ->where('ruleset_source_snapshots.ruleset_version_id', $rulesetVersionId)
+                ->join('policy_data_source_versions', 'policy_data_source_versions.id', '=', 'source_snapshots.source_version_id')
+                ->get(['source_snapshots.id', 'source_snapshots.source_code', 'source_snapshots.status', 'policy_data_sources.governance_status', 'policy_data_source_versions.version as source_version']);
+
+            if ($sources->isEmpty()) {
+                throw new DomainException('A ruleset without source snapshots cannot be activated.');
+            }
+
+            foreach ($sources as $source) {
+                $sourceData = get_object_vars($source);
+                $snapshotId = $this->string($sourceData, 'id');
+                $sourceCode = $this->string($sourceData, 'source_code');
+                $sourceVersion = $this->string($sourceData, 'source_version');
+
+                if ($this->string($sourceData, 'status') !== 'valid'
+                    || $this->string($sourceData, 'governance_status') === 'prohibited'
+                    || DB::table('source_conflicts')->where('existing_snapshot_id', $snapshotId)->where('status', 'quarantined')->exists()
+                    || ! $this->policy->permitsActivation($sourceCode, $sourceVersion)
+                ) {
+                    throw new DomainException('Ruleset activation is denied by source governance.');
+                }
+            }
+
+            $scope = [
+                'game_edition' => $this->string($data, 'game_edition'),
+                'patch' => $this->string($data, 'patch'),
+                'league_key' => $this->string($data, 'league_key'),
+                'parser_version' => $this->string($data, 'parser_version'),
+            ];
+            $current = DB::table('ruleset_activations')->where($scope)->lockForUpdate()->first();
+            $previousId = $current === null ? null : $this->property($current, 'ruleset_version_id');
+            $activationId = $current === null ? (string) Str::uuid7() : $this->property($current, 'id');
+
+            if ($previousId === $rulesetVersionId) {
+                return $this->activation($activationId, $data, $rulesetVersionId, $previousId);
+            }
+
+            $now = CarbonImmutable::now('UTC');
+
+            if ($current === null) {
+                DB::table('ruleset_activations')->insert([
+                    'id' => $activationId,
+                    ...$scope,
+                    'ruleset_version_id' => $rulesetVersionId,
+                    'activated_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            } else {
+                DB::table('ruleset_activations')->where('id', $activationId)->update([
+                    'ruleset_version_id' => $rulesetVersionId,
+                    'activated_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('ruleset_activation_history')->insert([
+                'id' => (string) Str::uuid7(),
+                'activation_id' => $activationId,
+                ...$scope,
+                'previous_ruleset_version_id' => $previousId,
+                'ruleset_version_id' => $rulesetVersionId,
+                'actor_type' => $actorType,
+                'activated_at' => $now,
+                'created_at' => $now,
+            ]);
+
+            return $this->activation($activationId, $data, $rulesetVersionId, $previousId);
+        }, 3);
+    }
+
+    private function sourceVersionId(string $sourceCode, string $sourceVersion): int
+    {
+        $id = DB::table('policy_data_source_versions')
+            ->where('source_id', $sourceCode)
+            ->where('version', $sourceVersion)
+            ->value('id');
+
+        if (! is_int($id)) {
+            throw new DomainException('The governed source version is not registered.');
+        }
+
+        return $id;
+    }
+
+    private function persistDatasetApproval(RulesetPublication $ruleset, string $rulesetVersionId): void
+    {
+        $expected = [
+            'game_edition' => $ruleset->edition->value,
+            'dataset_classification' => $ruleset->datasetClassification->value,
+            'provenance_status' => $ruleset->provenanceStatus->value,
+            'compatibility_status' => $ruleset->compatibilityStatus->value,
+            'approved_by_source_snapshot_id' => $ruleset->sourceSnapshotIds[0],
+        ];
+        $existing = DB::table('ruleset_dataset_approvals')->where('ruleset_version_id', $rulesetVersionId)->first();
+        if ($existing !== null) {
+            $data = get_object_vars($existing);
+            foreach ($expected as $key => $value) {
+                if (($data[$key] ?? null) !== $value) {
+                    throw new DomainException('Existing ruleset dataset approval is incompatible with this publication.');
+                }
+            }
+
+            return;
+        }
+
+        DB::table('ruleset_dataset_approvals')->insert([
+            'ruleset_version_id' => $rulesetVersionId,
+            ...$expected,
+            'imported_at' => $ruleset->publishedAt,
+            'created_at' => $ruleset->publishedAt,
+        ]);
+    }
+
+    private function persistCanonicalData(RulesetPublication $ruleset, string $rulesetVersionId): void
+    {
+        $snapshots = DB::table('source_snapshots')
+            ->join('policy_data_source_versions', 'policy_data_source_versions.id', '=', 'source_snapshots.source_version_id')
+            ->whereIn('source_snapshots.id', $ruleset->sourceSnapshotIds)
+            ->get(['source_snapshots.id', 'source_snapshots.source_code', 'source_snapshots.game_edition', 'source_snapshots.checksum_sha256', 'policy_data_source_versions.version as source_version'])
+            ->keyBy(static fn (object $row): string => $row->source_code.'|'.$row->source_version.'|'.$row->checksum_sha256);
+
+        $entities = $ruleset->canonicalData;
+        usort($entities, static function (CanonicalGameEntity $left, CanonicalGameEntity $right): int {
+            $priority = static fn (CanonicalEntityType $type): int => match ($type) {
+                CanonicalEntityType::CharacterClass, CanonicalEntityType::PassiveNode => 0,
+                CanonicalEntityType::Ascendancy, CanonicalEntityType::Keystone => 1,
+                default => 2,
+            };
+
+            return [$priority($left->type()), $left->type()->value, $left->externalId]
+                <=> [$priority($right->type()), $right->type()->value, $right->externalId];
+        });
+
+        foreach ($entities as $entity) {
+            $snapshot = $snapshots->get($entity->provenance->sourceCode.'|'.$entity->provenance->sourceVersion.'|'.$entity->provenance->checksumSha256);
+            if (! is_object($snapshot)
+                || $entity->edition !== $ruleset->edition
+                || $entity->rulesetVersionId !== $ruleset->id
+                || $snapshot->game_edition !== $ruleset->edition->value
+            ) {
+                throw new DomainException('Canonical data must cite an allowed same-edition ruleset snapshot.');
+            }
+
+            [$parentType, $parentExternalId] = match (true) {
+                $entity instanceof Ascendancy => [CanonicalEntityType::CharacterClass->value, $entity->characterClassExternalId],
+                $entity instanceof Keystone => [CanonicalEntityType::PassiveNode->value, $entity->externalId],
+                default => [null, null],
+            };
+            $payload = $entity->jsonSerialize();
+            $payload['ruleset_version_id'] = $rulesetVersionId;
+            $encoded = CanonicalJson::encode($payload);
+            $checksum = hash('sha256', $encoded);
+            $identity = [
+                'game_edition' => $ruleset->edition->value,
+                'ruleset_version_id' => $rulesetVersionId,
+                'entity_type' => $entity->type()->value,
+                'external_id' => $entity->externalId,
+            ];
+            $existing = DB::table('canonical_game_data')->where($identity)->first(['payload_checksum_sha256', 'source_snapshot_id']);
+            if ($existing !== null) {
+                if (! hash_equals((string) $existing->payload_checksum_sha256, $checksum)
+                    || (string) $existing->source_snapshot_id !== (string) $snapshot->id
+                ) {
+                    throw new DomainException('Duplicate canonical data has conflicting content.');
+                }
+
+                continue;
+            }
+
+            DB::table('canonical_game_data')->insert([
+                'id' => (string) Str::uuid7(),
+                ...$identity,
+                'display_name' => $entity->displayName,
+                'parent_entity_type' => $parentType,
+                'parent_external_id' => $parentExternalId,
+                'source_snapshot_id' => (string) $snapshot->id,
+                'payload' => $encoded,
+                'payload_checksum_sha256' => $checksum,
+                'created_at' => $ruleset->publishedAt,
+            ]);
+        }
+    }
+
+    private function completeRun(string $runId, string $status, ?string $snapshotId, CarbonImmutable $now, ?string $failureCode = null): void
+    {
+        DB::table('external_source_sync_runs')->where('id', $runId)->update([
+            'source_snapshot_id' => $snapshotId,
+            'status' => $status,
+            'failure_code' => $failureCode,
+            'completed_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    /** @param array<string, mixed> $ruleset */
+    private function activation(string $activationId, array $ruleset, string $rulesetVersionId, ?string $previousId): RulesetActivation
+    {
+        return new RulesetActivation(
+            $activationId,
+            GameEdition::from($this->string($ruleset, 'game_edition')),
+            $this->string($ruleset, 'patch'),
+            $this->nullableString($ruleset, 'league'),
+            $this->string($ruleset, 'parser_version'),
+            $rulesetVersionId,
+            $previousId,
+        );
+    }
+
+    /** @param array<string, mixed> $data */
+    private function string(array $data, string $key): string
+    {
+        $value = $data[$key] ?? null;
+
+        if (! is_string($value)) {
+            throw new RuntimeException("Expected string database field {$key}.");
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function nullableString(array $data, string $key): ?string
+    {
+        $value = $data[$key] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        return $this->string($data, $key);
+    }
+
+    private function property(object $row, string $key): string
+    {
+        return $this->string(get_object_vars($row), $key);
+    }
+}

@@ -1,7 +1,6 @@
 # Threat Model
 
-Status: implementation hardening baseline, reviewed 2026-08-15 for policy-gate
-version `1.0.0`. Controls are mapped in the
+Status: production-hardening baseline, reviewed 2026-08-21. Controls are mapped in the
 [security baseline](security-baseline.md). Revisit before the first public deployment and whenever an external
 capability, parser, ruleset source, account system, or funding path changes.
 
@@ -63,6 +62,7 @@ optional outbound AI calls.
 | Cross-game confusion | PoE2 identifier resolves through PoE1 mapping or cache | Non-null game IDs, separate namespaces/catalogs/cache keys, database constraints, negative isolation tests, no fallback |
 | Authorization failure | One principal replays, exports, or deletes another principal's build | Account or privacy-session authorization, hashed anonymous secret, keyed owner/idempotency hashes, owner-scoped idempotency, opaque IDs, constant-time verification, policy/export/deletion tests |
 | Sensitive-data leakage | Share code or item text appears in logs or provider prompts | Data classification, request hashes and coarse outcomes only in logs, raw input only in the encrypted expiring object handoff, encrypted normalized storage, no AI transmission, no analytics payloads |
+| Log injection or untraceable work | A hostile value inserts a forged line, or a queue retry cannot be joined to its initiating request | Strip ASCII control characters in the recursive log processor; accept only UUIDv4/UUIDv7 correlation headers; generate UUIDv7 otherwise; propagate Laravel log context into queue payloads; attach analysis ID, edition, ruleset checksum, engine version, and workflow stage without raw input |
 | Credential collection | A feature asks for `POESESSID` to improve results | Product-level prohibition, blocked field names, security review, UI tests, no generic secret vault for GGG sessions |
 | Prohibited automation | Recommendation feature clicks Trade or sends a whisper | No browser/client integration ports, no executable/extension deliverables, manual text recipe only, architecture and policy tests |
 | Supply-chain compromise | Malicious Composer/npm/base image or install script | Lockfiles, `composer audit`, `npm audit`, provenance/license review, minimal dependencies, protected update review, pinned CI actions/versioned base tags, non-root production image, digest-only deployment, and no image push in CI |
@@ -70,6 +70,7 @@ optional outbound AI calls.
 | Deployment/proxy mistake | Mutable image, spoofed forwarding header, plaintext data-store link, public Horizon, or automatic breaking migration | Reviewed immutable release identity, exact trusted host/proxy entries, edge header stripping, verified PostgreSQL and Redis/Valkey TLS when enabled, local-only Horizon gate, separate migration operation, expand/contract and previous-release rollback |
 | Backup recovery exposure | A restore resurrects deleted data or becomes reachable before verification | Encrypted bounded backups, `_restore_verify` target guard, isolated no-egress restore, forward migrations, deletion/retention pruning, count/hash checks, and quarterly recorded exercises |
 | Queue replay/duplication | Retried or concurrently published analysis creates inconsistent or excessive work | Transactional outbox, locked publisher rows, bounded publisher/job retry, edition/ruleset job identity, owner-scoped keyed idempotency hashes, atomic state claims, optimistic completion, immutable result hashes |
+| Source-import replay/timeout | An administrator double-clicks import, a worker is duplicated, or an upstream call hangs | Fixed source codes only, `ShouldBeUnique`, a 15-minute distributed lock, 10-minute timeout with fail-on-timeout, adapter-level bounded HTTP retry, terminal one-attempt queue policy, staged/idempotent checksums, and failure-code-only logs |
 | Raw queue handoff exposure | A queued share code survives a crash or is copied into a queue/database payload | Application-key encryption in private object storage, opaque key only in PostgreSQL, ID-only queue payload, immediate post-parse deletion, one-hour expiry ceiling, hourly pruning, no raw logs or backups |
 | Ruleset rollback/tampering | Old or modified ruleset is activated silently | Content-addressed artifacts, SHA-256, immutable publication, activation audit, explicit supersession, rollback approval |
 | CSRF/session abuse | Attacker submits or deletes analyses in a user's account/session | Laravel CSRF and secure cookies for accounts; high-entropy expiring bearer credential for anonymous sessions; authorization on every read/mutation; rate limits; no token logging |
@@ -106,6 +107,9 @@ optional outbound AI calls.
 - Do not use inputs or results to train models. Do not send them to AI unless the user enables the optional feature and the gate allows it.
 - Optional provider requests use minimum typed context, `store: false`, no tools, hashed safety identifiers, and bounded tokens. OpenAI documents default abuse-monitoring retention of up to 30 days; Lootwright does not claim Zero Data Retention without approval.
 - Logs use opaque correlation IDs and coarse metrics. No raw imports, full prompts, credentials, IP addresses beyond justified security retention, or protected game content.
+- Inertia SSR is disabled by default. Tests disable it explicitly and globally
+  deny unmatched Laravel HTTP requests, so view rendering cannot silently call
+  a local or remote renderer during CI.
 - Backups inherit deletion and access controls; retention and restore-deletion behavior must be tested.
 
 The authoritative schedule and restore-deletion sequence are in
@@ -129,9 +133,14 @@ The authoritative schedule and restore-deletion sequence are in
 ## Residual and unresolved risks
 
 - Format-only PoB1 and beta PoB2 interoperability are approved only for the pinned records through 2026-11-12; upstream drift or expired evidence disables execution.
-- No public Lootwright account/login flow exists yet. Expiring anonymous
-  privacy sessions permit owner-scoped persistence without a tracking identity;
-  production UX must communicate credential loss, expiry, and deletion clearly.
+- Registration, login, password reset/confirmation, verification, member
+  ownership, admin RBAC, suspension, and two-factor enforcement are implemented
+  with Fortify and feature tests. Production still requires a real mail provider,
+  operator bootstrap, cookie/proxy validation, and an end-to-end staging exercise.
+- PoE2 parsers and domain isolation fixtures remain in the repository for phase
+  two, but the public catalog, PoB import expectation, wizard, draft, and analysis
+  request boundaries reject PoE2 during the PoE1 MVP. A PoE2 production E2E path
+  is therefore intentionally blocked, not passing.
 - The primary-store deletion workflow is implemented, but backup-provider
   purge guarantees and restore-time deletion replay remain unresolved until a
   production backup system is selected.

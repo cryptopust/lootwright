@@ -1,4 +1,12 @@
-# Delivery Progress: Prompts 00–15
+# Delivery Progress: historical prompt ledger
+
+Current repository state (2026-08-31): Laravel Cloud is the production
+platform; PoE1 and PoE2 are separate, gate-controlled targets; Cloud deployment,
+performance, acceptance, and red-team hardening are implemented in code and
+documented, while live Cloud/provider evidence remains operator-collected.
+See the current [README](../README.md), [live acceptance](release/live-acceptance.md),
+and [performance budget](operations/performance-budget.md). Entries below are a
+historical implementation ledger and may describe superseded intermediate gates.
 
 This is the controlled implementation sequence. A later prompt may refine earlier documentation but may not bypass its gates. `Pending` means no application implementation has been authorized or completed.
 
@@ -626,4 +634,209 @@ This is the controlled implementation sequence. A later prompt may refine earlie
 
 ## Change discipline
 
+2026-08-20: implemented the PoE1 character catalog, seven-step analysis wizard,
+Fortify authentication, member ownership, enum RBAC, mandatory admin 2FA,
+append-only admin audit, member/admin Inertia surfaces and PostgreSQL-compatible
+membership migrations. Wiki metadata was verified by HTTP but runtime and
+migrations remain network-free. The final local verification passed 626 of 628
+PHPUnit tests (the two disposable-PostgreSQL integration tests were skipped),
+16 Vitest tests, Composer validation/audit, Pint, PHPStan, npm clean install and
+audit, ESLint, Vue TypeScript, production build, 72-file documentation validation,
+route inspection, and `git diff --check`. Port 5432 was closed and no local
+PostgreSQL, Docker, Podman, `psql`, or `pg_isready` command was available, so a
+real PostgreSQL fresh/rollback/reapply cycle remains a required pre-deployment
+gate; SQLite success is not PostgreSQL evidence.
+
+2026-08-20: added the policy-gated external-source boundary, poe.ninja economy
+candidate implementation, immutable price evidence contracts, source-sync
+migrations, disabled Wiki/GGG adapter skeletons, and PostgreSQL self-reference
+migration-order test correction. Real PostgreSQL verification remains pending
+because this workstation has no disposable PostgreSQL service or container
+runtime; PHP 8.4 was available through Laravel Herd.
+
 Each prompt ends by updating this file with status, decisions, commands, evidence, and unresolved risks. A prompt blocked by policy or provenance stays blocked; implementation convenience is not a reason to advance it.
+
+2026-08-21: extended the existing Policy Gate, immutable snapshot and ruleset
+lifecycle with one executable Source Registry projection, bounded normalized
+staging, import reports, content-addressed replay, approval and policy-gated
+staging rollback. GGG PoE1 passive-tree and conditional poe.ninja economy data
+now stage before snapshot/read-model publication. Fixed disabled adapters for
+documented GGG APIs, Wiki Cargo, PoE2 datasets, Atlas and RePoE have explicit
+reasons and no HTTP client. The admin system registry is read-only except for a
+super-admin-only, 2FA/recent-password/rate-limited/audited queue request using a
+fixed source code. No Trade endpoint, scraper, arbitrary URL or credential path
+was added. See ADR 0020 and the current validation report for actual gate
+results; SQLite is not PostgreSQL proof.
+
+Validation for this source-governance change: `composer validate --strict`,
+`composer audit`, Pint, PHPStan, repository guardrails, documentation checks,
+`git diff --check`, `npm run lint`, `npm run typecheck`, `npm run test` (21/21),
+`npm run build`, and the focused source/import/policy suite (131 tests, 129
+passed in the combined run with the two pre-existing opt-in PostgreSQL tests
+skipped). The full backend suite then passed 817/819 tests with 10,732
+assertions. After the final mock poe.ninja staging coverage, the complete suite
+passed 818/820 tests with 10,745 assertions; the two PostgreSQL tests remain skipped because no local service is
+listening on `127.0.0.1:5432`. A real PostgreSQL fresh/rollback/reapply run was
+attempted and failed closed with connection refused; SQLite is not reported as
+PostgreSQL evidence. No real external HTTP request was made; the poe.ninja
+sync path is covered with `Http::fake`.
+
+2026-08-20: extended the governed ruleset lifecycle with edition-scoped
+canonical game-data contracts and persistence. `GameVersion`, `GameRuleset`,
+historical/active ruleset repositories, compatibility statuses, and eleven
+canonical entity types are framework-independent. PostgreSQL composite foreign
+keys bind every canonical row to a same-edition immutable ruleset and source
+snapshot; activation requires an approved import, approved provenance, and
+compatible status. Fixture, legacy, invalid, unsupported, and unavailable
+datasets fail closed. The approved GGG PoE1 passive-tree importer now supplies
+only evidenced classes, Ascendancies, passive nodes, and keystones. No PoE2,
+skill, item, modifier, or content-goal facts were invented. Admin catalog
+inspection exposes checksums, import failures, activation, compatibility,
+provenance, and entity counts without raw payloads or an edit surface. See ADR
+0019. Composer validation/audit, Pint, PHPStan, 756 of 758 PHP tests with 9,571
+assertions (two opt-in PostgreSQL tests skipped), architecture tests, guardrails,
+the fast eval suite, npm clean install/audit/lint/typecheck, 21 Vitest tests, 8
+Playwright tests, Vite build, docs validation, route listing, and diff checks
+passed. A disposable SQLite fresh/rollback/reapply cycle passed. No local
+PostgreSQL service, client, or container runtime was available and port 5432
+was closed, so the real PostgreSQL fresh/rollback/reapply gate remains pending;
+SQLite is not claimed as PostgreSQL proof.
+
+2026-08-20: production-bound the versioned PoE1 deterministic finding engine.
+It consumes only normalized PoB facts and the exact locally activated immutable
+GGG passive-tree snapshot; both ruleset and snapshot checksums are reverified.
+The initial rule codes cover missing character identity fields, core armour slot
+completeness, PoB-reported elemental resistance versus its reported maximum,
+negative chaos resistance, invalid mana reservation, disabled gems, explicitly
+identified main-skill link count, item-slot conflicts, and unknown passive node
+IDs. No Life/ES/DPS or build-archetype defensive thresholds were introduced.
+Finding persistence, stable replay, missing-data omission, PlayerStat aliases,
+raw-input log exclusion, and reanalysis added/resolved/unchanged diffs have
+dedicated tests. Recommendation ranking and production Trade-recipe vocabulary
+remain separate future gates.
+
+2026-08-20: implemented the default-off operator importer for GGG's official
+PoE1 `grindinggear/skilltree-export` root `data.json`. Upstream `master` was
+inspected rather than assumed and pinned to commit
+`8bd138b32ea2631455cac5935bfab089f826094f` (`3.29.1`), raw SHA-256
+`7e9f755e33152129ebf36c2ebdad639c527e4ad70d274b1fefb860f30ca01122`.
+The exact real file normalized 7 classes and 3,390 nodes into 1,575,398 bytes
+with canonical snapshot SHA-256
+`83abe75e2ce26b30005537452ad72079361cc7c56be1d0b9dfa632bcd08265e7`.
+The command supports bounded absolute-file and exact commit-pinned raw-URL
+input, dry-run, immutable snapshot import, quarantine without raw retention,
+idempotent replay, immutable ruleset publication, and atomic activation. It
+does not run in web requests or download image assets.
+Final validation passed Composer metadata/audit, Pint, PHPStan, repository
+guardrails, 681 of 683 ordinary PHP tests with 8,693 assertions (the two
+opt-in PostgreSQL tests skipped in that ordinary SQLite run), clean npm install
+and audit, ESLint, Vue TypeScript, 21 Vitest tests, the Vite production build,
+76-file documentation validation, route inspection, and diff whitespace
+checks. A disposable local PostgreSQL 18.4 cluster separately passed all 15
+selected migration/lifecycle/import tests with 142 assertions, including
+`migrate:fresh`, rollback, reapply, foreign-key type inspection, immutable
+triggers, and atomic activation. The cluster and downloaded upstream files
+were then removed.
+
+2026-08-20: added the governed source and ruleset lifecycle described by ADR
+0017. The existing policy registry and external sync-run table now back
+content-addressed normalized snapshots, duplicate-checksum replay, revision
+conflict quarantine, immutable published rulesets, exact source links, atomic
+activation pointers, and append-only activation history. Canonical user, GGG
+PoE1 skill/Atlas, Wiki, poe.ninja and prohibited RePoE records are seeded.
+Wiki, poe.ninja and OpenAI explanations have independent default-off governance
+switches. At this dated lifecycle milestone the production analyzer remained
+unavailable; ADR 0018 later superseded that binding state. SQLite lifecycle and
+policy tests pass. A disposable PostgreSQL 18.4 cluster on localhost validated
+fresh migration, exact lifecycle foreign-key types, immutable triggers,
+rollback/reapply, duplicate checksum replay, conflict quarantine, denied source
+activation, and atomic ruleset activation: PostgreSQL migration tests passed
+3/3 with 47 assertions and lifecycle tests passed 6/6 with 40 assertions (87
+combined). The
+temporary cluster was stopped and deleted after validation.
+2026-08-20: expanded the character catalog and intake wizard to edition-scoped
+PoE1 and PoE2 support. PoE2 baseline 0.5 records twelve classes (eight available,
+four planned), twenty-two regular Ascendancies, and Witch/Lich-only alternate
+Abyssal Lich. Planned classes and cross-game payloads fail backend validation;
+ruleset-backed PoE2 findings remain approval-gated.
+Local verification passed 641 of 643 PHP tests (the two opt-in disposable
+PostgreSQL tests were skipped), 17 frontend tests, Composer validation/audit,
+Pint, PHPStan, npm clean install/audit/lint/typecheck/test/build, route listing,
+documentation validation, and diff whitespace checks. Source documentation
+URLs returned HTTP 200. No PostgreSQL client, container runtime, or service was
+available and port 5432 refused connections, so real PostgreSQL fresh/rollback/
+reapply remains an explicit deployment gate; SQLite is not claimed as proof.
+
+2026-08-20: implemented the Lootwright ARPG presentation system with semantic
+OKLCH tokens, locally bundled Newsreader, DM Sans, and JetBrains Mono fonts,
+two-pixel geometry, the 32px workbench grid, explicit rarity and unknown states,
+and reusable evidence, item, affix, statistic, finding, upgrade, recipe, and
+scope components. Landing, analysis overview, upgrades, and Manual Trade recipe
+surfaces now use the system; `/style-guide` is a fixture-only component gallery.
+No GGG assets, external requests, live listing claims, or fabricated prices were
+introduced. Composer metadata/audit, Pint, PHPStan, 641 of 643 PHP tests with
+8,305 assertions (two opt-in PostgreSQL tests skipped), clean npm install/audit,
+Prettier, ESLint, Vue TypeScript, 21 Vitest tests, the production build,
+Playwright behavior and responsive visual tests, 72-file documentation
+validation, route inspection, and diff whitespace checks passed. A disposable
+PostgreSQL service remains unavailable locally; SQLite is not claimed as
+PostgreSQL evidence.
+
+2026-08-21: added the framework-independent deterministic analysis contract.
+`AnalysisEngine`, `AnalysisResult`, `AnalysisContext`, `AnalysisRule`,
+`RuleRegistry`, and `RecommendationCandidate` are immutable, edition-scoped
+domain types. PoE1 exposes a versioned rule registry over the existing reviewed
+rules; the PoE2 registry and engine fail closed until an approved PoE2 ruleset
+and data sources are available. Findings carry stable IDs, ruleset/edition
+identity, evidence, provenance, unsupported-data disclosure, dependencies, and
+an explanation trace in the canonical result projection. Golden, determinism,
+cross-edition, unsupported-data, registry, and bounded benchmark tests were
+added. Existing persistence JSON remains compatible with the prior finding
+projection. PostgreSQL availability remains an external deployment gate.
+
+2026-08-21: added the deterministic upgrade graph stage. Findings are mapped
+by the PoE1 candidate factory to immutable upgrade nodes with prerequisites,
+conflicts, dependent slots, affected findings, expected effects, stable score,
+budget uncertainty, and explicit market-data requirements. Typed budget and
+hard/soft user constraints preserve items, the main skill, and passive-tree
+choices; violating candidates remain visible as impossible rather than being
+silently applied. Unknown prices never become numeric claims. Topological
+ordering rejects cycles, conflicts are deterministic, and PoE2 planning has no
+fallback to PoE1. Added tests cover Mageblood/skill preservation, verified and
+unknown budgets, conflicts, cycles, cross-slot dependencies, and edition
+isolation.
+
+2026-08-21: added the deterministic manual Trade Recipe Engine. Structured
+upgrade requirements now pass through an edition-scoped vocabulary, the exact
+canonical modifier registry, and a compatible approved ruleset before becoming
+immutable broad/strict human-readable filters. Unknown mappings remain
+`unsupported_filters`; positive vocabulary conflicts fail closed; dependent
+slots are disclosed without asserting unproven stat loss. The engine emits no
+Trade request payload, search URL, listing, price, seller action, or POESESSID.
+PoE1 vocabulary is an explicit adapter; PoE2 remains a disabled fail-closed
+contract. The recipe card copies only the selected manual text and shows
+unsupported filters. New engine and UI tests pass; production actionable
+recipes still require approved canonical modifier and Trade vocabulary imports.
+Validation passed 923 of 925 PHP tests with 12,921 assertions (the two
+environment-gated PostgreSQL tests skipped), PHPStan, Pint, repository
+guardrails, clean npm install/audit, ESLint, Vue typecheck, 22 Vitest tests, the
+production build, 86-file documentation validation, and diff whitespace
+checks. This feature adds no migration and performs no network request.
+
+2026-08-21: completed the optional AI runtime boundary around the existing
+provider-neutral gateway and OpenAI Responses adapter. Narrow intent and
+explanation ports, exact-edition explanation validation, independent global and
+task switches, transactional hard-capped quota overrides, a persistent
+single-probe circuit breaker, aggregate admin usage/cost projections, and
+super-admin-only audited controls now fail closed around the existing Policy
+Gate and outbound allowlist. Provider prompts and raw responses are not stored;
+AI-off retains the manual intent, deterministic analysis, upgrade graph, Manual
+Trade recipe, and local explanation path. Normal tests use fake transports and
+do not make live provider calls. Final local validation passed Composer
+metadata/audit, Pint, PHPStan, repository guardrails, 941 of 943 PHP tests with
+13,105 assertions (the two disposable-PostgreSQL tests were skipped), npm clean
+install/audit, ESLint, Vue typecheck, 22 Vitest tests, the production build,
+87-file documentation validation, route inspection, and diff whitespace checks.
+An isolated SQLite fresh/rollback/reapply cycle passed; no PostgreSQL service,
+client, or container runtime was available and port 5432 was closed, so SQLite
+is not claimed as PostgreSQL evidence. See ADR 0024 for the authority boundary.

@@ -14,7 +14,7 @@ flowchart TB
     TRADE[Manual Trade Planning]
     RULES[Ruleset Catalog]
     P1[PoE1 adapter]
-    P2[PoE2 adapter - inactive]
+    P2[PoE2 adapter + Early Access catalog]
     INFRA[PostgreSQL / cache / queue / optional AI adapters]
 
     UI --> HTTP --> APP
@@ -22,7 +22,7 @@ flowchart TB
     APP --> INGEST
     APP --> ANALYSIS --> RECO --> TRADE
     INGEST --> P1
-    INGEST -. phase two .-> P2
+    INGEST --> P2
     ANALYSIS --> RULES
     P1 --> RULES
     P2 -. isolated .-> RULES
@@ -38,18 +38,18 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 | --- | --- | --- | --- |
 | `src/Domain/Shared` | Game identity, evidence, provenance references, shared value objects and ports | PHP standard library | Laravel, adapters, storage, AI |
 | `src/Domain/BuildIntake` | Player intent, parser snapshots, canonical-build boundary, normalization port | Shared, PoE Catalog, Rulesets | Laravel, persistence, provider SDKs |
-| `src/Domain/PoeCatalog` | Opaque game-scoped catalog identifiers and canonical item selections | Shared | real datasets without approved provenance, adapters, Laravel |
+| `src/Domain/PoeCatalog` | Edition/ruleset-scoped canonical entity contracts, identifiers, relationships, and repository port | Shared | unapproved datasets, adapters, Laravel, Policy implementation |
 | `src/Domain/Rulesets` | Immutable ruleset identity and exact-resolution port | Shared, Policy and Provenance | mutable publication state, Laravel |
 | `src/Domain/Analysis` | Deterministic metrics and findings | Shared, Build Intake, Rulesets | HTTP, Eloquent, queues, AI |
 | `src/Domain/Recommendations` | Deterministic ranking and explanations-as-data | Shared, Build Intake, Analysis | provider prose, market state |
-| `src/Domain/TradePlanning` | Abstract manual filter recipe | Shared, Recommendations | Trade IDs, URLs, browser/API clients |
+| `src/Domain/TradePlanning` | Immutable manual recipe, vocabulary contract, descriptive compiler and validation | Shared, Recommendations | Trade request payloads, generated search URLs, browser/API clients |
 | `src/Domain/PolicyProvenance` | Sources/versions, permission evidence, exact capability rules, decisions, effective periods, kill switches, and pure evaluation | Shared | external clients, database types, feature-flag overrides |
 | `src/Domain/UsageFunding` | Usage port and disabled funding policy | Shared, Policy and Provenance | payment providers, funding entitlements |
-| `src/GameAdapters/PoE1` | PoE1 parsing and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |
-| `src/GameAdapters/PoE2` | PoE2 parsing and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
-| `src/Application` | Use cases, commands, queries, workflow states, DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
+| `src/GameAdapters/PoE1` | PoE1 parsing, source-schema normalization, and rule interpretation | shared ports, PoE1 ruleset contracts | PoE2 code, Laravel |
+| `src/GameAdapters/PoE2` | PoE2 parsing, isolated source-schema normalization, Early Access catalog and rule interpretation | shared ports, PoE2 ruleset contracts | PoE1 code, Laravel |
+| `src/Application` | Use cases, commands, queries, workflow states, game-data authority/conflict/coverage DTOs, and provider-neutral ports | all domain packages through public APIs | concrete Laravel/AI SDK, database, queue, HTTP, or filesystem types |
 | `app/Modules/PolicyProvenance` | Seeded source register, policy persistence, exact capability decisions, audit, evidence administration, and kill-switch adapter | Policy and Provenance port, Laravel | domain formulas, raw user content, provider secrets |
-| `app/Modules/Rulesets` | Reserved for future import, checksum, review, activation, and repository adapter; not implemented | Application ports, Laravel | mutating published rulesets |
+| `app/Modules/Rulesets` | Governed import, checksum/conflict quarantine, category authority, active coverage, immutable ruleset and canonical-data persistence, historical/exact resolution, and atomic activation | Application/domain ports, Laravel | mutating published rulesets, fixture promotion, silent conflict selection, cross-edition fallback |
 | `app/Modules/BuildIntake` | Policy-gated PoB intake orchestration, owner-scoped encrypted persistence, idempotency, deletion, and expiry pruning | Build Intake domain port, adapter coordinator, Policy and Provenance port, Laravel | game formulas, raw-input persistence, external fetching |
 | `app/Modules/Analysis` | PostgreSQL workflow repository, encrypted raw-artifact handoff, exact-resolution policy adapter, Horizon jobs, lifecycle events, and deletion coordination | Application workflow ports, domain ports, Laravel | game formulas, mutable analysis snapshots, provider authority |
 | `app/Modules/Identity` | Expiring anonymous privacy-session credentials, secret generation, and HTTP-principal resolution | Application identity ports, Laravel | GGG credentials, IP/device identity storage, domain rules |
@@ -66,9 +66,9 @@ Arrows mean permitted dependency or invocation. Domain packages do not point to 
 - A module owns its tables and Eloquent models. Other modules use its application port, not direct queries.
 - Synchronous calls are preferred inside the process. Queue only bounded, idempotent work that benefits from retry or latency isolation.
 - Laravel cache and queue abstractions are the infrastructure boundary. Local
-  Docker and self-hosted deployments may use Redis/Horizon; Laravel Cloud may
-  use Valkey and managed queue/background facilities only when an enabled
-  feature requires them. See [ADR 0014](../adr/0014-laravel-cloud-staging.md).
+  Laravel Cloud is production and uses managed cache/queue/background facilities
+  only when an enabled feature requires them. Docker/Redis/Horizon files are
+  local compatibility tooling.
 - Laravel events may notify in-process secondary behavior, but event logs are not the source of truth and event sourcing is prohibited.
 - Database transactions end at a use-case boundary. Cross-module transactions must be explicit and tested.
 - The narrow workflow outbox is limited to parse/analysis dispatch. It is a

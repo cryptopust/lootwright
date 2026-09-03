@@ -4,11 +4,14 @@ namespace Lootwright\GameAdapters\Shared\Pob;
 
 use DOMDocument;
 use DOMElement;
+use Lootwright\Domain\BuildIntake\Import\BuildInputType;
+use Lootwright\Domain\BuildIntake\Import\BuildSourceMetadata;
 use Lootwright\Domain\BuildIntake\Import\CanonicalImportedBuild;
 use Lootwright\Domain\BuildIntake\Import\ImportLimits;
 use Lootwright\Domain\BuildIntake\Import\ImportProvenance;
 use Lootwright\Domain\BuildIntake\Import\ImportWarning;
 use Lootwright\Domain\BuildIntake\Import\PobImportResult;
+use Lootwright\Domain\BuildIntake\Import\PropertySupportStatus;
 use Lootwright\Domain\BuildIntake\Import\UnsupportedFeature;
 use Lootwright\Domain\Shared\Error\DomainError;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
@@ -26,7 +29,10 @@ abstract class AbstractPobNormalizer
     /** @return list<string> */
     abstract protected function choiceAttributes(): array;
 
-    public function normalize(DOMDocument $document, string $inputChecksum, ImportLimits $limits): DomainResult
+    /** @return array<string, list<string>> */
+    abstract protected function metricAliases(): array;
+
+    public function normalize(DOMDocument $document, string $inputChecksum, BuildInputType $inputType, ImportLimits $limits): DomainResult
     {
         $root = $document->documentElement;
 
@@ -34,7 +40,24 @@ abstract class AbstractPobNormalizer
             return $this->failure(DomainErrorCode::InvalidXml, 'The build XML has no root element.');
         }
 
+        $oppositePrefix = $this->edition() === GameEdition::Poe1 ? 'poe2' : 'poe1';
+
+        foreach ($root->getElementsByTagName('*') as $element) {
+            foreach ($element->attributes as $attribute) {
+                if (preg_match('/(?:^|[^a-z0-9])'.preg_quote($oppositePrefix, '/').'[.:][a-z0-9._-]+/i', $attribute->nodeValue ?? '') === 1) {
+                    return $this->failure(DomainErrorCode::EditionMismatch, 'The build contains an identifier scoped to the other game edition.');
+                }
+            }
+        }
+
         $warnings = [];
+
+        foreach (['Build', 'Tree', 'Skills', 'Items', 'Config', 'Notes'] as $singleton) {
+            if ($this->directChildren($root, $singleton) > 1) {
+                return $this->failure(DomainErrorCode::DuplicateValue, "The build XML contains a duplicate {$singleton} section.");
+            }
+        }
+
         $build = $this->directChild($root, 'Build');
         $tree = $this->directChild($root, 'Tree');
         $skillsNode = $this->directChild($root, 'Skills');
@@ -128,6 +151,13 @@ abstract class AbstractPobNormalizer
         }
 
         $unsupported = $this->unsupported($root);
+
+        if (count($unsupported) > $limits->unsupportedFeatures) {
+            return $this->failure(DomainErrorCode::InputTooLarge, 'The build exceeds the unsupported-feature diagnostic limit.');
+        }
+
+        $metrics = $this->metrics($summary);
+        $propertySupport = $this->propertySupport($metrics, $unsupported);
         $canonical = new CanonicalImportedBuild(
             $this->edition(),
             $this->nullable($build->getAttribute('targetVersion')),
@@ -142,6 +172,30 @@ abstract class AbstractPobNormalizer
             $summary,
             $notes,
             $this->beta(),
+            $metrics['attributes'] ?? [],
+            $metrics['life'] ?? null,
+            $metrics['energy_shield'] ?? null,
+            $metrics['mana'] ?? null,
+            $metrics['armour'] ?? null,
+            $metrics['evasion'] ?? null,
+            $metrics['resistances'] ?? [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            $propertySupport,
+            $unsupported,
+            $warnings,
+            new BuildSourceMetadata(
+                $this->provenance()->sourceId,
+                $inputType,
+                $this->edition(),
+                'xml_root:'.$root->tagName,
+                $inputChecksum,
+                $this->provenance()->parserVersion,
+            ),
         );
 
         return DomainResult::success(new PobImportResult(
@@ -215,7 +269,7 @@ abstract class AbstractPobNormalizer
         $skills = [];
         $gemCount = 0;
 
-        foreach ($skillsNode->getElementsByTagName('Skill') as $skillNode) {
+        foreach ($this->nestedChildren($skillsNode, 'SkillSet', 'Skill') as $skillNode) {
             if (count($skills) >= $limits->skills) {
                 return $this->failure(DomainErrorCode::InputTooLarge, 'The build exceeds the skill-group limit.');
             }
@@ -251,6 +305,7 @@ abstract class AbstractPobNormalizer
                 'id' => $this->editionPrefix().'.pob.skill_group.'.$group,
                 'slot' => $this->bounded($skillNode->getAttribute('slot'), 128),
                 'enabled' => $this->booleanAttribute($skillNode, 'enabled', true, $warnings, '/Skills/Skill/@enabled'),
+                'main_active_gem_index' => $this->integerAttribute($skillNode, 'mainActiveSkill', $warnings, '/Skills/Skill/@mainActiveSkill'),
                 'gems' => $gems,
             ];
         }
@@ -268,7 +323,7 @@ abstract class AbstractPobNormalizer
         $items = [];
         $slots = [];
 
-        foreach ($itemsNode->getElementsByTagName('Slot') as $slotNode) {
+        foreach ($this->nestedChildren($itemsNode, 'ItemSet', 'Slot') as $slotNode) {
             if ($slotNode->hasAttribute('itemId')) {
                 $slots[$slotNode->getAttribute('itemId')][] = $this->bounded($slotNode->getAttribute('name'), 128);
             }
@@ -298,7 +353,7 @@ abstract class AbstractPobNormalizer
             $items[$id] = [
                 'id' => $this->editionPrefix().'.pob.item.'.$this->slug($id),
                 'source_id' => $this->bounded($id, 128),
-                'slots' => array_values(array_unique($slots[$id] ?? [])),
+                'slots' => $slots[$id] ?? [],
                 'item_text_untrusted' => $text,
             ];
         }
@@ -323,7 +378,7 @@ abstract class AbstractPobNormalizer
 
         $values = [];
 
-        foreach ($parent->getElementsByTagName('Input') as $input) {
+        foreach ($this->directElements($parent, 'Input') as $input) {
             $name = $input->getAttribute('name');
 
             $key = $this->bounded($name, 128);
@@ -363,7 +418,7 @@ abstract class AbstractPobNormalizer
     {
         $values = [];
 
-        foreach ($build->getElementsByTagName('PlayerStat') as $stat) {
+        foreach ($this->directElements($build, 'PlayerStat') as $stat) {
             $name = $stat->getAttribute('stat');
             $value = $stat->getAttribute('value');
 
@@ -401,7 +456,7 @@ abstract class AbstractPobNormalizer
             'Slot' => ['itemId', 'name'],
             'Skills' => [],
             'SkillSet' => [],
-            'Skill' => ['enabled', 'slot'],
+            'Skill' => ['enabled', 'slot', 'mainActiveSkill'],
             'Gem' => ['skillId', 'gemId', 'nameSpec', 'level', 'quality', 'enabled'],
         ];
         $unsupported = [];
@@ -486,6 +541,114 @@ abstract class AbstractPobNormalizer
         }
 
         return null;
+    }
+
+    private function directChildren(DOMElement $parent, string $name): int
+    {
+        return count($this->directElements($parent, $name));
+    }
+
+    /** @return list<DOMElement> */
+    private function directElements(DOMElement $parent, string $name): array
+    {
+        $elements = [];
+
+        foreach ($parent->childNodes as $child) {
+            if ($child instanceof DOMElement && $child->tagName === $name) {
+                $elements[] = $child;
+            }
+        }
+
+        return $elements;
+    }
+
+    /** @return list<DOMElement> */
+    private function nestedChildren(DOMElement $parent, string $containerName, string $childName): array
+    {
+        $children = $this->directElements($parent, $childName);
+
+        foreach ($this->directElements($parent, $containerName) as $container) {
+            array_push($children, ...$this->directElements($container, $childName));
+        }
+
+        return $children;
+    }
+
+    /** @param array<string, int|string> $summary
+     * @return array<string, mixed>
+     */
+    private function metrics(array $summary): array
+    {
+        $resolved = [];
+
+        foreach ($this->metricAliases() as $canonical => $aliases) {
+            $matches = [];
+
+            foreach ($aliases as $alias) {
+                if (array_key_exists($alias, $summary)) {
+                    $matches[] = $summary[$alias];
+                }
+            }
+
+            if ($matches !== [] && count(array_unique(array_map('strval', $matches))) === 1) {
+                $resolved[$canonical] = $matches[0];
+            }
+        }
+
+        $attributes = array_filter([
+            'strength' => $resolved['strength'] ?? null,
+            'dexterity' => $resolved['dexterity'] ?? null,
+            'intelligence' => $resolved['intelligence'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null);
+        $resistances = array_filter([
+            'fire' => $resolved['fire_resistance'] ?? null,
+            'cold' => $resolved['cold_resistance'] ?? null,
+            'lightning' => $resolved['lightning_resistance'] ?? null,
+            'chaos' => $resolved['chaos_resistance'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null);
+
+        return [
+            ...$resolved,
+            'attributes' => $attributes,
+            'resistances' => $resistances,
+        ];
+    }
+
+    /** @param array<string, mixed> $metrics
+     * @param  list<UnsupportedFeature>  $unsupported
+     * @return array<string, PropertySupportStatus>
+     */
+    private function propertySupport(array $metrics, array $unsupported): array
+    {
+        $present = static fn (string $key): PropertySupportStatus => array_key_exists($key, $metrics)
+            ? PropertySupportStatus::Supported
+            : PropertySupportStatus::Unknown;
+
+        return [
+            'game_edition' => PropertySupportStatus::Supported,
+            'game_version' => PropertySupportStatus::PartiallySupported,
+            'level' => PropertySupportStatus::Supported,
+            'class' => PropertySupportStatus::PartiallySupported,
+            'ascendancy' => PropertySupportStatus::PartiallySupported,
+            'attributes' => ($metrics['attributes'] ?? []) !== [] ? PropertySupportStatus::Supported : PropertySupportStatus::Unknown,
+            'life' => $present('life'),
+            'energy_shield' => $present('energy_shield'),
+            'mana' => $present('mana'),
+            'armour' => $present('armour'),
+            'evasion' => $present('evasion'),
+            'resistances' => ($metrics['resistances'] ?? []) !== [] ? PropertySupportStatus::Supported : PropertySupportStatus::Unknown,
+            'skills' => PropertySupportStatus::PartiallySupported,
+            'supports' => PropertySupportStatus::Unknown,
+            'auras' => PropertySupportStatus::Unknown,
+            'items' => PropertySupportStatus::PartiallySupported,
+            'item_modifiers' => PropertySupportStatus::Unknown,
+            'passive_nodes' => PropertySupportStatus::PartiallySupported,
+            'keystones' => PropertySupportStatus::Unknown,
+            'jewels' => PropertySupportStatus::Unknown,
+            'clusters' => PropertySupportStatus::Unknown,
+            'configuration' => PropertySupportStatus::PartiallySupported,
+            'unsupported_fields' => $unsupported === [] ? PropertySupportStatus::Supported : PropertySupportStatus::Unsupported,
+        ];
     }
 
     private function directText(DOMElement $element): string

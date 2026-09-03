@@ -21,17 +21,18 @@ final readonly class DatabaseAiBudget implements AiBudget
 
     public function reserve(AiRequestContext $context, int $maximumMicroUsd): ?AiBudgetReservation
     {
-        if ($maximumMicroUsd < 1 || in_array(true, array_map(static fn (int $limit): bool => $limit < 1, $this->limits()), true)) {
+        $limits = $this->limits($context);
+        if ($maximumMicroUsd < 1 || in_array(true, array_map(static fn (int $limit): bool => $limit < 1, $limits), true)) {
             return null;
         }
 
-        return DB::transaction(function () use ($context, $maximumMicroUsd): ?AiBudgetReservation {
+        return DB::transaction(function () use ($context, $maximumMicroUsd, $limits): ?AiBudgetReservation {
             $now = CarbonImmutable::now('UTC');
             $scopes = [
-                $this->scope('user_daily', $context->userHash, $now->startOfDay(), $now->endOfDay(), $this->perUserDailyMicroUsd),
-                $this->scope('ip_daily', $context->ipHash, $now->startOfDay(), $now->endOfDay(), $this->perIpDailyMicroUsd),
-                $this->scope('global_daily', 'global', $now->startOfDay(), $now->endOfDay(), $this->globalDailyMicroUsd),
-                $this->scope('global_monthly', 'global', $now->startOfMonth(), $now->endOfMonth(), $this->globalMonthlyMicroUsd),
+                $this->scope('user_daily', $context->userHash, $now->startOfDay(), $now->endOfDay(), $limits['user_daily']),
+                $this->scope('ip_daily', $context->ipHash, $now->startOfDay(), $now->endOfDay(), $limits['ip_daily']),
+                $this->scope('global_daily', 'global', $now->startOfDay(), $now->endOfDay(), $limits['global_daily']),
+                $this->scope('global_monthly', 'global', $now->startOfMonth(), $now->endOfMonth(), $limits['global_monthly']),
             ];
 
             foreach ($scopes as $scope) {
@@ -124,10 +125,18 @@ final readonly class DatabaseAiBudget implements AiBudget
         }, 3);
     }
 
-    /** @return list<int> */
-    private function limits(): array
+    /** @return array{user_daily:int,ip_daily:int,global_daily:int,global_monthly:int} */
+    private function limits(AiRequestContext $context): array
     {
-        return [$this->perUserDailyMicroUsd, $this->perIpDailyMicroUsd, $this->globalDailyMicroUsd, $this->globalMonthlyMicroUsd];
+        $control = DB::table('ai_runtime_controls')->where('scope', 'global')->first();
+        $userOverride = DB::table('ai_user_quota_overrides')->where('user_hash', $context->userHash)->value('daily_budget_micro_usd');
+
+        return [
+            'user_daily' => is_numeric($userOverride) ? min((int) $userOverride, $this->perUserDailyMicroUsd) : $this->perUserDailyMicroUsd,
+            'ip_daily' => $this->perIpDailyMicroUsd,
+            'global_daily' => is_numeric($control?->global_daily_budget_micro_usd) ? min((int) $control->global_daily_budget_micro_usd, $this->globalDailyMicroUsd) : $this->globalDailyMicroUsd,
+            'global_monthly' => is_numeric($control?->global_monthly_budget_micro_usd) ? min((int) $control->global_monthly_budget_micro_usd, $this->globalMonthlyMicroUsd) : $this->globalMonthlyMicroUsd,
+        ];
     }
 
     /** @return array{type: string, key: string, start: string, end: string, limit: int} */

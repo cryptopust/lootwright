@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
+use App\Models\UserRole;
+use App\Models\UserStatus;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,11 +38,25 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $role = $user instanceof User ? UserRole::tryFrom((string) $user->getRawOriginal('role')) : null;
+        $status = $user instanceof User ? UserStatus::tryFrom((string) $user->getRawOriginal('status')) : null;
+        $authenticatedUser = $user instanceof User && $role !== null && $status !== null ? $user : null;
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $authenticatedUser === null ? null : [
+                    'id' => $authenticatedUser->getAuthIdentifier(),
+                    'name' => $authenticatedUser->name,
+                    'email' => $authenticatedUser->email,
+                    'locale' => $authenticatedUser->locale,
+                    'role' => $role->value,
+                    'status' => $status->value,
+                    'email_verified_at' => $authenticatedUser->email_verified_at?->toIso8601String(),
+                    'two_factor_enabled' => $authenticatedUser->two_factor_confirmed_at !== null,
+                ],
             ],
         ];
     }

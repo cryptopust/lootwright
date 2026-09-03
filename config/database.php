@@ -15,6 +15,8 @@ $redisStreamContext = ['stream' => $redisStreamOptions];
 
 return [
 
+    'postgres_migration_integration' => (bool) env('POSTGRES_MIGRATION_INTEGRATION', false),
+
     /*
     |--------------------------------------------------------------------------
     | Default Database Connection Name

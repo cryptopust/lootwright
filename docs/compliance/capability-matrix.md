@@ -1,7 +1,7 @@
 # Capability Matrix
 
-Status: binding deny-by-default baseline, policy version `1.0.0`, reviewed
-2026-08-14. A `require_review` result is non-executable and cannot be treated as
+Status: binding deny-by-default baseline, policy version `1.3.0`, reviewed
+2026-08-21. A `require_review` result is non-executable and cannot be treated as
 an allow by a UI, administrator, feature flag, AI provider, or fallback path.
 
 ## Decision semantics
@@ -31,6 +31,9 @@ or unmet conditions require review but remain non-executable.
 | User-pasted item text | `import`, `transient_process` | `allow` | Requires `explicit_user_submission` and hostile-input bounds. |
 | User-pasted item text | `persistent_store` | `allow` | Additionally requires `user_storage_consent` and `authenticated_user`. |
 | User-pasted item text | `public_display`, `redistribution` | `deny` | User input is private and non-redistributable by default. |
+| Governed user snapshots | `import: user.pob.snapshot.import`, `user.item_text.snapshot.import` | `allow` | Explicit user submission only; snapshots remain private and are denied as ruleset authority. |
+| Official PoE1 skill tree | `live_fetch: ggg.poe1.skilltree.export.fetch`; `import: ggg.poe1.skilltree.snapshot.import`, `ggg.poe1.skilltree.snapshot.quarantine`, `ruleset.source.activate`; `derivative_analysis: ruleset.deterministic_analysis` | `allow-default-off` | Only GGG repo commit `8bd138b32ea2631455cac5935bfab089f826094f`, root `data.json`, exact raw checksum, operator workflow, PoE1 scope, immutable payload, source switch, and Policy Gate conditions are accepted. Runtime analysis is local against the activated checksum; it performs no fetch. Quarantine records bounded rejection metadata without asserting checksum validation. |
+| Official PoE1 Atlas tree | snapshot import and activation | `require_review` / `deny` | The family is recorded as allowed in principle but is outside the current MVP. |
 | Official documented GGG APIs | `live_fetch` | `require_review` | No exact API operation is enabled. A future operation needs available application registration, configured credentials, least-privilege scopes, and current policy evidence. |
 | GGG application registration | `live_fetch: ggg.application.register` | `deny` | On 2026-08-14 the official docs still state that GGG is unable to process new applications. |
 | Undocumented Trade endpoints | `live_fetch` for `/api/trade/search`, `/api/trade/fetch`, and the `/api/trade/data/*` family | `deny` | These paths are absent from the supported API Reference. Exact unregistered paths also fail the missing-rule default. |
@@ -41,8 +44,15 @@ or unmet conditions require review but remain non-executable.
 | Path of Building Community, pinned PoE1 format | `derivative_analysis: pob.community.format_interpret` | `allow` | Independent local format interpretation only; requires configured attribution, the pinned commit, and no copied upstream implementation. |
 | Path of Building Community, pinned PoE2 format | `derivative_analysis: pob2.community.format_interpret` | `allow` | Same format-only conditions; PoE2 output is beta and cannot activate rulesets or analysis. |
 | Path of Building Community, broader reuse | `import`, `derivative_analysis`, `redistribution: pob.community.reuse` | `require_review` | Source, game data, formulas, assets, full builds, dependencies, and third-party portions remain disabled. |
-| RePoE or similar generated datasets | `import`, `derivative_analysis` | `require_review` | Underlying data rights and current GGG policy must be documented. |
+| RePoE or similar generated datasets | `import: repoe.snapshot.import`, `ruleset.source.activate` | `deny` | Runtime snapshot import and ruleset authority are prohibited under the current source decision. |
+| RePoE or similar generated datasets | other `import`, `derivative_analysis` candidates | `require_review` | Underlying data rights and current GGG policy must be documented before any superseding review. |
 | RePoE or similar generated datasets | `redistribution`, `monetized_hosting` | `deny` | Hosted redistribution remains disabled while underlying rights are unresolved. |
+| poe.ninja public economy API | `live_fetch: poe_ninja.economy.leagues.fetch`, `poe_ninja.economy.exchange.fetch`, `poe_ninja.economy.stash_item.fetch` | `allow` | Exact documented PoE1 economy paths and configured category allowlist only; HTTPS/exact host, cache headers, operator contact/User-Agent, source switch, evidence, and kill switches are mandatory. |
+| poe.ninja builds/profile/auth/page operations | `live_fetch` | `deny` | Builds, profiles, characters, PoB, authentication, scraping, site replication, unknown paths, and user-controlled URLs are outside this approval. |
+| PoE Wiki Cargo | `live_fetch: poe_wiki.cargo.factual_metadata.fetch` | `require_review` | Disabled pending CC BY-NC-SA/share-alike, GGG-data, attribution, redistribution, and funding review. |
+| PoE Wiki Cargo snapshot lifecycle | `import: poewiki.cargo.snapshot.import`, `ruleset.source.activate` | `require_review` | `POEWIKI_IMPORT_ENABLED=false` additionally fails closed and cannot turn review into allow. |
+| poe.ninja economy snapshot lifecycle | `import: poeninja.economy.snapshot.import` | `allow` | Both independent source switches, current evidence, operator contact, exact allowlist and normalized-snapshot-only conditions are required. |
+| poe.ninja economy ruleset authority | `import: ruleset.source.activate` | `deny` | Market context cannot define deterministic game rules. |
 | GGG art, item images, logos, music, flavour text, screenshots, and fonts | `public_display`, `redistribution` | `deny` | Protected publisher expression is outside Lootwright's license scope. |
 | OpenAI Responses API | `live_fetch: openai.responses.intent`, `openai.responses.explanation` | `require_review` | A tool-free, stateless, strict-schema adapter is implemented and off by default. Execution remains prohibited until privacy/opt-in UX, provider approval, current evidence, configured credentials, and deployment hard spend limits are reviewed. |
 | Funding activation request | `monetized_hosting: lootwright.funding.activate` | `deny` | `FUNDING_ENABLED` and operator metadata cannot override the exact denied rule/evidence. A superseding dated review, allowed evidence, accepted ADR, operator action, and visible disclosure are all required. |

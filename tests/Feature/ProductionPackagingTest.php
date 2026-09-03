@@ -38,6 +38,7 @@ final class ProductionPackagingTest extends TestCase
             'session.encrypt' => true,
             'session.http_only' => true,
             'session.same_site' => 'lax',
+            'security.require_verified_email' => true,
             'services.readiness.token' => 'fixture-readiness-token-32-characters',
             'logging.default' => 'stderr',
             'policy.global_kill_switch' => true,
@@ -84,7 +85,7 @@ final class ProductionPackagingTest extends TestCase
         foreach (['APP_KEY', 'DB_PASSWORD', 'REDIS_PASSWORD', 'READINESS_TOKEN', 'OPENAI_API_KEY'] as $secret) {
             self::assertMatchesRegularExpression('/^'.preg_quote($secret, '/').'=$/m', $environment);
         }
-        foreach (['OPENAI_ENABLED', 'OUTBOUND_NETWORK_ENABLED', 'FUNDING_ENABLED', 'HORIZON_DASHBOARD_ENABLED'] as $disabled) {
+        foreach (['OPENAI_ENABLED', 'OPENAI_INTENT_ENABLED', 'OPENAI_EXPLANATIONS_ENABLED', 'POENINJA_ECONOMY_ENABLED', 'POEWIKI_IMPORT_ENABLED', 'OUTBOUND_NETWORK_ENABLED', 'FUNDING_ENABLED', 'HORIZON_DASHBOARD_ENABLED'] as $disabled) {
             self::assertMatchesRegularExpression('/^'.preg_quote($disabled, '/').'=false$/m', $environment);
         }
 

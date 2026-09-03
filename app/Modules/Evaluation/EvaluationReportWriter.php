@@ -25,7 +25,7 @@ final readonly class EvaluationReportWriter
             'suite' => $suite,
             'generated_at' => now()->utc()->format('Y-m-d\TH:i:s\Z'),
             'source_hash_sha256' => $sourceHash,
-            'scope_notice' => 'Production rulesets and deterministic game analysis remain unavailable; finding metrics marked fixture_structural are harness evaluations only.',
+            'scope_notice' => 'Production PoE1 deterministic findings are active only for an exact operator-activated immutable ruleset; evaluation cases marked fixture_structural remain harness-only.',
             ...$run,
             'regression_diffs' => $regressions,
         ];

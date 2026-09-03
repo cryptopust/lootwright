@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Modules\BuildIntake\PobImportIdempotency;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StorePobImportRequest extends FormRequest
@@ -24,6 +25,7 @@ class StorePobImportRequest extends FormRequest
             'persist' => ['sometimes', 'boolean'],
             'storage_consent' => ['exclude_unless:persist,true', 'required', 'accepted'],
             'retention_hours' => ['exclude_unless:persist,true', 'sometimes', 'integer', 'min:1', 'max:'.$maximumRetention],
+            'expected_game' => ['sometimes', Rule::in(config('game-editions.public', ['poe1']))],
         ];
     }
 

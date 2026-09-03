@@ -1,181 +1,122 @@
 # Lootwright
 
-[Türkçe](README.tr.md)
-
-Lootwright is an open-source, pre-alpha foundation for traceable,
-deterministic Path of Exile build analysis and human-readable manual item-search
-planning. The project is a Laravel 13 modular monolith with an infrastructure-
-independent PHP domain core and an Inertia/Vue interface.
+Lootwright is a Laravel 13 application for evidence-backed Path of Exile build
+analysis. A player submits build text or a PoB share payload, describes goals,
+and receives deterministic findings, prioritized upgrade candidates, and a
+human-readable manual Trade-filter recipe.
 
 > This product isn't affiliated with or endorsed by Grinding Gear Games in any way.
 
-Lootwright is not a public service or a completed end-user MVP. It does not yet
-have an approved production game ruleset or an authoritative production
-analysis engine, so it cannot currently provide real build findings, upgrade
-recommendations, or production Manual Trade Recipes.
+## What Lootwright is
 
-## What works today
+Lootwright is a deterministic, edition-scoped analysis service. Findings use a
+normalized build, immutable ruleset, and explicit evidence. Unknown facts remain
+uncertain; AI is never game-mechanics authority.
 
-- Laravel 13, Inertia 3, Vue 3, TypeScript, Tailwind CSS, and shadcn-vue
-  application foundations.
-- A framework-independent domain and application layer under `src/`, protected
-  by automated dependency-boundary tests.
-- Edition-scoped value objects, DTOs, ports, provenance records, workflow
-  states, persistence mappings, deletion, and portable export contracts.
-- Separate PoE1 and PoE2 namespaces with negative tests preventing identifier
-  and ruleset crossover.
-- Bounded, local, format-only PoB1 import and a separately labelled beta PoB2
-  format reader. This is structural interoperability, not full upstream-format
-  parity or production game analysis.
-- A deny-by-default Policy and Provenance Gate, hardened parser boundaries,
-  security headers, rate limits, redacted logging, and emergency switches.
-- A provider-neutral optional-AI gateway and a default-off OpenAI Responses
-  adapter. Production provider execution remains policy-blocked; normal tests
-  use fakes and deterministic fallback.
-- Deterministic recommendation and Manual Trade Recipe contracts exercised with
-  original fixture vocabulary. These test harnesses are not production game
-  advice and never query live listings or prices.
-- Responsive Turkish/English fixture screens, health/readiness endpoints,
-  reproducible evaluations, and CI/production-packaging foundations.
+## PoE1 support
 
-See [MVP readiness](docs/release/mvp-readiness.md) for the strict release verdict
-and [delivery progress](docs/progress.md) for the historical implementation log.
+PoE1 has bounded PoB1 parsing, edition checks, encrypted workflow persistence,
+ruleset resolution, and a narrow production engine. Coverage is limited to the
+rules and canonical data in the active approved ruleset and fails closed when
+that ruleset is unavailable.
 
-## What is planned
+## PoE2 support
 
-- Approve and publish an immutable PoE1 ruleset with exact source permission,
-  version, checksum, parser compatibility, and provenance.
-- Implement and independently verify a narrow authoritative PoE1 deterministic
-  analysis and upgrade-prioritization slice.
-- Bind production analysis pages to owner-scoped application results instead of
-  fixture data.
-- Add durable object storage before enabling queued raw-artifact handoff, then
-  complete staging backup/restore, privacy contacts, and public account UX.
-- Consider full PoE2 analysis only after the PoE1 release gates pass and a
-  separate activation ADR is accepted.
-- Publish only after security, policy, provenance, deletion, and operations
-  blockers are resolved.
+PoE2 has independent PoB2, canonical-data, ruleset, analysis, upgrade, and Trade
+namespaces. It never falls back to PoE1 identifiers or formulas. Public/runtime
+availability is separately gate-controlled and remains unavailable until its
+activation and acceptance evidence are approved.
 
-## Game scope
+## Build import and deterministic analysis
 
-Path of Exile 1 is the first intended analysis target. PoE1 has a bounded format
-reader, but no production ruleset or authoritative analysis result.
+Supported intake is explicitly submitted PoB XML/share-code content and bounded
+item text where the selected adapter supports it. User URLs are never fetched.
+Malformed encoding, XXE, oversized payloads, decompression bombs, excessive
+depth/counts, and cross-edition data are rejected.
 
-Path of Exile 2 has only a separate beta format reader. Its rulesets, findings,
-recommendations, and recipes are inactive; cross-edition fallback is forbidden.
+The workflow is parse → normalize → exact ruleset resolve → findings → upgrade
+planner → manual Trade recipe → optional explanation. Results include hashes,
+provenance, uncertainty, and stable decision traces.
 
-## Design principles
+## Trade and market intelligence
 
-- Deterministic calculations before generative wording.
-- Exact evidence and ruleset identity before confidence claims.
-- AI is optional and cannot invent game facts, modifiers, filters, prices,
-  sources, URLs, or recommendations.
-- Unknown or unsupported facts produce typed uncertainty or refusal.
-- No scraping, undocumented Trade endpoints, live market indexing, browser or
-  game-client access, automation, overlays, or session-cookie collection.
-- The core workflow must remain usable when every AI provider is disabled,
-  unavailable, or out of budget.
+Lootwright does not automate the Trade site, issue undocumented API requests, or
+purchase items. It emits descriptive manual filters. Approved market observations
+are contextual, timestamped, cached with expiry, and never deterministic truth;
+the poe.ninja adapter is disabled by default.
 
-## Architecture
+## AI assistant
 
-- `src/Domain`: immutable, framework-independent domain contracts.
-- `src/Application`: transport-neutral use cases, DTOs, and ports.
-- `src/GameAdapters/PoE1` and `src/GameAdapters/PoE2`: isolated format and
-  edition adapters.
-- `app/Modules`: Laravel HTTP, PostgreSQL, queue, storage, policy, identity, and
-  optional provider infrastructure.
-- `resources/js`: Inertia/Vue presentation; never authoritative calculation.
+OpenAI is optional and disabled by default. If explicitly enabled and allowed,
+it may classify intent or explain existing findings in a closed schema. It cannot
+invent items, modifiers, prices, links, rules, recommendations, or another
+user's data. Provider failure falls back to deterministic behavior.
 
-PostgreSQL is the system of record. Laravel cache and queue abstractions isolate
-the application from the runtime. Local Docker and self-hosted deployments may
-use Redis and Horizon. The first staging target is Laravel Cloud Starter in
-Frankfurt, using Serverless PostgreSQL and a generated `*.laravel.cloud` domain.
-Valkey and Cloud queue resources are added only when an enabled feature needs
-them; Horizon is not required on Laravel Cloud.
+## Feature matrix
 
-See the [module map](docs/architecture/module-map.md), [system context](docs/architecture/system-context.md), and [Laravel Cloud ADR](docs/adr/0014-laravel-cloud-staging.md).
+| Capability | Status | Evidence |
+| --- | --- | --- |
+| Laravel app, accounts, ownership, RBAC, 2FA, audit log | AVAILABLE | Feature-tested modules and routes |
+| Safe PoB1 import and normalization | AVAILABLE | Bounded parser and security tests |
+| PoE1 deterministic analysis | BETA | Production binding with narrow approved-rule coverage |
+| PoE2 adapter and deterministic engine | BETA | Independent adapter/ruleset code; activation gate remains separate |
+| Upgrade planner and manual Trade recipes | BETA | Deterministic planner and vocabulary validation |
+| Market observations | EXPERIMENTAL | Policy-gated poe.ninja adapter, disabled by default |
+| AI intent/explanations | EXPERIMENTAL | Strict gateway, budgets, fallback; disabled by default |
+| PoE Wiki ingestion, remote build retrieval, automated Trade | PLANNED | No enabled production implementation |
+
+AVAILABLE is implemented and tested; BETA is usable with scope limits;
+EXPERIMENTAL is optional or release-gated; PLANNED is not shipped.
+
+## Data sources and architecture
+
+External sources pass through the deny-by-default Policy and Provenance Gate.
+Rulesets/canonical data are immutable, checksum-bound, and edition-scoped. The
+framework-independent engine is under `src/`; Laravel orchestration and
+infrastructure are under `app/`; Inertia/Vue renders typed results only.
+
+Laravel Cloud is the production platform. PostgreSQL is the system of record;
+managed cache, queues, scheduler, and durable private object storage are enabled
+only when required and reviewed. Scale-to-zero is preferred where safe. `/up` is
+public liveness and `/ready` is protected diagnostics.
+
+## Privacy, security, and current limitations
+
+Hostile-input, XML, SSRF, XSS, CSRF, IDOR, SQL injection, queue replay, dataset
+poisoning, and privilege-boundary defenses are tested. Raw inputs and AI prompts
+are minimized, encrypted where retained, redacted from logs, and deletable.
+
+Limitations: narrow mechanic coverage; external providers disabled by default;
+separately gated PoE2 activation; no automated Trade actions; and live Cloud or
+provider evidence must come from staging acceptance. See [live acceptance](docs/release/live-acceptance.md)
+and [MVP readiness](docs/release/mvp-readiness.md).
 
 ## Local setup
 
-Required baseline: PHP 8.4, Composer 2, Node.js 24, npm 11, PostgreSQL, and the
-PHP `dom`, `zlib`, and `pdo_pgsql` extensions. The committed lockfiles are
-authoritative.
+Requirements: PHP 8.4, Composer 2, Node.js 24/npm 11, and PostgreSQL (or the
+documented SQLite test profile).
 
-### Docker on Linux or WSL2
-
-Install Docker Engine with Compose v2, then run:
-
-```bash
-cp .env.example .env
-composer run setup:docker
-composer run dev:docker
-```
-
-Open <http://localhost:8000>. The local stack uses PostgreSQL, Redis, and
-Horizon; its data services bind to loopback and use named Docker volumes.
-
-### Host installation
-
-With local PostgreSQL and Redis available:
-
-```bash
-cp .env.example .env
-composer run setup
+```powershell
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+php artisan migrate
+npm ci
+npm run build
 composer run dev
 ```
 
-Horizon needs `pcntl` and `posix`; use WSL2/Docker on Windows, or the web-only workflow:
+Cloud deployment follows `docs/deployment/laravel-cloud.md`; never run
+destructive commands against production.
 
-```powershell
-composer run setup:windows
-composer run dev:web
-```
+## Testing
 
-Run the original structural fixture without database, queue, network, or AI:
+Run the repository Composer/npm quality gates, audits, build, and documentation
+validator. Production acceptance additionally requires a dedicated environment
+and `php artisan acceptance:gate`; fixture runtime is rejected.
 
-```powershell
-php artisan pob:import-fixture tests/Fixtures/Pob/poe1-minimal.xml
-```
+## Contributing
 
-## Quality gates
-
-```powershell
-composer validate --strict
-composer audit
-composer run format:check
-composer run analyse
-composer run test
-npm ci
-npm audit --audit-level=high
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate-docs.ps1
-```
-
-Additional gates include `composer run ci:guardrails`, `composer run test:architecture`,
-`composer run test:parser-security`, `composer run test:policy-gate`,
-`composer run eval:fast`, and `npm run test:e2e`.
-
-## Deployment
-
-The first deployment is a locked-down pre-alpha staging environment on Laravel
-Cloud Starter. It uses Frankfurt where available, the generated Cloud hostname,
-and Serverless PostgreSQL. The initial monthly target is USD 20, with an
-absolute USD 25 ceiling; these are operator budgets, not billing guarantees.
-
-Follow the [Laravel Cloud guide](docs/deployment/laravel-cloud.md). Docker and
-Horizon packaging remains available for local or self-hosted use and is not a
-Laravel Cloud requirement.
-
-## Security, contribution, and license
-
-Use [SECURITY.md](SECURITY.md) for private vulnerability reports; never publish
-credentials, private builds, prompts, cookies, or exploit details. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Ruleset and source
-changes require verified permission and provenance.
-
-Lootwright-original code and documentation are MIT licensed. [LICENSE-SCOPE.md](LICENSE-SCOPE.md)
-explains what the project license does not cover, including GGG material,
-third-party data, and user submissions. See also [third-party notices](THIRD_PARTY_NOTICES.md).
+Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), and the relevant
+architecture/policy documents. Preserve edition isolation, provenance,
+determinism, privacy, and security; add tests and docs for capability changes.

@@ -10,10 +10,11 @@
     ],
     "license": "MIT",
     "require": {
+        "php": "^8.4",
         "ext-dom": "*",
         "ext-zlib": "*",
-        "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
+        "laravel/fortify": "^1.38",
         "laravel/framework": "^13.25",
         "laravel/horizon": "^5.48.0",
         "laravel/tinker": "^3.0",
@@ -112,6 +113,7 @@
         "eval:live": "@php artisan eval:live-openai",
         "ci:guardrails": "@php scripts/ci/guardrails.php",
         "test:architecture": "@php artisan test --testsuite=Architecture",
+        "test:acceptance": "@php artisan test --testsuite=Acceptance",
         "test:parser-security": "@php artisan test tests/Unit/GameAdapters/PobImportTest.php tests/Feature/PobImportEndpointTest.php tests/Feature/SecurityHardeningTest.php",
         "test:policy-gate": "@php artisan test tests/Feature/PolicyProvenanceGateTest.php tests/Feature/ManualTradePolicyGateTest.php",
         "quality": [

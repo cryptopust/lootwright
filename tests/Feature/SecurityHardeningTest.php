@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Logging\RedactSensitiveData;
+use App\Models\Analysis;
 use App\Models\User;
+use App\Modules\Administration\AdminAuditLogger;
 use App\Modules\Analysis\Jobs\ParseBuildArtifactJob;
 use App\Modules\Analysis\Jobs\RunDeterministicAnalysisJob;
 use App\Modules\BuildIntake\PobImportDisabled;
@@ -15,10 +17,12 @@ use Database\Seeders\PolicyDefaultsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
+use InvalidArgumentException;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Application\Workflow\UseCases\ParseAndNormalizeBuild;
 use Lootwright\Application\Workflow\UseCases\RunDeterministicAnalysis;
@@ -57,6 +61,63 @@ final class SecurityHardeningTest extends TestCase
         self::assertStringNotContainsString("'unsafe-inline'", $csp);
         self::assertStringNotContainsString("'unsafe-eval'", $csp);
         self::assertStringContainsString('camera=()', (string) $response->headers->get('Permissions-Policy'));
+    }
+
+    public function test_correlation_ids_are_bounded_returned_and_shared_with_audit_records(): void
+    {
+        $correlationId = '018f0000-0000-7000-8000-000000000123';
+        $this->withHeader('X-Correlation-ID', $correlationId)
+            ->get('/')
+            ->assertOk()
+            ->assertHeader('X-Correlation-ID', $correlationId);
+
+        $generated = (string) $this->withHeader('X-Correlation-ID', 'forged-log-entry')
+            ->get('/')
+            ->headers->get('X-Correlation-ID');
+        self::assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $generated);
+
+        $actor = User::factory()->create();
+        Context::scope(function () use ($actor): void {
+            app(AdminAuditLogger::class)->record($actor, 'security.correlation_test', 'Bounded test reason.');
+        }, ['correlation_id' => $correlationId]);
+        $this->assertDatabaseHas('admin_audit_logs', [
+            'actor_user_id' => $actor->id,
+            'correlation_id' => $correlationId,
+        ]);
+    }
+
+    public function test_persistence_models_are_not_open_to_mass_assignment(): void
+    {
+        self::assertTrue((new Analysis)->totallyGuarded());
+
+        $user = new User;
+        $user->fill([
+            'name' => 'Fixture',
+            'email' => 'fixture@example.test',
+            'password' => 'not-persisted',
+            'role' => 'super_admin',
+            'status' => 'suspended',
+        ]);
+        self::assertArrayNotHasKey('role', $user->getAttributes());
+        self::assertArrayNotHasKey('status', $user->getAttributes());
+    }
+
+    public function test_admin_audit_rejects_sensitive_metadata_and_log_injection(): void
+    {
+        $actor = User::factory()->create();
+        $audit = app(AdminAuditLogger::class);
+
+        try {
+            $audit->record($actor, 'security.invalid_metadata', 'Bounded reason.', metadata: [
+                'access_token_hash' => 'must-not-persist',
+            ]);
+            self::fail('Sensitive audit metadata must be rejected.');
+        } catch (InvalidArgumentException) {
+            self::addToAssertionCount(1);
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $audit->record($actor, 'security.invalid_reason', "forged\nlog line");
     }
 
     public function test_hostile_pob_text_stays_json_data_and_cannot_be_reflected_as_markup(): void
@@ -196,7 +257,7 @@ final class SecurityHardeningTest extends TestCase
             CarbonImmutable::now(),
             'security',
             Level::Warning,
-            'Failed with Bearer super-secret and sk-project-secret123',
+            "Failed with Bearer super-secret and sk-project-secret123\nforged-log-entry",
             [
                 'OPENAI_API_KEY' => 'sk-project-secret123',
                 'artifact' => '<PathOfBuilding>private</PathOfBuilding>',
@@ -209,6 +270,7 @@ final class SecurityHardeningTest extends TestCase
         $redacted = $processor($record);
         self::assertStringNotContainsString('super-secret', $redacted->message);
         self::assertStringNotContainsString('sk-project-secret123', $redacted->message);
+        self::assertStringNotContainsString("\n", $redacted->message);
         self::assertSame('[REDACTED]', $redacted->context['OPENAI_API_KEY']);
         self::assertSame('[REDACTED]', $redacted->context['artifact']);
         self::assertSame('[REDACTED]', $redacted->context['nested']['privacy_session_token']);

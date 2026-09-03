@@ -3,6 +3,7 @@
 namespace Lootwright\Application\AIGateway\Schema;
 
 use Lootwright\Application\AIGateway\DTO\IntentVocabulary;
+use Lootwright\Domain\Shared\Game\GameEdition;
 
 final class StructuredSchemas
 {
@@ -51,9 +52,9 @@ final class StructuredSchemas
      * @param  list<string>  $recommendationCodes
      * @return array<string, mixed>
      */
-    public static function explanation(string $language, array $findingCodes, array $recommendationCodes): array
+    public static function explanation(string $language, array $findingCodes, array $recommendationCodes, ?GameEdition $edition = null): array
     {
-        return self::object([
+        $properties = [
             'language' => ['type' => 'string', 'enum' => [$language]],
             'summary' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 600],
             'findings' => [
@@ -74,6 +75,25 @@ final class StructuredSchemas
                     'text' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 500],
                 ]),
             ],
+        ];
+        if ($edition !== null) {
+            $properties = ['edition' => ['type' => 'string', 'enum' => [$edition->value]], ...$properties];
+        }
+
+        return self::object($properties);
+    }
+
+    /** @param list<string> $references
+     * @return array<string,mixed>
+     */
+    public static function followUp(GameEdition $edition, array $references): array
+    {
+        return self::object([
+            'edition' => ['type' => 'string', 'enum' => [$edition->value]],
+            'action' => ['type' => 'string', 'enum' => ['change_budget', 'keep_item', 'remove_item', 'compare_upgrades', 'remove_aura', 'explain_support', 'unsupported']],
+            'reference_id' => ['type' => 'string', 'enum' => ['', ...$references]],
+            'value' => ['type' => 'string', 'maxLength' => 128],
+            'confidence_basis_points' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 10_000],
         ]);
     }
 

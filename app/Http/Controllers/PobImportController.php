@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePobImportRequest;
 use App\Modules\BuildIntake\PobImportConflict;
 use App\Modules\BuildIntake\PobImportDisabled;
+use App\Modules\BuildIntake\PobImportEditionMismatch;
 use App\Modules\BuildIntake\PobImportRejected;
 use App\Modules\BuildIntake\PobPolicyDenied;
 use App\Modules\BuildIntake\PolicyGatedPobImporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Lootwright\Domain\Shared\Error\DomainErrorCode;
+use Lootwright\Domain\Shared\Game\GameEdition;
 use RuntimeException;
 
 class PobImportController extends Controller
@@ -25,6 +27,8 @@ class PobImportController extends Controller
             ? (string) $actorIdentifier
             : null;
 
+        $expectedEdition = GameEdition::tryFrom($request->string('expected_game')->toString());
+
         try {
             $execution = $importer->handle(
                 $input,
@@ -32,6 +36,7 @@ class PobImportController extends Controller
                 $request->integer('retention_hours') ?: null,
                 $request->header('Idempotency-Key'),
                 $actorId,
+                expectedEdition: $expectedEdition,
             );
         } catch (PobImportDisabled) {
             return response()->json([
@@ -42,6 +47,12 @@ class PobImportController extends Controller
             return response()->json([
                 'status' => 'idempotency_conflict',
             ], 409);
+        } catch (PobImportEditionMismatch $exception) {
+            return response()->json([
+                'status' => 'edition_mismatch',
+                'expected_game' => $exception->expected->value,
+                'detected_game' => $exception->detected->value,
+            ], 409, ['Cache-Control' => 'no-store']);
         } catch (PobPolicyDenied $exception) {
             return response()->json([
                 'status' => 'policy_denied',

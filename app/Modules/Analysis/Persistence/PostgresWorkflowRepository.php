@@ -19,6 +19,7 @@ use Lootwright\Application\Workflow\DTO\DeletionResult;
 use Lootwright\Application\Workflow\DTO\DeterministicAnalysisSnapshot;
 use Lootwright\Application\Workflow\DTO\ParsedArtifact;
 use Lootwright\Application\Workflow\DTO\PortableAnalysisDocument;
+use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\DTO\SubmissionReceipt;
 use Lootwright\Application\Workflow\Exception\IdempotencyConflict;
 use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
@@ -28,6 +29,7 @@ use Lootwright\Application\Workflow\Ports\WorkflowRepository;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Lootwright\Domain\TradePlanning\ManualTradeRecipe as DomainManualTradeRecipe;
+use Lootwright\Domain\TradePlanning\TradeRecipe as DomainTradeRecipe;
 use RuntimeException;
 
 final class PostgresWorkflowRepository implements AnalysisDocumentRepository, BuildLifecycleRepository, WorkflowRepository
@@ -86,6 +88,7 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
             'id' => $analysisId,
             'artifact_id' => $artifactId,
             'owner_id_hash' => $ownerHash,
+            'user_id' => $this->userId($ownerId),
             'game_edition' => $edition->value,
             'version' => 1,
             'state' => AnalysisState::Queued->value,
@@ -111,6 +114,17 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
         event(new BuildArtifactSubmitted($artifactId, $analysisId, $edition->value));
 
         return new SubmissionReceipt($artifactId, $analysisId, AnalysisState::Queued, false);
+    }
+
+    private function userId(string $ownerId): ?int
+    {
+        if (! ctype_digit($ownerId)) {
+            return null;
+        }
+
+        $userId = (int) $ownerId;
+
+        return DB::table('users')->where('id', $userId)->exists() ? $userId : null;
     }
 
     public function claimArtifact(string $artifactId): ?ArtifactRecord
@@ -230,6 +244,40 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
             ]);
         }, 3);
         event(new BuildArtifactParsed($artifactId, $parsed->edition->value, $parsed->adapterKey, $parsed->parserVersion));
+    }
+
+    public function pinAnalysisRuleset(string $analysisId, ResolvedAnalysisContext $context): void
+    {
+        DB::transaction(function () use ($analysisId, $context): void {
+            $analysis = DB::table('analyses')->where('id', $analysisId)->lockForUpdate()->first();
+            if ($analysis === null || $this->string($analysis, 'state') !== AnalysisState::Processing->value) {
+                throw new TerminalWorkflowFailure('analysis_state_conflict', 'The ruleset identity could not be pinned before analysis dispatch.');
+            }
+
+            foreach ([
+                'ruleset_id' => $context->rulesetId,
+                'ruleset_version' => $context->rulesetVersion,
+                'ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+            ] as $field => $expected) {
+                $existing = $this->nullableString($analysis, $field);
+                if ($existing !== null && $existing !== $expected) {
+                    throw new TerminalWorkflowFailure('stale_ruleset_selection', 'The persisted ruleset identity changed before analysis dispatch.');
+                }
+            }
+
+            DB::table('analyses')->where('id', $analysisId)->update([
+                'ruleset_id' => $context->rulesetId,
+                'ruleset_version' => $context->rulesetVersion,
+                'ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+                'updated_at' => now(),
+            ]);
+            DB::table('builds')->where('id', $this->string($analysis, 'artifact_id'))->update([
+                'selected_ruleset_id' => $context->rulesetId,
+                'selected_ruleset_version' => $context->rulesetVersion,
+                'selected_ruleset_checksum_sha256' => $context->rulesetChecksumSha256,
+                'updated_at' => now(),
+            ]);
+        }, 3);
     }
 
     public function claimAnalysis(string $analysisId): ?AnalysisRecord
@@ -464,6 +512,7 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
                 'artifact_id' => $parent->artifactId,
                 'build_id' => $parent->artifactId,
                 'owner_id_hash' => $this->string($artifact, 'owner_id_hash'),
+                'user_id' => DB::table('analyses')->where('id', $parent->id)->value('user_id'),
                 'parent_analysis_id' => $parent->id,
                 'game_edition' => $parent->edition->value,
                 'version' => $version,
@@ -679,7 +728,13 @@ final class PostgresWorkflowRepository implements AnalysisDocumentRepository, Bu
 
         foreach ($snapshot->recipes as $sequence => $recipe) {
             $payload = CanonicalJson::encode($recipe);
-            $key = $recipe instanceof DomainManualTradeRecipe ? $recipe->recommendationCode : $recipe->slot;
+            $key = $recipe instanceof DomainManualTradeRecipe
+                ? $recipe->recommendationCode
+                : ($recipe instanceof DomainTradeRecipe ? $recipe->slot : $recipe->slot);
+            $key = $key === '' ? 'recipe' : $key;
+            if (DB::table('manual_trade_recipes')->where('analysis_id', $analysisId)->where('recipe_key', $key)->exists()) {
+                $key .= ':'.$sequence;
+            }
             DB::table('manual_trade_recipes')->insert([
                 'id' => (string) Str::uuid7(),
                 'analysis_id' => $analysisId,

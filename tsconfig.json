@@ -123,6 +123,7 @@
         "resources/js/**/*.vue",
         "tests/e2e/**/*.ts",
         "playwright.config.ts",
+        "playwright.live.config.ts",
         "vite.config.ts",
         "vitest.config.ts"
     ]

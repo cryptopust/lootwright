@@ -85,7 +85,7 @@ final readonly class SubmitBuildArtifact
         if (trim($command->ownerId) === ''
             || preg_match('/^[A-Za-z0-9._:-]{1,128}$/D', $command->ownerId) !== 1
             || preg_match('/^[A-Za-z0-9._:-]{32,128}$/D', $command->idempotencyKey) !== 1
-            || $command->artifactType !== 'pob'
+            || ! in_array($command->artifactType, ['pob', 'wizard_plan', 'item_text'], true)
             || $command->artifact === ''
             || strlen($command->artifact) > 1_048_576
         ) {

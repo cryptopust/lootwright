@@ -11,6 +11,9 @@ use Lootwright\Application\AIGateway\DTO\AiRequestContext;
 use Lootwright\Application\AIGateway\DTO\BuildIntentCandidate;
 use Lootwright\Application\AIGateway\DTO\ClarificationSet;
 use Lootwright\Application\AIGateway\DTO\ExplanationBundle;
+use Lootwright\Application\AIGateway\DTO\FollowUpAction;
+use Lootwright\Application\AIGateway\DTO\FollowUpOutcome;
+use Lootwright\Application\AIGateway\DTO\FollowUpQuestionRequest;
 use Lootwright\Application\AIGateway\DTO\GatewayExplanationRequest;
 use Lootwright\Application\AIGateway\DTO\IntentVocabulary;
 use Lootwright\Application\AIGateway\DTO\NaturalLanguageIntentRequest;
@@ -18,10 +21,13 @@ use Lootwright\Application\AIGateway\DTO\StructuredAiRequest;
 use Lootwright\Application\AIGateway\DTO\StructuredAiResponse;
 use Lootwright\Application\AIGateway\Exception\AiProviderFailure;
 use Lootwright\Application\AIGateway\Ports\AiBudget;
+use Lootwright\Application\AIGateway\Ports\AiCircuitBreaker;
 use Lootwright\Application\AIGateway\Ports\AiExecutionPolicy;
 use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\AiResponseCache;
+use Lootwright\Application\AIGateway\Ports\AiRuntimePolicy;
 use Lootwright\Application\AIGateway\Ports\AiTelemetry;
+use Lootwright\Application\AIGateway\Ports\FollowUpInterpreter;
 use Lootwright\Application\AIGateway\Ports\StructuredAiProvider;
 use Lootwright\Application\AIGateway\Schema\StrictJsonSchemaValidator;
 use Lootwright\Application\AIGateway\Schema\StructuredSchemas;
@@ -30,8 +36,20 @@ use Lootwright\Domain\Recommendations\Recommendation;
 use Lootwright\Domain\Shared\Serialization\CanonicalJson;
 use Throwable;
 
-final readonly class ProviderNeutralAiGateway implements AiGateway
+final readonly class ProviderNeutralAiGateway implements AiGateway, FollowUpInterpreter
 {
+    private const array NEUTRAL_EXPLANATION_WORDS = [
+        'a', 'an', 'analysis', 'and', 'are', 'as', 'at', 'because', 'by', 'can', 'comes', 'current',
+        'deterministic', 'evidence', 'existing', 'explain', 'explains', 'finding', 'findings', 'for',
+        'from', 'has', 'have', 'in', 'indicates', 'input', 'is', 'known', 'may', 'must', 'not', 'of',
+        'on', 'only', 'or', 'order', 'ordering', 'priority', 'recommendation', 'recommendations',
+        'result', 'results', 'shows', 'summary', 'that', 'the', 'these', 'this', 'those', 'to',
+        'unchanged', 'was', 'were', 'with', 'without', 'açıklar', 'analiz', 'bir', 'bu', 'değil',
+        'değişmez', 'deterministik', 'gelir', 'girdi', 'girdiden', 'gösterir', 'için', 'ile', 'kanıt',
+        'mevcut', 'öncelik', 'öneri', 'özeti', 'sıralama', 'sıralamayı', 'sonuç', 'sonuçlar',
+        'sonuçların', 'şu', 've', 'veya', 'bulgu',
+    ];
+
     public function __construct(
         private AiGatewayConfiguration $config,
         private StructuredAiProvider $provider,
@@ -40,6 +58,8 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
         private AiResponseCache $cache,
         private AiTelemetry $telemetry,
         private StrictJsonSchemaValidator $validator = new StrictJsonSchemaValidator,
+        private AiRuntimePolicy $runtime = new AllowAllAiRuntimePolicy,
+        private AiCircuitBreaker $circuitBreaker = new AllowAllAiCircuitBreaker,
     ) {}
 
     public function extractIntent(NaturalLanguageIntentRequest $request): AiGatewayOutcome
@@ -110,9 +130,10 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
         $language = $this->language($request->locale->value);
         $findingCodes = array_map(static fn (Finding $finding): string => $finding->code, $request->findings);
         $recommendationCodes = array_map(static fn (Recommendation $recommendation): string => $recommendation->code, $request->recommendations);
-        $schema = StructuredSchemas::explanation($language, $findingCodes, $recommendationCodes);
+        $schema = StructuredSchemas::explanation($language, $findingCodes, $recommendationCodes, $request->edition);
         $input = [
             'language' => $language,
+            'edition' => $request->edition->value,
             'findings' => array_map(static fn (Finding $finding): array => [
                 'code' => $finding->code,
                 'severity' => $finding->severity->value,
@@ -134,6 +155,9 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
             $input,
             'explanation_bundle',
             $schema,
+            fn (array $data): bool => $this->referencesExactly($data['findings'], $findingCodes)
+                && $this->referencesExactly($data['recommendations'], $recommendationCodes)
+                && ! $this->containsForbiddenExplanationContent($data, $request),
         );
 
         if ($call['data'] === null) {
@@ -144,7 +168,7 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
 
         if (! $this->referencesExactly($data['findings'], $findingCodes)
             || ! $this->referencesExactly($data['recommendations'], $recommendationCodes)
-            || $this->containsForbiddenExplanationContent($data)
+            || $this->containsForbiddenExplanationContent($data, $request)
         ) {
             return new AiGatewayOutcome('fallback', $fallback, [...$call['metadata'], 'validation_outcome' => 'authority_violation']);
         }
@@ -154,7 +178,57 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
             $data['summary'],
             $data['findings'],
             $data['recommendations'],
+            $request->edition,
         ), $call['metadata']);
+    }
+
+    public function interpretFollowUp(FollowUpQuestionRequest $request): FollowUpOutcome
+    {
+        $fallback = new FollowUpOutcome('fallback', null, 'This question is outside the supported deterministic assistant actions.', ['provider_called' => false]);
+        if ($this->looksLikePromptInjection($request->question)) {
+            return new FollowUpOutcome('fallback', null, 'The assistant cannot process instruction-like requests.', ['provider_called' => false, 'validation_outcome' => 'prompt_injection']);
+        }
+
+        $schema = StructuredSchemas::followUp($request->edition, $request->actionReferences);
+        $call = $this->call(
+            'follow_up',
+            $this->config->explanationModel,
+            $this->config->explanationMaxOutputTokens,
+            $request->context,
+            'Classify the question only. Select one supported action and a reference from the supplied deterministic context. Never answer, calculate, invent IDs, prices, mechanics, or facts. Unsupported questions must use unsupported.',
+            [
+                'question' => $request->question,
+                'edition' => $request->edition->value,
+                'ruleset_version' => $request->rulesetVersion,
+                'context' => $request->deterministicContext,
+            ],
+            'follow_up_action',
+            $schema,
+            fn (array $data): bool => $this->followUpReferencesResolve($data, $request),
+        );
+
+        if ($call['data'] === null) {
+            return $fallback;
+        }
+
+        $data = $call['data'];
+
+        return new FollowUpOutcome(
+            $call['status'],
+            new FollowUpAction($data['action'], $data['reference_id'], $data['value'], $data['confidence_basis_points']),
+            'The question was classified for deterministic recalculation.',
+            $call['metadata'],
+        );
+    }
+
+    /** @param array<string,mixed> $data */
+    private function followUpReferencesResolve(array $data, FollowUpQuestionRequest $request): bool
+    {
+        if ($data['action'] === 'unsupported') {
+            return true;
+        }
+
+        return in_array($data['reference_id'], $request->actionReferences, true);
     }
 
     /** @param array<string, bool|int|string> $priorMetadata */
@@ -186,6 +260,7 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
     /**
      * @param  array<string, mixed>  $input
      * @param  array<string, mixed>  $schema
+     * @param  (callable(array<string, mixed>): bool)|null  $semanticValidator
      * @return array{data: array<string, mixed>|null, status: string, metadata: array<string, bool|int|string>}
      */
     private function call(
@@ -197,16 +272,23 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
         array $input,
         string $schemaName,
         array $schema,
+        ?callable $semanticValidator = null,
     ): array {
         $baseMetadata = ['provider_called' => false, 'validation_outcome' => 'not_called', 'repair_attempts' => 0];
 
         if (! $this->config->enabled || ! $context->userOptedIn) {
             return ['data' => null, 'status' => 'disabled', 'metadata' => $baseMetadata];
         }
-        if (! $this->policy->permits($task)) {
-            return ['data' => null, 'status' => 'policy_blocked', 'metadata' => $baseMetadata];
+        try {
+            if (! $this->runtime->permits($task)) {
+                return ['data' => null, 'status' => 'disabled', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'runtime_disabled']];
+            }
+            if (! $this->policy->permits($task)) {
+                return ['data' => null, 'status' => 'policy_blocked', 'metadata' => $baseMetadata];
+            }
+        } catch (Throwable) {
+            return ['data' => null, 'status' => 'fallback', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'control_unavailable']];
         }
-
         $canonical = CanonicalJson::encode(['task' => $task, 'model' => $model, 'template' => $this->config->promptTemplateVersion, 'input' => $input]);
         $inputTokens = $this->estimateTokens($canonical.$instructions.CanonicalJson::encode($schema));
 
@@ -216,9 +298,15 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
 
         $requestHash = hash_hmac('sha256', $canonical, $this->config->cacheHmacKey);
 
-        if ($context->cachePermitted && ($cached = $this->cache->get($requestHash, $context->userHash)) !== null
+        try {
+            $cached = $context->cachePermitted ? $this->cache->get($requestHash, $context->userHash) : null;
+        } catch (Throwable) {
+            return ['data' => null, 'status' => 'fallback', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'cache_unavailable']];
+        }
+
+        if ($cached !== null
             && $this->validator->validate($cached, $schema) === []
-        ) {
+            && ($semanticValidator === null || $semanticValidator($cached))) {
             $this->telemetry->record(new AiCallAudit(
                 $requestHash,
                 $context->userHash,
@@ -239,8 +327,20 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
             return ['data' => $cached, 'status' => 'cache', 'metadata' => ['provider_called' => false, 'validation_outcome' => 'valid', 'repair_attempts' => 0, 'cache_hit' => true]];
         }
 
+        try {
+            if (! $this->circuitBreaker->permitsRequest()) {
+                return ['data' => null, 'status' => 'circuit_open', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'circuit_open']];
+            }
+        } catch (Throwable) {
+            return ['data' => null, 'status' => 'fallback', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'circuit_unavailable']];
+        }
+
         $maximumCost = 2 * $this->cost($inputTokens, 0, $maxOutputTokens);
-        $reservation = $this->budget->reserve($context, $maximumCost);
+        try {
+            $reservation = $this->budget->reserve($context, $maximumCost);
+        } catch (Throwable) {
+            return ['data' => null, 'status' => 'fallback', 'metadata' => [...$baseMetadata, 'validation_outcome' => 'budget_unavailable']];
+        }
 
         if (! $reservation instanceof AiBudgetReservation) {
             return ['data' => null, 'status' => 'budget_exceeded', 'metadata' => $baseMetadata];
@@ -272,11 +372,22 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
                     break;
                 }
 
+                if ($response->outputTokens > $maxOutputTokens) {
+                    $validationOutcome = 'output_token_limit';
+                    break;
+                }
+
                 $decoded = $this->decode($response->outputJson);
                 if ($decoded !== null && $this->validator->validate($decoded, $schema) === []) {
+                    if ($semanticValidator !== null && ! $semanticValidator($decoded)) {
+                        $validationOutcome = 'authority_violation';
+                        break;
+                    }
+
                     $validationOutcome = 'valid';
                     $actualCost = $this->responsesCost($responses);
                     $this->budget->settle($reservation, $actualCost);
+                    $this->circuitBreaker->recordSuccess();
                     $this->audit($task, $requestHash, $context, $responses, $validationOutcome, $repairAttempts, $actualCost);
 
                     if ($context->cachePermitted) {
@@ -292,12 +403,17 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
 
             $actualCost = $this->responsesCost($responses);
             $this->budget->settle($reservation, $actualCost);
+            if (in_array($validationOutcome, ['schema_invalid', 'authority_violation', 'output_token_limit', 'provider_failure'], true)) {
+                $this->circuitBreaker->recordFailure();
+            }
             $this->audit($task, $requestHash, $context, $responses, $validationOutcome, min(1, $repairAttempts), $actualCost);
         } catch (AiProviderFailure) {
             $this->budget->cancel($reservation);
+            $this->circuitBreaker->recordFailure();
             $this->auditFailure($task, $model, $requestHash, $context);
         } catch (Throwable) {
             $this->budget->cancel($reservation);
+            $this->circuitBreaker->recordFailure();
             $this->auditFailure($task, $model, $requestHash, $context);
         }
 
@@ -339,6 +455,7 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
                 'code' => $recommendation->code,
                 'text' => $language === 'tr' ? 'Deterministik öneri önceliği: '.$recommendation->priority->value.'.' : 'Deterministic recommendation priority: '.$recommendation->priority->value.'.',
             ], $request->recommendations),
+            $request->edition,
         );
     }
 
@@ -368,11 +485,85 @@ final readonly class ProviderNeutralAiGateway implements AiGateway
     }
 
     /** @param array<string, mixed> $data */
-    private function containsForbiddenExplanationContent(array $data): bool
+    private function containsForbiddenExplanationContent(array $data, GatewayExplanationRequest $request): bool
     {
         $text = mb_strtolower(CanonicalJson::encode($data));
 
-        return preg_match('~https?://|/api/trade/|<[^>]+>|\b(price|fiyat|chaos|divine|trade id)\b~iu', $text) === 1;
+        $allowedCodes = [
+            ...array_map(static fn (Finding $finding): string => $finding->code, $request->findings),
+            ...array_map(static fn (Recommendation $recommendation): string => $recommendation->code, $request->recommendations),
+        ];
+        preg_match_all('/\b[a-z][a-z0-9_-]*(?:\.[a-z0-9_-]+)+\b/i', $text, $matches);
+        foreach ($matches[0] as $candidateCode) {
+            if (! in_array($candidateCode, $allowedCodes, true)) {
+                return true;
+            }
+        }
+
+        $allowedNumbers = [];
+        foreach ($request->findings as $finding) {
+            preg_match_all('/(?<![A-Za-z])-?\d+(?:\.\d+)?(?![A-Za-z])/', CanonicalJson::encode([$finding->observedValue, $finding->expectedValue, $finding->summary]), $numbers);
+            $allowedNumbers = [...$allowedNumbers, ...$numbers[0]];
+        }
+        preg_match_all('/(?<![A-Za-z])-?\d+(?:\.\d+)?(?![A-Za-z])/', $text, $outputNumbers);
+        foreach ($outputNumbers[0] as $number) {
+            if (! in_array($number, $allowedNumbers, true)) {
+                return true;
+            }
+        }
+
+        if (preg_match('~https?://|/api/trade/|<[^>]+>|\b(price|fiyat|chaos|divine|trade id)\b~iu', $text) === 1) {
+            return true;
+        }
+
+        $sourceText = mb_strtolower(CanonicalJson::encode(array_map(static fn (Finding $finding): array => [
+            $finding->title,
+            $finding->summary,
+            $finding->explanation,
+        ], $request->findings)));
+        foreach (['modifier', 'modifiye', 'passive node', 'pasif düğüm', 'ascendancy', 'item id'] as $canonicalTerm) {
+            if (str_contains($text, $canonicalTerm) && ! str_contains($sourceText, $canonicalTerm)) {
+                return true;
+            }
+        }
+
+        $prose = implode(' ', [
+            is_string($data['summary'] ?? null) ? $data['summary'] : '',
+            ...array_map(static fn (array $row): string => $row['text'], $data['findings']),
+            ...array_map(static fn (array $row): string => $row['text'], $data['recommendations']),
+        ]);
+        $sourceVocabulary = CanonicalJson::encode([
+            ...array_map(static fn (Finding $finding): array => [
+                $finding->code,
+                $finding->severity->value,
+                $finding->title,
+                $finding->summary,
+                $finding->explanation,
+            ], $request->findings),
+            ...array_map(static fn (Recommendation $recommendation): array => [
+                $recommendation->code,
+                $recommendation->priority->value,
+            ], $request->recommendations),
+        ]);
+        $allowedWords = array_fill_keys([
+            ...$this->words($sourceVocabulary),
+            ...self::NEUTRAL_EXPLANATION_WORDS,
+        ], true);
+        foreach ($this->words($prose) as $word) {
+            if (! isset($allowedWords[$word])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return list<string> */
+    private function words(string $text): array
+    {
+        preg_match_all("/[\\p{L}\\p{M}][\\p{L}\\p{M}'’-]*/u", mb_strtolower($text), $matches);
+
+        return array_values(array_unique($matches[0]));
     }
 
     private function looksLikePromptInjection(string $text): bool

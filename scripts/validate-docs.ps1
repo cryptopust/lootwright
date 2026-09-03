@@ -41,7 +41,7 @@ foreach ($relativePath in $requiredFiles) {
 
 $markdownFiles = Get-ChildItem -LiteralPath $root -Recurse -File -Filter '*.md' |
     Where-Object {
-        $_.FullName -notmatch '[\\/](vendor|node_modules|\.git)[\\/]'
+        $_.FullName -notmatch '[\\/](vendor|node_modules|storage|\.git)[\\/]'
     }
 
 foreach ($file in $markdownFiles) {

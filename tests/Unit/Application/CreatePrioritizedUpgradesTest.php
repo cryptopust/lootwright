@@ -3,15 +3,18 @@
 namespace Tests\Unit\Application;
 
 use Lootwright\Application\Analysis\UseCases\CreatePrioritizedUpgrades;
+use Lootwright\Domain\Analysis\AnalysisResult;
 use Lootwright\Domain\Analysis\Finding;
 use Lootwright\Domain\Analysis\FindingSeverity;
 use Lootwright\Domain\Analysis\Ports\BuildAnalyzer;
 use Lootwright\Domain\BuildIntake\CanonicalBuild;
 use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
 use Lootwright\Domain\BuildIntake\Intent\UpgradePriority;
+use Lootwright\Domain\Recommendations\BudgetConstraint;
 use Lootwright\Domain\Recommendations\Ports\UpgradePlanner;
 use Lootwright\Domain\Recommendations\Recommendation;
 use Lootwright\Domain\Recommendations\RecommendationImpact;
+use Lootwright\Domain\Recommendations\UserConstraints;
 use Lootwright\Domain\Shared\Error\DomainResult;
 use Lootwright\Domain\Shared\Game\GameEdition;
 use Lootwright\Domain\Shared\Identity\AnalysisId;
@@ -84,8 +87,11 @@ final class FixtureUpgradePlanner implements UpgradePlanner
     /** @var list<string> */
     public array $receivedFindingCodes = [];
 
-    public function plan(array $findings, BuildIntent $intent): DomainResult
+    public function plan(array|AnalysisResult $findings, BuildIntent $intent, ?BudgetConstraint $budget = null, ?UserConstraints $constraints = null): DomainResult
     {
+        if (! is_array($findings)) {
+            throw new \RuntimeException('The legacy fixture expects finding-list input.');
+        }
         $this->receivedFindingCodes = array_column($findings, 'code');
         $impact = DomainFixtures::value(
             RecommendationImpact::create(['fixture_dimension' => 1_000]),

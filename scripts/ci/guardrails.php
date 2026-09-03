@@ -111,6 +111,10 @@ foreach ($paths as $path) {
         $record($path, 'runtime funding or payment acceptance cannot be enabled');
     }
 
+    if (str_starts_with($path, 'resources/js/') && preg_match('/\bv-html\s*=/i', $text) === 1) {
+        $record($path, 'v-html is prohibited; render untrusted values as escaped text');
+    }
+
     if (preg_match('/^[ \t]*(APP_KEY|OPENAI_API_KEY|POLICY_ADMIN_TOKEN|READINESS_TOKEN)[ \t]*=[ \t]*[^\r\n]+/m', $text) === 1
         && in_array($path, ['.env.example', 'deploy/env.production.example'], true)
     ) {

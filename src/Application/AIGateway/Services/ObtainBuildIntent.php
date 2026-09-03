@@ -6,7 +6,7 @@ use Lootwright\Application\AIGateway\DTO\BuildIntentCandidate;
 use Lootwright\Application\AIGateway\DTO\BuildIntentResolution;
 use Lootwright\Application\AIGateway\DTO\ClarificationSet;
 use Lootwright\Application\AIGateway\DTO\NaturalLanguageIntentRequest;
-use Lootwright\Application\AIGateway\Ports\AiGateway;
+use Lootwright\Application\AIGateway\Ports\IntentInterpreter;
 use Lootwright\Domain\BuildIntake\Intent\BuildIntent;
 use Lootwright\Domain\BuildIntake\Intent\Constraint;
 use Lootwright\Domain\BuildIntake\Intent\ContentGoal;
@@ -19,7 +19,7 @@ use RuntimeException;
 
 final readonly class ObtainBuildIntent
 {
-    public function __construct(private AiGateway $gateway) {}
+    public function __construct(private IntentInterpreter $gateway) {}
 
     public function handle(NaturalLanguageIntentRequest $request): BuildIntentResolution
     {

@@ -31,4 +31,6 @@ enum DomainErrorCode: string
     case AmbiguousGameEdition = 'ambiguous_game_edition';
     case UnsupportedInput = 'unsupported_input';
     case ProcessingLimit = 'processing_limit';
+    case CircularDependency = 'circular_dependency';
+    case ConstraintViolation = 'constraint_violation';
 }

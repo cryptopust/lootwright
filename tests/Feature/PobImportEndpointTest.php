@@ -19,6 +19,15 @@ class PobImportEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_inactive_poe2_expected_game_is_rejected_before_parsing(): void
+    {
+        $this->postJson('/api/build-imports/pob', [
+            'input' => $this->fixture('poe1-minimal.xml'),
+            'persist' => false,
+            'expected_game' => 'poe2',
+        ])->assertUnprocessable()->assertJsonValidationErrors('expected_game');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -123,7 +132,7 @@ class PobImportEndpointTest extends TestCase
     {
         DB::table('policy_kill_switches')->insert([
             'scope' => 'source_capability',
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'capability' => 'import',
             'active' => true,
             'reason' => 'Test import shutdown.',
@@ -162,7 +171,7 @@ class PobImportEndpointTest extends TestCase
         DB::table('policy_kill_switches')->where('source_id', 'POB-COMMUNITY')->delete();
         DB::table('policy_kill_switches')->insert([
             'scope' => 'source_capability',
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'capability' => 'persistent_store',
             'active' => true,
             'reason' => 'Test persistence shutdown.',
@@ -195,18 +204,15 @@ class PobImportEndpointTest extends TestCase
         $this->assertDatabaseCount('pob_imports', 0);
     }
 
-    public function test_poe2_uses_only_the_separate_beta_format_policy_record(): void
+    public function test_detected_poe2_input_is_rejected_while_the_adapter_remains_dormant(): void
     {
         $this->postJson('/api/build-imports/pob', [
             'input' => $this->fixture('poe2-minimal.xml'),
-        ])->assertOk()
-            ->assertJsonPath('import.canonical_build.edition', 'poe2')
-            ->assertJsonPath('import.canonical_build.beta', true);
+        ])->assertUnprocessable()->assertJsonPath('status', 'rejected');
 
-        $this->assertDatabaseHas('policy_decision_audits', [
+        $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB2-COMMUNITY',
             'operation' => 'pob2.community.format_interpret',
-            'decision' => 'allow',
         ]);
         $this->assertDatabaseMissing('policy_decision_audits', [
             'source_id' => 'POB-COMMUNITY',
@@ -299,7 +305,7 @@ class PobImportEndpointTest extends TestCase
 
         $this->withHeaders($headers)->postJson('/api/build-imports/pob', [
             ...$payload,
-            'input' => $this->fixture('poe2-minimal.xml'),
+            'input' => str_replace('Untrusted ', 'Different ', $this->fixture('poe1-minimal.xml')),
         ])->assertConflict()->assertJsonPath('status', 'idempotency_conflict');
         $this->assertDatabaseCount('pob_imports', 1);
 

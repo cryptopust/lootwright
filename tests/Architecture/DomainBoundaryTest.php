@@ -22,6 +22,7 @@ class DomainBoundaryTest extends TestCase
         'Recommendations' => ['Shared', 'BuildIntake', 'Analysis', 'Recommendations'],
         'TradePlanning' => ['Shared', 'Recommendations', 'TradePlanning'],
         'UsageFunding' => ['Shared', 'PolicyProvenance', 'UsageFunding'],
+        'Market' => ['Shared', 'Market'],
     ];
 
     /** @return iterable<string, array{string}> */

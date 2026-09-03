@@ -60,3 +60,45 @@ export interface DemoRecipe {
     strict: DemoRecipeVariant;
     broad: DemoRecipeVariant;
 }
+
+export interface TradeRecipeFilter {
+    canonical_modifier_id: string;
+    label: string;
+    minimum?: string;
+    weight?: number;
+}
+
+export interface TradeRecipeView {
+    game_edition: GameEdition;
+    slot: string;
+    item_class: string | null;
+    base_constraints: Record<string, unknown>;
+    rarity: string | null;
+    influence_or_edition_equivalent: string | null;
+    corruption_constraints: string | null;
+    required_modifiers: TradeRecipeFilter[];
+    optional_modifiers: TradeRecipeFilter[];
+    excluded_modifiers: TradeRecipeFilter[];
+    minimum_values: Record<string, string>;
+    weights: Record<string, number>;
+    dependencies: Array<{ slot: string; reason: string }>;
+    broad_recipe: string;
+    strict_recipe: string;
+    explanation: string;
+    provenance: {
+        source_id: string;
+        source_version: string;
+        checksum_sha256: string;
+    };
+    unsupported_filters: Array<{
+        modifier_id?: string;
+        candidate?: string;
+        reason: string;
+    }>;
+    ruleset: {
+        edition: GameEdition;
+        id: string;
+        version: string;
+        checksum_sha256: string;
+    };
+}

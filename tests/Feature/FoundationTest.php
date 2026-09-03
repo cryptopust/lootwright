@@ -26,6 +26,7 @@ class FoundationTest extends TestCase
             '/analyses/demo/trade' => 'Analysis/Workspace',
             '/analyses/demo/provenance' => 'Analysis/Workspace',
             '/analyses/demo/states' => 'Analysis/Workspace',
+            '/style-guide' => 'StyleGuide',
             '/privacy' => 'Information',
             '/data-deletion' => 'Information',
             '/methodology' => 'Information',

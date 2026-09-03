@@ -3,6 +3,7 @@
 namespace Lootwright\Domain\PoeCatalog;
 
 use JsonSerializable;
+use Lootwright\Domain\PoeCatalog\Character\CharacterCatalogRegistry;
 use Lootwright\Domain\PoeCatalog\Identifier\AscendancyId;
 use Lootwright\Domain\PoeCatalog\Identifier\CharacterClassId;
 use Lootwright\Domain\PoeCatalog\Identifier\KeystoneId;
@@ -59,6 +60,13 @@ final readonly class BuildCatalog implements JsonSerializable
             return DomainResult::failure(DomainError::because(
                 DomainErrorCode::EditionMismatch,
                 'The character class and ascendancy must belong to the build edition.',
+            ));
+        }
+
+        if (! CharacterCatalogRegistry::for($edition)->supports($characterClass->value, $ascendancy?->value)) {
+            return DomainResult::failure(DomainError::because(
+                DomainErrorCode::InvalidValue,
+                'The selected Ascendancy does not belong to the selected character class and game.',
             ));
         }
 
@@ -169,6 +177,23 @@ final readonly class BuildCatalog implements JsonSerializable
             $validatedKeystones,
             $validatedItems,
         ));
+    }
+
+    /** Construct a build shell from an already-resolved immutable ruleset. */
+    public static function fromCanonical(
+        GameEdition $edition,
+        CharacterClassId $characterClass,
+        ?AscendancyId $ascendancy,
+    ): DomainResult {
+        if (! $characterClass->belongsTo($edition)
+            || ($ascendancy !== null && ! $ascendancy->belongsTo($edition))) {
+            return DomainResult::failure(DomainError::because(
+                DomainErrorCode::EditionMismatch,
+                'Canonical build values must belong to the selected edition.',
+            ));
+        }
+
+        return DomainResult::success(new self($edition, $characterClass, $ascendancy, [], [], [], [], []));
     }
 
     /** @return array<string, mixed> */

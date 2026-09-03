@@ -1,0 +1,11 @@
+{
+    "game_edition": "poe1",
+    "status": "complete",
+    "engine_version": "1.0.0",
+    "rule_codes": [
+        "defence.fire_resistance.below_reported_max",
+        "defence.chaos_resistance.negative"
+    ],
+    "recommendation_count": 0,
+    "unsupported_data": []
+}

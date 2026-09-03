@@ -80,7 +80,7 @@ class PolicyProvenanceGateTest extends TestCase
         $global = $this->decision($this->request(
             Capability::Import,
             'user_input.pob_code.import',
-            'USER-PASTED-POB',
+            'USER-POB-001',
             '1.0.0',
             ['explicit_user_submission'],
         ));
@@ -89,7 +89,7 @@ class PolicyProvenanceGateTest extends TestCase
         Config::set('policy.global_kill_switch', false);
         DB::table('policy_kill_switches')->insert([
             'scope' => 'source_capability',
-            'source_id' => 'USER-PASTED-POB',
+            'source_id' => 'USER-POB-001',
             'capability' => 'import',
             'active' => true,
             'reason' => 'Test emergency switch.',
@@ -100,7 +100,7 @@ class PolicyProvenanceGateTest extends TestCase
         $scoped = $this->decision($this->request(
             Capability::Import,
             'user_input.pob_code.import',
-            'USER-PASTED-POB',
+            'USER-POB-001',
             '1.0.0',
             ['explicit_user_submission'],
         ));
@@ -114,21 +114,21 @@ class PolicyProvenanceGateTest extends TestCase
         $withoutConsent = $this->decision($this->request(
             Capability::PersistentStore,
             'user_input.item_text.store',
-            'USER-PASTED-ITEM',
+            'USER-ITEM-TEXT-001',
             '1.0.0',
             ['explicit_user_submission'],
         ));
         $withConsent = $this->decision($this->request(
             Capability::PersistentStore,
             'user_input.item_text.store',
-            'USER-PASTED-ITEM',
+            'USER-ITEM-TEXT-001',
             '1.0.0',
             ['explicit_user_submission', 'user_storage_consent'],
         ));
         $withConsentAndOwner = $this->decision($this->request(
             Capability::PersistentStore,
             'user_input.item_text.store',
-            'USER-PASTED-ITEM',
+            'USER-ITEM-TEXT-001',
             '1.0.0',
             ['explicit_user_submission', 'user_storage_consent', 'authenticated_user'],
         ));

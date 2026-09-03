@@ -33,11 +33,13 @@ The first releasable product supports Path of Exile 1 only.
 - Policy/provenance denials are tested before any external capability can be enabled.
 - Security limits cover encoded input, decompression, parsing, queues, rendering, and retention.
 
-## PoE2 phase two
+## Dual-game catalog and ruleset boundary
 
-PoE2 work starts only after the PoE1 release gates are met and an ADR records activation of the adapter.
+PoE1 and PoE2 catalog, intake, wizard selection, and persistence are active
+under ADR 0016. PoE2 remains Early Access and ruleset-backed analysis is still
+approval-gated; an unavailable ruleset fails closed.
 
-Phase two may add:
+Future ruleset work may add:
 
 - a separately licensed and provenanced PoB2 parser;
 - PoE2-specific normalized facts, rulesets, calculations, findings, recommendations, and manual recipes;

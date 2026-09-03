@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 
 import AppShell from '@/components/app/AppShell.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
+import ScopePanel from '@/components/arpg/ScopePanel.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { locale, tx } = useLocale();
@@ -84,135 +85,53 @@ const workflow = [
                             })
                         }}
                     </a>
-                    <a
-                        class="button is-secondary"
-                        href="/analyses/demo/overview"
-                    >
-                        {{
-                            tx({
-                                tr: 'Fixture demosunu incele',
-                                en: 'Explore the fixture demo',
-                            })
-                        }}
-                    </a>
                 </div>
                 <div class="edition-line">
                     <EditionBadge edition="poe1" />
                     <span>{{
                         tx({ tr: 'MVP analizi', en: 'MVP analysis' })
                     }}</span>
-                    <EditionBadge edition="poe2" />
-                    <span>{{
-                        tx({
-                            tr: 'Yalnızca format inceleme',
-                            en: 'Format review only',
-                        })
-                    }}</span>
                 </div>
             </div>
 
-            <aside
-                class="truth-ledger"
-                :aria-label="
-                    tx({ tr: 'Ürün sınırları', en: 'Product boundaries' })
-                "
-            >
-                <div class="ledger-heading">
-                    <span>LOOTWRIGHT / SCOPE</span>
-                    <span>POLICY 1.0.0</span>
-                </div>
-                <div class="ledger-split">
-                    <section>
-                        <h2>{{ tx({ tr: 'Yaptığı', en: 'What it does' }) }}</h2>
-                        <ul class="check-list">
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Deterministik bulgular',
-                                        en: 'Deterministic findings',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Kanıtlı yükseltme sırası',
-                                        en: 'Evidence-backed upgrade order',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Manuel Trade filtre tarifi',
-                                        en: 'Manual Trade filter recipe',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Kaynak ve ruleset görünürlüğü',
-                                        en: 'Source and ruleset visibility',
-                                    })
-                                }}
-                            </li>
-                        </ul>
-                    </section>
-                    <section>
-                        <h2>
-                            {{
-                                tx({
-                                    tr: 'Yapmadığı',
-                                    en: 'What it does not do',
-                                })
-                            }}
-                        </h2>
-                        <ul class="cross-list">
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Canlı fiyat veya ilan çekmez',
-                                        en: 'No live prices or listings',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Trade araması otomatikleştirmez',
-                                        en: 'No automated Trade search',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'Oyuna veya tarayıcıya dokunmaz',
-                                        en: 'No game or browser control',
-                                    })
-                                }}
-                            </li>
-                            <li>
-                                {{
-                                    tx({
-                                        tr: 'AI ile hesap yapmaz',
-                                        en: 'No AI-authored calculations',
-                                    })
-                                }}
-                            </li>
-                        </ul>
-                    </section>
-                </div>
-                <p class="ledger-footnote">
-                    {{
-                        tx({
-                            tr: 'Fiyat ve bulunabilirlik bilinmiyorsa Lootwright bunu bilinmiyor olarak gösterir.',
-                            en: 'When price or availability is unknown, Lootwright says it is unknown.',
-                        })
-                    }}
-                </p>
-            </aside>
+            <ScopePanel
+                :does="[
+                    tx({
+                        tr: 'Deterministik bulgular',
+                        en: 'Deterministic findings',
+                    }),
+                    tx({
+                        tr: 'Kanıtlı yükseltme sırası',
+                        en: 'Evidence-backed upgrade order',
+                    }),
+                    tx({
+                        tr: 'Manuel Trade filtre tarifi',
+                        en: 'Manual Trade filter recipe',
+                    }),
+                    tx({
+                        tr: 'Kaynak ve ruleset görünürlüğü',
+                        en: 'Source and ruleset visibility',
+                    }),
+                ]"
+                :does-not="[
+                    tx({
+                        tr: 'Canlı fiyat veya ilan çekmez',
+                        en: 'No live prices or listings',
+                    }),
+                    tx({
+                        tr: 'Trade araması otomatikleştirmez',
+                        en: 'No automated Trade search',
+                    }),
+                    tx({
+                        tr: 'Oyuna veya tarayıcıya dokunmaz',
+                        en: 'No game or browser control',
+                    }),
+                    tx({
+                        tr: 'AI ile hesap yapmaz',
+                        en: 'No AI-authored calculations',
+                    }),
+                ]"
+            />
         </section>
 
         <section class="landing-workflow" aria-labelledby="workflow-title">

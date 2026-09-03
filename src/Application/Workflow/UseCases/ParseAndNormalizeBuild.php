@@ -9,6 +9,7 @@ use Lootwright\Application\Workflow\Exception\TerminalWorkflowFailure;
 use Lootwright\Application\Workflow\Exception\TransientWorkflowFailure;
 use Lootwright\Application\Workflow\Ports\ArtifactParser;
 use Lootwright\Application\Workflow\Ports\ArtifactStorage;
+use Lootwright\Application\Workflow\Ports\DeterministicAnalysisEngine;
 use Lootwright\Application\Workflow\Ports\TransactionManager;
 use Lootwright\Application\Workflow\Ports\WorkflowDispatcher;
 use Lootwright\Application\Workflow\Ports\WorkflowRepository;
@@ -19,6 +20,7 @@ final readonly class ParseAndNormalizeBuild
         private WorkflowRepository $repository,
         private ArtifactStorage $storage,
         private ArtifactParser $parser,
+        private DeterministicAnalysisEngine $engine,
         private WorkflowDispatcher $dispatcher,
         private RequestClarification $clarifications,
         private TransactionManager $transactions,
@@ -45,11 +47,24 @@ final readonly class ParseAndNormalizeBuild
                     return;
                 }
 
+                $rulesetChecksum = $this->selectedRulesetChecksum($artifact->analysisId);
+                if ($rulesetChecksum === null) {
+                    $analysis = $this->repository->analysis($artifact->analysisId);
+                    $parsedArtifact = $this->repository->artifact($artifactId);
+                    if ($analysis === null || $parsedArtifact === null) {
+                        throw new TerminalWorkflowFailure('analysis_identity_missing', 'The parsed analysis identity could not be resolved.');
+                    }
+
+                    $context = $this->engine->resolve($analysis, $parsedArtifact);
+                    $this->repository->pinAnalysisRuleset($artifact->analysisId, $context);
+                    $rulesetChecksum = $context->rulesetChecksumSha256;
+                }
+
                 $this->repository->transitionAnalysis($artifact->analysisId, AnalysisState::Queued);
                 $this->dispatcher->analyze(
                     $artifact->analysisId,
                     $artifact->edition,
-                    $this->selectedRulesetChecksum($artifact->analysisId),
+                    $rulesetChecksum,
                 );
             });
             $this->deleteRawArtifact($artifactId, $artifact->blobKey);

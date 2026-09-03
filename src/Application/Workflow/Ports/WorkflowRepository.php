@@ -8,6 +8,7 @@ use Lootwright\Application\Workflow\DTO\ArtifactRecord;
 use Lootwright\Application\Workflow\DTO\DeletionResult;
 use Lootwright\Application\Workflow\DTO\DeterministicAnalysisSnapshot;
 use Lootwright\Application\Workflow\DTO\ParsedArtifact;
+use Lootwright\Application\Workflow\DTO\ResolvedAnalysisContext;
 use Lootwright\Application\Workflow\DTO\SubmissionReceipt;
 use Lootwright\Domain\Shared\Game\GameEdition;
 
@@ -33,6 +34,8 @@ interface WorkflowRepository
     public function artifact(string $artifactId): ?ArtifactRecord;
 
     public function saveParsedArtifact(string $artifactId, ParsedArtifact $parsed): void;
+
+    public function pinAnalysisRuleset(string $analysisId, ResolvedAnalysisContext $context): void;
 
     public function claimAnalysis(string $analysisId): ?AnalysisRecord;
 

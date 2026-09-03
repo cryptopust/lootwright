@@ -15,7 +15,10 @@ const { tx } = useLocale();
                 <span class="severity-label">{{ finding.severity }}</span>
                 <span class="category-label">{{ finding.category }}</span>
             </div>
-            <code>{{ finding.code }}</code>
+            <div class="finding-value">
+                <code>{{ finding.confidence }}%</code
+                ><code>{{ finding.code }}</code>
+            </div>
         </header>
         <div class="finding-content">
             <div>

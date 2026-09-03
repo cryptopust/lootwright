@@ -13,6 +13,38 @@ This file is binding for every contributor and coding agent. Product and policy 
 - Required visible notice: "This product isn't affiliated with or endorsed by Grinding Gear Games in any way."
 - Lootwright is not a bot, overlay, executable client tool, browser extension, price-check overlay, live market indexer, scraper, browser automation tool, or trading automation system.
 
+## Active release scope
+
+- PoE1 and PoE2 are independent product targets. PoE1 remains the currently
+  released public scope. PoE2 may be exposed only after its own approved
+  canonical ruleset, deterministic analysis, data-quality, security, and
+  staging gates pass; architecture or parser support alone never enables it.
+  Public edition configuration is therefore gate-controlled per edition, and
+  PoE2 incompleteness must not block an otherwise passing PoE1 release.
+- Preserve the repository's current Laravel 13 line, PHP `^8.4` baseline, and
+  PostgreSQL deployment target. The current verified versions are Laravel
+  `13.25.x`, PHP 8.4, and the PostgreSQL 18 local development image. A major
+  runtime or database-version change requires an explicit task, compatibility
+  evidence, and an ADR when architectural consequences are material.
+- Production analysis must remain unavailable until an approved immutable PoE1
+  ruleset and the deterministic analyzer pass their release gates. Fixture UI,
+  format parsing, ports, schemas, or tests are not evidence that a production
+  analyzer exists.
+- No third-party game, market, catalog, metadata, or ruleset source may be
+  called while handling a user request. A reviewed adapter may synchronize only
+  out of band through an operator-controlled command or scheduler, with cached
+  normalized data, exact Policy Gate permission, and all source switches
+  enabled. User-facing requests read validated local snapshots only.
+- PoE Wiki and poe.ninja integrations are disabled by default in every
+  environment template and configuration path. Enabling either requires its
+  source-specific environment switch, an exact executable database Policy Gate
+  decision, current evidence, and an operations review; neither may become a
+  required dependency for the deterministic analyzer.
+- RePoE, PyPoE, `dat-schema`, PoEDB, Craft of Exile, undocumented APIs, scraped
+  pages, and unreviewed generated datasets are not production sources. Technical
+  accessibility or open-source code does not establish permission to import,
+  transform, cache, or redistribute embedded game data.
+
 ## Non-negotiable architecture
 
 - Use a Laravel 13 modular monolith: one repository, one application deployment,
@@ -53,6 +85,15 @@ Modules exchange typed commands, queries, DTOs, and ports. They do not read anot
 - Every finding and recommendation must reference input evidence and the exact ruleset identity used.
 - Preserve raw user input only as long as necessary and separately from normalized facts. Never silently reinterpret a PoE1 payload as PoE2 or vice versa.
 - Unknown, ambiguous, unsupported, or unproven facts produce typed uncertainty or a refusal, never a fabricated fallback.
+- AI may explain only already-verified deterministic findings and may perform
+  constrained intent extraction into a closed, validated schema. It cannot
+  create, alter, complete, or replace a stat, modifier, item fact, price,
+  finding, recommendation, rule, score, or Trade filter. Provider output is
+  non-authoritative and failure must preserve the deterministic result.
+- Facts derived from explicit user input, an official GGG export, PoE Wiki, and
+  poe.ninja must retain separate source identities, source versions, retrieval
+  or submission evidence, checksums where applicable, and permitted-use
+  metadata. They must not be merged into a provenance-free canonical fact.
 
 ## GGG, platform, and data policy
 
@@ -68,6 +109,10 @@ Modules exchange typed commands, queries, DTOs, and ports. They do not read anot
 - Use Path of Exile names only as reasonably necessary to truthfully describe compatibility.
 - Unknown permission or commercial-use status means disabled. Approval requires an updated source-register record and, when material, an ADR.
 - Donations and all monetization remain disabled until documented policy/legal review approves them. Funding must never change functionality, quota, accuracy, adapters, priority, or access.
+- No implementation may read or inspect game memory, process state, client
+  files, logs, screen contents, clipboard contents, browser traffic, or network
+  traffic. Do not automate gameplay, chat, whispers, invites, purchases,
+  keyboard input, mouse input, or any Trade-site action.
 
 ## Security and privacy
 
@@ -101,6 +146,22 @@ Modules exchange typed commands, queries, DTOs, and ports. They do not read anot
 - Do not commit secrets, generated credentials, `.env`, dependency directories, build output, dumps, imported user data, or publisher assets.
 - Keep commits small and coherent. Use Conventional Commits, explain migrations and policy changes, and never claim tests ran when they did not.
 - Architecture, source-policy, game-boundary, funding, or deterministic-behavior changes require corresponding documentation/ADR updates in the same change.
+- Codex must preserve user changes, keep unrelated work unstaged, and never
+  force-push. Do not discard, rewrite, or overwrite user work to make a task or
+  test pass.
+
+## Database and migration rules
+
+- Every migration must be PostgreSQL-compatible and must have an exercised
+  rollback path. SQLite may provide fast feedback but is never proof of
+  PostgreSQL compatibility.
+- A foreign-key column must use exactly the same database type as the referenced
+  primary or unique key. In particular, never mix UUID and bigint identities.
+  Self-references must target a primary/unique constraint already observable by
+  PostgreSQL.
+- Migrations and seeders must not call external sources. Versioned data enters
+  through reviewed, deterministic, idempotent local artifacts or explicit
+  operator workflows.
 
 ## Required quality gates
 
@@ -132,3 +193,10 @@ Required Composer scripts are `format:check`, `analyse`, and `test`; required np
 ## Definition of done
 
 A change is done only when its tests and quality gates pass, deterministic behavior is evidenced, security and provenance impacts are recorded, PoE1/PoE2 isolation is preserved, user-visible copy includes required notices where relevant, docs and ADRs are current, and no disabled capability was enabled by assumption.
+
+Before declaring any task complete, run the applicable test, formatting,
+static-analysis/lint, frontend typecheck, production build, documentation
+validation, and `git diff --check` commands defined by this repository. Review
+the complete scoped diff and final `git status`. Report every skipped or
+unavailable gate; do not convert a missing PostgreSQL, network, browser, or
+container environment into a passing claim.

@@ -3,6 +3,7 @@
 namespace Lootwright\GameAdapters\PoE1\Pob;
 
 use DOMDocument;
+use Lootwright\Domain\BuildIntake\Import\BuildInputType;
 use Lootwright\Domain\BuildIntake\Import\ImportLimits;
 use Lootwright\Domain\BuildIntake\Ports\PobBuildParser;
 use Lootwright\Domain\Shared\Error\DomainError;
@@ -18,12 +19,12 @@ final readonly class Pob1Parser implements PobBuildParser
         return 'PathOfBuilding';
     }
 
-    public function parse(DOMDocument $document, string $inputChecksum, ImportLimits $limits): DomainResult
+    public function parse(DOMDocument $document, string $inputChecksum, BuildInputType $inputType, ImportLimits $limits): DomainResult
     {
         if ($document->documentElement?->tagName !== $this->rootElement()) {
             return DomainResult::failure(DomainError::because(DomainErrorCode::AmbiguousGameEdition, 'The document is not a PoE1 PoB build.'));
         }
 
-        return $this->normalizer->normalize($document, $inputChecksum, $limits);
+        return $this->normalizer->normalize($document, $inputChecksum, $inputType, $limits);
     }
 }

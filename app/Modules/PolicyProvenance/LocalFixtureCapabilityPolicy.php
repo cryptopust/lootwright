@@ -54,20 +54,20 @@ final readonly class LocalFixtureCapabilityPolicy implements CapabilityPolicy
     {
         return [
             [
-                'source_id' => 'USER-PASTED-POB',
+                'source_id' => 'USER-POB-001',
                 'source_version' => '1.0.0',
                 'capability' => Capability::Import,
                 'operation' => 'user_input.pob_code.import',
                 'conditions' => ['explicit_user_submission'],
-                'evidence_id' => 'USER-PASTED-POB-EVIDENCE',
+                'evidence_id' => 'USER-POB-001-EVIDENCE',
             ],
             [
-                'source_id' => 'USER-PASTED-POB',
+                'source_id' => 'USER-POB-001',
                 'source_version' => '1.0.0',
                 'capability' => Capability::TransientProcess,
                 'operation' => 'user_input.pob_code.process',
                 'conditions' => ['explicit_user_submission'],
-                'evidence_id' => 'USER-PASTED-POB-EVIDENCE',
+                'evidence_id' => 'USER-POB-001-EVIDENCE',
             ],
             [
                 'source_id' => 'POB-COMMUNITY',

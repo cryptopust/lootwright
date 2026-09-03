@@ -22,7 +22,7 @@ use RuntimeException;
 
 final readonly class PolicyGatedPobImporter
 {
-    private const USER_SOURCE = 'USER-PASTED-POB';
+    private const USER_SOURCE = 'USER-POB-001';
 
     private const USER_VERSION = '1.0.0';
 
@@ -40,6 +40,8 @@ final readonly class PolicyGatedPobImporter
         ?string $idempotencyKey = null,
         ?string $actorId = null,
         ?ImportLimits $limits = null,
+        ?GameEdition $expectedEdition = null,
+        bool $allowInactiveEditionForEvaluation = false,
     ): PobImportExecution {
         if (! (bool) config('security.emergency.imports')) {
             throw new PobImportDisabled('Build imports are disabled by the emergency switch.');
@@ -63,6 +65,15 @@ final readonly class PolicyGatedPobImporter
                 throw new RuntimeException('The importer returned an invalid prepared input.');
             }
 
+            if (! $allowInactiveEditionForEvaluation
+                && ! in_array($prepared->edition()->value, config('game-editions.public', ['poe1']), true)
+            ) {
+                throw new PobImportRejected(DomainError::because(
+                    DomainErrorCode::UnsupportedInput,
+                    'This game edition is not enabled in the current public release.',
+                ));
+            }
+
             $this->authorizeFormat($prepared->edition());
             $result = $this->importer->normalize($prepared, $limits);
 
@@ -74,6 +85,10 @@ final readonly class PolicyGatedPobImporter
 
             if (! $import instanceof PobImportResult) {
                 throw new RuntimeException('The importer returned an invalid normalized result.');
+            }
+
+            if ($expectedEdition !== null && $import->canonicalBuild->edition !== $expectedEdition) {
+                throw new PobImportEditionMismatch($expectedEdition, $import->canonicalBuild->edition);
             }
 
             $stored = null;

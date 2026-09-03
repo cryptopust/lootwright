@@ -240,7 +240,7 @@ final class SyntheticTradeCaseFactory
         $scope = $this->scope();
         $catalog = $this->value(BuildCatalog::create(
             $edition,
-            $this->value(CharacterClassId::from($edition, 'fixture.class'), CharacterClassId::class),
+            $this->value(CharacterClassId::from($edition, 'witch'), CharacterClassId::class),
             null,
         ), BuildCatalog::class);
         $snapshot = $this->value(BuildSnapshot::create(

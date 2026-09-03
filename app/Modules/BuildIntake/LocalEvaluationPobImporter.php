@@ -26,7 +26,12 @@ final readonly class LocalEvaluationPobImporter
         );
 
         try {
-            return DomainResult::success($gated->handle($input, false, limits: $limits)->result);
+            return DomainResult::success($gated->handle(
+                $input,
+                false,
+                limits: $limits,
+                allowInactiveEditionForEvaluation: true,
+            )->result);
         } catch (PobImportRejected $exception) {
             return DomainResult::failure($exception->domainError);
         }

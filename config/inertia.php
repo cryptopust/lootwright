@@ -16,8 +16,11 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
-        'url' => 'http://127.0.0.1:13714',
+        // SSR is an optional local process, not an implicit production
+        // dependency. Keeping it off prevents a missing or unintended local
+        // listener from turning page rendering into an outbound HTTP call.
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', false),
+        'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],

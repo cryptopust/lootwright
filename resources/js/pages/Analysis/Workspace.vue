@@ -9,6 +9,9 @@ import AppShell from '@/components/app/AppShell.vue';
 import ConfidenceMeter from '@/components/app/ConfidenceMeter.vue';
 import EditionBadge from '@/components/app/EditionBadge.vue';
 import StatusBanner from '@/components/app/StatusBanner.vue';
+import EvidenceCallout from '@/components/arpg/EvidenceCallout.vue';
+import ItemCard from '@/components/arpg/ItemCard.vue';
+import StatChip from '@/components/arpg/StatChip.vue';
 import { useLocale } from '@/composables/useLocale';
 import {
     demoBuild,
@@ -80,6 +83,32 @@ const severityGroups = computed(() => [
         ),
     },
 ]);
+const targetItem = {
+    slot: 'HELMET · FIXTURE',
+    name: 'Target Evidence Helm',
+    baseName: 'Neutral Test Base',
+    rarity: 'rare' as const,
+    ilvl: 84,
+    fixture: true,
+    affixes: [
+        {
+            text: '+# to maximum Life',
+            value: '+90',
+            minimum: 80,
+            maximum: 99,
+            roll: 90,
+            tier: 'T1',
+        },
+        {
+            text: '+#% to Cold Resistance',
+            value: '+36%',
+            minimum: 36,
+            maximum: 41,
+            roll: 36,
+            tier: 'T2',
+        },
+    ],
+};
 </script>
 
 <template>
@@ -160,33 +189,17 @@ const severityGroups = computed(() => [
 
                 <template v-if="section === 'overview'">
                     <section class="overview-strip" aria-label="Build summary">
-                        <div>
-                            <span>{{
-                                tx({ tr: 'Edition', en: 'Edition' })
-                            }}</span
-                            ><strong>PoE 1</strong>
-                        </div>
-                        <div>
-                            <span>{{
-                                tx({
-                                    tr: 'Analiz sürümü',
-                                    en: 'Analysis version',
-                                })
-                            }}</span
-                            ><strong>V1</strong>
-                        </div>
-                        <div>
-                            <span>{{
-                                tx({ tr: 'Bulgular', en: 'Findings' })
-                            }}</span
-                            ><strong>{{ demoFindings.length }}</strong>
-                        </div>
-                        <div>
-                            <span>{{
-                                tx({ tr: 'Yükseltmeler', en: 'Upgrades' })
-                            }}</span
-                            ><strong>{{ demoUpgrades.length }}</strong>
-                        </div>
+                        <StatChip label="Edition" value="PoE 1" />
+                        <StatChip label="Analysis" value="V1" />
+                        <StatChip
+                            label="Findings"
+                            :value="demoFindings.length"
+                        />
+                        <StatChip
+                            label="Exact market cost"
+                            :value="null"
+                            note="no-live-listings"
+                        />
                         <ConfidenceMeter
                             :value="demoBuild.confidence"
                             :label="
@@ -416,6 +429,17 @@ const severityGroups = computed(() => [
                             :key="upgrade.code"
                             :upgrade="upgrade"
                         />
+                    </div>
+                    <div class="upgrade-evidence-layout">
+                        <ItemCard v-bind="targetItem" /><EvidenceCallout
+                            rule="res.cold.cap"
+                            source="LOOTWRIGHT-001 / fixture-1"
+                            title="Hedef slot kanıtı"
+                            >Fixture hedefi maximum Life ve Cold Resistance
+                            gereksinimlerini aynı slotta toplar. Exact item
+                            fiyatı ve bulunabilirlik
+                            bilinmiyor.</EvidenceCallout
+                        >
                     </div>
                     <StatusBanner
                         tone="neutral"

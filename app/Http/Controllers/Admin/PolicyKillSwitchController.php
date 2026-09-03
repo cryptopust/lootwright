@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Modules\Administration\AdminAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,7 @@ use Lootwright\Domain\PolicyProvenance\KillSwitchScope;
 
 class PolicyKillSwitchController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, AdminAuditLogger $audit): JsonResponse
     {
         $validated = $request->validate([
             'scope' => ['required', Rule::enum(KillSwitchScope::class)],
@@ -48,6 +50,15 @@ class PolicyKillSwitchController extends Controller
                 'updated_at' => now(),
             ],
         );
+
+        $actor = $request->user();
+        if ($actor instanceof User) {
+            $audit->record($actor, 'policy.kill_switch.changed', $validated['reason'], metadata: [
+                'scope' => $scope->value,
+                'active' => (bool) $validated['active'],
+                'capability' => $capability,
+            ]);
+        }
 
         return response()->json(['status' => 'updated'], headers: ['Cache-Control' => 'no-store']);
     }

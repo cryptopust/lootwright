@@ -33,4 +33,11 @@ final class Pob2Normalizer extends AbstractPobNormalizer
     {
         return [];
     }
+
+    protected function metricAliases(): array
+    {
+        // PoB2 summary semantics are not yet sufficiently verified to promote
+        // similarly named fields into canonical PoE2 facts.
+        return [];
+    }
 }

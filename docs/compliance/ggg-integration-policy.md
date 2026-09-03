@@ -45,6 +45,9 @@ cannot authorize monetization.
 - Use Path of Exile names only as reasonably needed to identify compatibility.
 - Link to the official home page in ordinary text if useful, without logos or proprietary graphics.
 - Use an optional AI provider solely for constrained intent extraction or explanation, independent of GGG systems.
+- Use reviewed cached poe.ninja economy context only as a visible estimate with
+  source and freshness; it cannot become a live Trade listing or exact rare-item
+  price claim.
 
 ## Prohibited behavior
 

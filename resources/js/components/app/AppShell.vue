@@ -39,18 +39,14 @@ onBeforeUnmount(() => {
 });
 
 const navigation = [
+    { key: 'dashboard', href: '/dashboard', tr: 'Panel', en: 'Dashboard' },
     {
         key: 'new',
         href: '/analyses/new',
         tr: 'Yeni analiz',
         en: 'New analysis',
     },
-    {
-        key: 'demo',
-        href: '/analyses/demo/overview',
-        tr: 'Demo çalışma alanı',
-        en: 'Demo workspace',
-    },
+    { key: 'account', href: '/login', tr: 'Hesap', en: 'Account' },
     {
         key: 'methodology',
         href: '/methodology',

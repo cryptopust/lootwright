@@ -80,6 +80,15 @@ final readonly class OpenAiResponsesProvider implements StructuredAiProvider
 
     private function success(OpenAiHttpResponse $response, string $requestedModel): StructuredAiResponse
     {
+        if (($response->body['status'] ?? null) === 'incomplete') {
+            $details = $response->body['incomplete_details'] ?? null;
+            $reason = is_array($details) && is_string($details['reason'] ?? null)
+                ? $details['reason']
+                : 'unknown';
+
+            throw new AiProviderFailure('incomplete_'.$reason, false);
+        }
+
         $outputText = null;
         $refused = false;
 

@@ -129,6 +129,23 @@ jobs:
           php artisan migrate:rollback --step=1 --force --no-interaction
           php artisan migrate --force --no-interaction
 
+      - name: Run PostgreSQL-specific migration and constraint tests
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: lootwright_ci
+          DB_USERNAME: lootwright_ci
+          DB_PASSWORD: ci-local-only
+          DB_SSLMODE: disable
+          POSTGRES_MIGRATION_INTEGRATION: true
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+        run: php artisan test tests/Feature/PostgreSqlMigrationCompatibilityTest.php
+
       - name: Install frontend dependencies
         run: npm ci
 

@@ -10,7 +10,7 @@ final readonly class OutboundRequestGuard
     private Closure $resolver;
 
     /**
-     * @param  array<string, array{scheme: string, host: string, port: int, path: string}>  $targets
+     * @param  array<string, array{scheme: string, host: string, port: int, path?: string, path_pattern?: string, allow_query?: bool}>  $targets
      * @param  null|Closure(string): list<string>  $resolver
      */
     public function __construct(
@@ -51,9 +51,13 @@ final readonly class OutboundRequestGuard
         $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 0));
         $path = (string) ($parts['path'] ?? '/');
 
+        $pathAllowed = isset($target['path'])
+            ? $path === $target['path']
+            : isset($target['path_pattern']) && preg_match($target['path_pattern'], $path) === 1;
+
         if ($scheme !== $target['scheme'] || $host !== $target['host']
-            || $port !== $target['port'] || $path !== $target['path']
-            || isset($parts['query']) || isset($parts['fragment'])
+            || $port !== $target['port'] || ! $pathAllowed
+            || (! ($target['allow_query'] ?? false) && isset($parts['query'])) || isset($parts['fragment'])
             || isset($parts['user']) || isset($parts['pass'])
         ) {
             throw new OutboundRequestDenied('The outbound destination is not allowlisted.');

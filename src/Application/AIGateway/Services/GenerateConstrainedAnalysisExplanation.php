@@ -5,8 +5,8 @@ namespace Lootwright\Application\AIGateway\Services;
 use Lootwright\Application\AIGateway\DTO\AiGatewayOutcome;
 use Lootwright\Application\AIGateway\DTO\ExplanationBundle;
 use Lootwright\Application\AIGateway\DTO\GatewayExplanationRequest;
-use Lootwright\Application\AIGateway\Ports\AiGateway;
 use Lootwright\Application\AIGateway\Ports\AnalysisExplanationRepository;
+use Lootwright\Application\AIGateway\Ports\RecommendationExplainer;
 use Lootwright\Application\Workflow\AnalysisState;
 use Lootwright\Application\Workflow\Exception\InvalidWorkflowInput;
 use Lootwright\Application\Workflow\UseCases\RetrieveAnalysis;
@@ -16,7 +16,7 @@ final readonly class GenerateConstrainedAnalysisExplanation
 {
     public function __construct(
         private RetrieveAnalysis $analyses,
-        private AiGateway $gateway,
+        private RecommendationExplainer $gateway,
         private AnalysisExplanationRepository $explanations,
     ) {}
 

@@ -44,15 +44,14 @@ The modular monolith is one release artifact and one security boundary. HTTP and
 background workers are processes of the same codebase, not separate services.
 PostgreSQL is the system of record; cache and queue backends are disposable
 coordination state. Local/self-hosted operation may use Redis and Horizon.
-Laravel Cloud staging may use Valkey and Cloud queue/background facilities only
-when required. Ruleset artifacts are content-addressed and backed by database
+Laravel Cloud uses managed cache/queue/background facilities only when required
+by an enabled feature. Ruleset artifacts are content-addressed and backed by database
 metadata. AI and future documented APIs are replaceable infrastructure adapters,
 never domain dependencies.
 
 ## Assumptions
 
-- Initial pre-alpha staging targets Laravel Cloud Starter in Frankfurt, using a
-  generated `*.laravel.cloud` domain and Serverless PostgreSQL. See
-  [ADR 0014](../adr/0014-laravel-cloud-staging.md).
+- Laravel Cloud is the production platform. Compute, PostgreSQL, managed cache,
+  queue, scheduler, and durable storage are enabled according to measured need.
 - No GGG OAuth client is needed for MVP, and the official developer page currently says new registrations cannot be processed.
 - Account requirements are undecided; anonymous short-lived workspaces are preferred until persistence needs prove otherwise.

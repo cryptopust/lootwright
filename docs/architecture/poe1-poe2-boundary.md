@@ -12,7 +12,7 @@ flowchart LR
 
     USE --> PORT
     PORT --> P1
-    PORT -. phase two .-> P2
+    PORT --> P2
     P1 --> N
     P2 --> N
     P1 ~~~ P2
@@ -47,24 +47,22 @@ The port does not promise that both games support the same stats, slots, passive
 - Queue handlers revalidate game identity instead of trusting serialized class names or route parameters.
 - Cross-game comparisons are out of scope.
 
-## PoE1-first delivery
+## Dual-game delivery boundary
 
-PoE1 remains the first intended analysis adapter, but no production analysis
-adapter is active in the current pre-alpha. A bounded PoE1 format reader and the
-ADR 0010 beta PoE2 format reader are implemented. PoE2 interfaces may be
-reserved where they prevent lock-in, but no speculative PoE2 rules, placeholder
-mappings, or generic demo data may ship. Enabling PoE2 analysis requires:
+PoE1 and PoE2 character catalogs, intake, persistence, and wizard selection are
+active. Every value remains edition-scoped and cross-game payloads are rejected.
+The PoE2 catalog is an Early Access, versioned factual catalog (baseline 0.5)
+and does not imply that an unapproved PoE2 ruleset or formula exists. Analysis
+adapters must fail closed when a parser or deterministic ruleset is unavailable;
+they must never manufacture a result with the other game's rules.
 
-1. approved parser and ruleset provenance;
-2. separate fixtures and deterministic conformance tests;
-3. explicit UI and persistence support;
-4. policy/security review; and
-5. an ADR changing the adapter's status from inactive to active.
-
-ADR 0010 permits one narrower exception: a beta PoB2 format reader may decode
-and normalize explicitly supplied input behind the shared intake port. PoE2
-rulesets, analysis, game datasets, persistence claims, and release parity remain
-inactive; the beta reader cannot satisfy the phase-two activation gates above.
+The bounded PoB2 format reader may decode explicitly supplied input. A successful
+PoE2 analysis additionally requires an approved parser/ruleset provenance record,
+separate fixtures and deterministic conformance tests. The production PoE2
+binding now routes to its own ruleset loader and resolver, validates every
+edition-scoped reference, and fails closed when the ruleset is absent, stale, or
+unapproved. Public exposure remains disabled until that independent release gate
+passes; PoE1 status is evaluated separately.
 
 ## Compatibility testing
 
